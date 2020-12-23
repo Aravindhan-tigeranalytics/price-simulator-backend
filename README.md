@@ -14,7 +14,6 @@ Creating virtual env :
 python -m venv envss
 env\Scripts\activate
 ```
-
 or
 or
 
