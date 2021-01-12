@@ -36,4 +36,6 @@ class AuthTokenSerializer(serializers.Serializer):
             msg = _('Unable to authenticate')
             raise serializers.ValidationError(msg, code='authentication')
         attrs['user'] = user
+        print(user , "TOKEN USER")
+        print(attrs , "ATTRS ")
         return attrs

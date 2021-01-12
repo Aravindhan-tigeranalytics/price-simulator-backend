@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from core.models import Scenario
 from scenario_planner import serializers
+from utils import exceptions as exception
 # import xlwt
 from xlwt import Workbook
 from django.http import HttpResponse
@@ -12,17 +13,32 @@ from django.http import HttpResponse
 import xlsxwriter
 
 
-class ScenarioViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin):
+class ScenarioViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin,
+mixins.UpdateModelMixin,mixins.DestroyModelMixin):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
     queryset = Scenario.objects.all()
     serializer_class = serializers.ScenarioSerializer
 
     def get_queryset(self):
+       
         return self.queryset.filter(user=self.request.user).order_by('-name')
 
     def perform_create(self, serializer):
+        query = self.queryset.filter(user=self.request.user)
+        if(query.count() > 1):
+            raise exception.CountExceedException
+        if(query.filter(name = serializer.validated_data['name']).exists()):
+            raise exception.AlredyExistsException
         serializer.save(user=self.request.user)
+
+    def put(self,**kwargs):
+        self.partial_update(self.request,*args,**kwargs)
+    
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+    # def
 
 
 def down(request):
