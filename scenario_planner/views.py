@@ -26,7 +26,7 @@ mixins.UpdateModelMixin,mixins.DestroyModelMixin):
 
     def perform_create(self, serializer):
         query = self.queryset.filter(user=self.request.user)
-        if(query.count() > 1):
+        if(query.count() > 20):
             raise exception.CountExceedException
         if(query.filter(name = serializer.validated_data['name']).exists()):
             raise exception.AlredyExistsException
