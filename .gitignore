@@ -9,3 +9,5 @@ __pycache__/
 *.so
 db.sqlite3
 .env
+test.py
+*.xlsx

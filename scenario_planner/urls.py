@@ -10,5 +10,7 @@ app_name = "scenario"
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('download/', views.down)
+    path('download/', views.down),
+    path('downloads/', views.ExampleViewSet.as_view({'post' : 'download'})),
+    path('getExcel/', views.ExampleViewSet.as_view({'post' : 'getData'}))
 ]

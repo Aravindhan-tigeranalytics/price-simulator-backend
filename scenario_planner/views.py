@@ -2,15 +2,20 @@
 from rest_framework import viewsets, mixins
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 
 from core.models import Scenario
 from scenario_planner import serializers
 from utils import exceptions as exception
+from utils import excel as excel
 # import xlwt
+# from xlrd import ope
 from xlwt import Workbook
 from django.http import HttpResponse
 # import StringIO
 import xlsxwriter
+import json
+import io
 
 
 class ScenarioViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin,
@@ -39,32 +44,88 @@ mixins.UpdateModelMixin,mixins.DestroyModelMixin):
         return self.destroy(request, *args, **kwargs)
 
     # def
+class ExampleViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Scenario.objects.all()
+    serializer_class = serializers.ScenarioSerializer
 
+
+    @action(methods=['post'], detail=True)
+    def download(self, *args, **kwargs):
+        # print(args , "ARGS")
+        # print(kwargs , "KWARGS")
+        # print(self , "self")
+        formdata = self.request.data['data']
+        typ = self.request.data['type']
+       
+        output = io.BytesIO()
+        if typ == 'comp':
+            excel.excel_summary(json.loads(formdata) , output)
+        else:
+            excel.excel(json.loads(formdata) , output)
+        output.seek(0)
+        filename = 'django_simple.xlsx'
+        response = HttpResponse(
+            output,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=%s' % filename
+        return response
+
+    @action(methods=['post'], detail=True)
+    def getData(self, *args, **kwargs):
+        # print(args , "ARGS")
+        # print(kwargs , "KWARGS")
+        formdata = self.request.data['file']
+        # print(formdata)
+        # import pdb
+        # pdb.set_trace()
+        # print(self , "self")
+        return 1
+       
+        # instance = self.get_object()
+
+        # # get an open file handle (I'm just using a file attached to the model for this example):
+        # file_handle = instance.file.open()
+
+        # # send file
+        # response = FileResponse(file_handle, content_type='whatever')
+        # response['Content-Length'] = instance.file.size
+        # response['Content-Disposition'] = 'attachment; filename="%s"' % instance.file.name
+
+        # return response
 
 def down(request):
-    # import xlwt
-    wb = Workbook()
+    output = io.BytesIO()
+    workbook = xlsxwriter.Workbook(output)
+    worksheet = workbook.add_worksheet()
 
-# add_sheet is used to create sheet.
-    sheet1 = wb.add_sheet('Sheet 1')
+    expenses = (
+        ['Rent', 1000],
+        ['Gas',   100],
+        ['Food',  300],
+        ['Gym',    50],
+    )
 
-    sheet1.write(1, 0, 'ISBT DEHRADUN')
-    sheet1.write(2, 0, 'SHASTRADHARA')
-    sheet1.write(3, 0, 'CLEMEN TOWN')
-    sheet1.write(4, 0, 'RAJPUR ROAD')
-    sheet1.write(5, 0, 'CLOCK TOWER')
-    sheet1.write(0, 1, 'ISBT DEHRADUN')
-    sheet1.write(0, 2, 'SHASTRADHARA')
-    sheet1.write(0, 3, 'CLEMEN TOWN')
-    sheet1.write(0, 4, 'RAJPUR ROAD')
-    sheet1.write(0, 5, 'CLOCK TOWER')
+    row = 3
+    col = 3
 
-    wb.save('xlwt example.xls')
-    # if 'excel' in request.POST:
-    response = HttpResponse(content_type='application/xls')
-    response['Content-Disposition'] = 'attachment; filename=Report.xls'
-    # xlsx_data = WriteToExcel("weather_period", "town")
-    response.write(wb)
+    # Iterate over the data and write it out row by row.
+    for item, cost in (expenses):
+        worksheet.write(row, col,     item)
+        worksheet.write(row, col + 1, cost)
+        row += 1
+
+    worksheet.write(row, 3, 'Total')
+    worksheet.write(row, 4, '=SUM(B1:B4)')
+
+    workbook.close()
+    output.seek(0)
+    filename = 'django_simple.xlsx'
+    response = HttpResponse(
+        output,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=%s' % filename
     return response
 
 
