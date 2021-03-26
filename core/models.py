@@ -42,6 +42,33 @@ class Scenario(models.Model):
         on_delete=models.CASCADE
 
     )
+    is_yearly = models.BooleanField(default=False)
+
 
     def __str__(self):
         return self.name
+
+class ScenarioPlannerMetrics(models.Model):
+    category = models.CharField(max_length=100,verbose_name="Category")
+    product_group = models.CharField(max_length=100,verbose_name="Product Group")
+    retailer = models.CharField(max_length=100,verbose_name="Retailer")
+    brand_filter = models.CharField(max_length=100,verbose_name="Brand Filter",default=None)
+    brand_format_filter = models.CharField(max_length=100,verbose_name="Brand Format Filter",default=None)
+    strategic_cell_filter = models.CharField(max_length=100,verbose_name="Strategic Cell Filter",default=None)
+    year = models.IntegerField(verbose_name="Year")
+    date = models.DateField(verbose_name="Date")
+    base_price_elasticity = models.DecimalField(verbose_name="Base Price Elasticity",max_digits=8 , decimal_places=3)
+    cross_elasticity = models.DecimalField(verbose_name="Cross Elasticity",max_digits=8 , decimal_places=3)
+    net_elasticity = models.DecimalField(verbose_name="Net Elasticity",max_digits=8 , decimal_places=3)
+    base_units = models.DecimalField(verbose_name="Base Units",max_digits=12 , decimal_places=3)
+    list_price = models.DecimalField(verbose_name="List Price",max_digits=8 , decimal_places=3)
+    retailer_median_base_price = models.DecimalField(verbose_name="Retailer Median Base Price",max_digits=8 , decimal_places=3)
+    retailer_median_base_price_w_o_vat = models.DecimalField(verbose_name="Retailer Median Base Price w/o VAT",max_digits=8 , decimal_places=3)
+    on_inv_percent = models.DecimalField(verbose_name="On Inv %",max_digits=8 , decimal_places=3)
+    off_inv_percent = models.DecimalField(verbose_name="Off Inv %",max_digits=8 , decimal_places=3)
+    tpr_percent = models.DecimalField(verbose_name="TPR %",max_digits=8 , decimal_places=3)
+    gmac_percent_lsv = models.DecimalField(verbose_name="GMAC % LSV",max_digits=8 , decimal_places=3)
+    product_group_weight = models.DecimalField(verbose_name="Product Group Weight (grams)",max_digits=8 , decimal_places=3)
+
+    class Meta:
+        db_table = "scenario_planner_metrics"

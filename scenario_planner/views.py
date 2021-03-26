@@ -4,8 +4,9 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 
-from core.models import Scenario
-from scenario_planner import serializers
+from core.models import Scenario , ScenarioPlannerMetrics
+from scenario_planner import serializers as sc
+from rest_framework import serializers
 from utils import exceptions as exception
 from utils import excel as excel
 # import xlwt
@@ -23,30 +24,58 @@ mixins.UpdateModelMixin,mixins.DestroyModelMixin):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
     queryset = Scenario.objects.all()
-    serializer_class = serializers.ScenarioSerializer
+    serializer_class = sc.ScenarioSerializer
 
     def get_queryset(self):
-       
+        # queryset = super(ScenarioViewSet, self).get_queryset()
         return self.queryset.filter(user=self.request.user).order_by('-name')
-
-    def perform_create(self, serializer):
+    def filter_queryset(self,queryset):
+        # print(self.request.GET.get('yearly' , '') , "yearly value")
+        # print(type(self.request.GET.get('yearly' , '')) , "yearly type")
+        if(self.request.GET.get('yearly' , '')!="ALL"):
+            return queryset.filter(is_yearly = self.request.GET.get('yearly' , '') == 'true')
+        return queryset
+    
+    def create(self, request , *args , **kwargs):
+        if not request.data['name']:
+            raise exception.EmptyException
         query = self.queryset.filter(user=self.request.user)
         if(query.count() > 20):
             raise exception.CountExceedException
         if(query.filter(name = serializer.validated_data['name']).exists()):
             raise exception.AlredyExistsException
-        serializer.save(user=self.request.user)
+        super().create(request,args,kwargs)
+        
+
+   
+    # def perform_create(self, serializer):
+    #     query = self.queryset.filter(user=self.request.user)
+    #     if(query.count() > 2):
+    #         raise exception.CountExceedException
+    #     if(query.filter(name = serializer.validated_data['name']).exists()):
+    #         raise exception.AlredyExistsException
+    #     serializer.save(user=self.request.user)
 
     def put(self,**kwargs):
+        print(self.request , "request")
+        print(kwargs , "kwargs")
         self.partial_update(self.request,*args,**kwargs)
     
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
 
     # def
+class ScenarioPlannerMetricsViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
+    queryset = ScenarioPlannerMetrics.objects.all()
+    serializer_class = sc.ScenarioPlannerMetricsSerializer
+
+class ScenarioPlannerMetricsViewSetObject(viewsets.GenericViewSet, mixins.ListModelMixin):
+    queryset = ScenarioPlannerMetrics.objects.all()
+    serializer_class = sc.ScenarioPlannerMetricsSerializerObject
+
 class ExampleViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Scenario.objects.all()
-    serializer_class = serializers.ScenarioSerializer
+    serializer_class = sc.ScenarioSerializer
 
 
     @action(methods=['post'], detail=True)

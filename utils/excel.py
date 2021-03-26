@@ -1,6 +1,10 @@
 import xlsxwriter
 import datetime
-
+import openpyxl
+from datetime import datetime,timedelta
+from core.models import ScenarioPlannerMetrics
+from utils.models import ScenarioPlannerMetricModel
+from utils import util
 def excel(data , output):
     ROW_CONST = 5
     COL_CONST = 1
@@ -162,3 +166,232 @@ def dateformat():
 # if __name__ == "__main__":
 #     excel()
     # dateformat()
+
+def read_excel(loc):
+    # ScenarioPlannerMetrics.objects.all().delete()
+    headers = ['Category' , 'Product Group' , 'Retailer' ,'Brand Filter','Brand Format Filter',
+    'Strategic Cell Filter','Year' , 'Date','Base Price Elasticity','Cross Elasticity',
+    'Net Elasticity','Base Units','List Price','Retailer Median Base Price',
+    'Retailer Median Base Price  w\o VAT','On Inv. %','Off Inv. %','TPR %','GMAC%, LSV',
+    'Product Group Weight (grams)']
+    taken_header = []
+    book = openpyxl.load_workbook(loc,data_only=True)
+    shet = book['Scenario Planner']
+    columns = shet.max_column
+    rows = shet.max_row
+    col_ = []
+    row_ =0
+    col_taken = False
+    for row in range(1,rows+1):
+        for col in range(1,columns+1):
+            cell_obj = shet.cell(row = row, column = col)
+            if cell_obj.value in headers and cell_obj.value not in taken_header:
+                col_taken = True
+                col_.append(col)
+                taken_header.append(cell_obj.value)
+        if col_taken:
+            row_ = row
+            break
+    obj = {}
+    ob=[]
+    for row in range(row_+1 , rows+1):
+        obj = {}
+        # metric = ScenarioPlannerMetrics()
+        for c in range(0,len(col_)):
+            cell_obj = shet.cell(row = row, column = col_[c])
+            _genObj(obj,cell_obj.value,headers[c])
+        ob.append(ScenarioPlannerMetricModel(obj))
+    print(len(ob) , "OBJECY LIST")
+    _update_date(ob)
+        # metric.save()
+    # for row in range(row_+1 , rows+1):
+    #     metric = ScenarioPlannerMetrics()
+    #     for c in range(0,len(col_)):
+    #         cell_obj = shet.cell(row = row, column = col_[c])
+    #         _updateMetric(metric , cell_obj.value,headers[c])
+    #     metric.save()
+    # for row in range(row_+1 , rows+1):
+    #     metric = ScenarioPlannerMetrics()
+    #     for c in range(0,len(col_)):
+    #         cell_obj = shet.cell(row = row, column = col_[c])
+    #         _updateMetricDup(metric , cell_obj.value,headers[c])
+    #     metric.save()
+def _update_date(obj):
+    # for o in obj:
+    #     metric = ScenarioPlannerMetrics()
+    #     _updateMetricFromObject(metric , o)
+    #     metric.save()
+    # print(min(obj,key=lambda x:x.date).date , "min date")
+    # print(max(obj,key=lambda x:x.date).date , "max date")
+    # print(max(obj,key=lambda x:x.date).date + timedelta(days=7) , "initial date")
+
+    li = util.grouping(obj , max(obj,key=lambda x:x.date).date + timedelta(days=7))
+    for o in li:
+        metric = ScenarioPlannerMetrics()
+        _updateMetricFromObject(metric , o)
+        metric.save()
+    print(min(li,key=lambda x:x.date).date , "min date")
+    print(max(li,key=lambda x:x.date).date , "max date")
+    print(max(li,key=lambda x:x.date).date + timedelta(days=7) , "initial date")
+    
+def _updateMetricFromObject(metric:ScenarioPlannerMetrics , obj : ScenarioPlannerMetricModel):
+    # print(obj.year , "object year")
+     
+    metric.category = obj.category
+    metric.product_group = obj.product_group
+    metric.retailer = obj.retailer
+    metric.brand_filter = obj.brand_filter
+    metric.brand_format_filter = obj.brand_format_filter
+    metric.strategic_cell_filter = obj.brand_format_filter
+    metric.year = obj.year
+    metric.date = obj.date
+    metric.base_price_elasticity = obj.base_price_elasticity
+    metric.cross_elasticity = obj.cross_elasticity
+    metric.net_elasticity = obj.net_elasticity
+    metric.base_units = obj.base_units
+    metric.list_price = obj.list_price
+    metric.retailer_median_base_price = obj.retailer_median_base_price
+    metric.retailer_median_base_price_w_o_vat = obj.retailer_median_base_price_w_o_vat
+    metric.on_inv_percent = obj.on_inv_percent
+    metric.off_inv_percent = obj.off_inv_percent
+    metric.tpr_percent = obj.tpr_percent 
+    metric.gmac_percent_lsv = obj.gmac_percent_lsv
+    metric.product_group_weight = obj.product_group_weight
+
+def _updateMetric(metric:ScenarioPlannerMetrics , value,header):
+    if(header == 'Category'):
+        metric.category = value.strip()
+    elif(header == 'Product Group'):
+        metric.product_group = value.strip()
+    elif(header == 'Retailer'):
+        metric.retailer = value.strip()
+    elif(header == 'Brand Filter'):
+        metric.brand_filter = value.strip()
+    elif(header == 'Brand Format Filter'):
+        metric.brand_format_filter = value.strip()
+    elif(header == 'Strategic Cell Filter'):
+        metric.strategic_cell_filter = value.strip()
+    elif(header == 'Year'):
+        metric.year = value
+    elif(header == 'Date'):
+        metric.date =value
+    elif(header == 'Base Price Elasticity'):
+        metric.base_price_elasticity = round(float(value),3)
+    elif(header == 'Cross Elasticity'):
+        metric.cross_elasticity = round(float(value),3)
+    elif(header == 'Net Elasticity'):
+        metric.net_elasticity = round(float(value),3)
+    elif(header == 'Base Units'):
+        metric.base_units = round(float(value),3)
+    elif(header == 'List Price'):
+        metric.list_price = round(float(value),3)
+    elif(header == 'Retailer Median Base Price'):
+        metric.retailer_median_base_price = round(float(value),3)
+    elif(header == 'Retailer Median Base Price  w\o VAT'):
+        metric.retailer_median_base_price_w_o_vat = round(float(value),3)
+    elif(header == 'On Inv. %'):
+        metric.on_inv_percent = round(float(value) * 100,3) 
+    elif(header == 'Off Inv. %'):
+        metric.off_inv_percent = round(float(value) * 100,3) 
+    elif(header == 'TPR %'):
+        metric.tpr_percent = round(float(value) * 100,3) 
+    elif(header == 'GMAC%, LSV'):
+        metric.gmac_percent_lsv = round(float(value) * 100,3)
+    elif(header == 'Product Group Weight (grams)'):
+        metric.product_group_weight = round(float(value),3)
+
+def _updateMetricDup(metric:ScenarioPlannerMetrics , value,header):
+    # print(value , "Value " , type(value) , " TYPE VALUE")
+    if(header == 'Category'):
+        metric.category = value.strip()
+    elif(header == 'Product Group'):
+        metric.product_group = value.strip()
+    elif(header == 'Retailer'):
+        metric.retailer = value.strip()
+    elif(header == 'Brand Filter'):
+        metric.brand_filter = value.strip()
+    elif(header == 'Brand Format Filter'):
+        metric.brand_format_filter = value.strip()
+    elif(header == 'Strategic Cell Filter'):
+        metric.strategic_cell_filter = value.strip()
+    elif(header == 'Year'):
+        metric.year = value + 1
+    elif(header == 'Date'):
+        metric.date =value
+    elif(header == 'Base Price Elasticity'):
+        metric.base_price_elasticity = round(float(value),3)
+    elif(header == 'Cross Elasticity'):
+        metric.cross_elasticity = round(float(value),3)
+    elif(header == 'Net Elasticity'):
+        metric.net_elasticity = round(float(value),3)
+    elif(header == 'Base Units'):
+        metric.base_units = round(float(value),3) * 2
+    elif(header == 'List Price'):
+        metric.list_price = round(float(value),3)
+    elif(header == 'Retailer Median Base Price'):
+        metric.retailer_median_base_price = round(float(value),3)
+    elif(header == 'Retailer Median Base Price  w\o VAT'):
+        metric.retailer_median_base_price_w_o_vat = round(float(value),3)
+    elif(header == 'On Inv. %'):
+        metric.on_inv_percent = round(float(value) * 100,3) 
+    elif(header == 'Off Inv. %'):
+        metric.off_inv_percent = round(float(value) * 100,3) 
+    elif(header == 'TPR %'):
+        metric.tpr_percent = round(float(value) * 100,3) 
+    elif(header == 'GMAC%, LSV'):
+        metric.gmac_percent_lsv = round(float(value) * 100,3)
+    elif(header == 'Product Group Weight (grams)'):
+        metric.product_group_weight = round(float(value),3)
+
+def _genObj(obj,value,header):
+    # print(value , "Value " , type(value) , " TYPE VALUE")
+     
+    if(header == 'Category'):
+        obj["category"]= value.strip()
+    elif(header == 'Product Group'):
+        obj["product_group"]= value.strip()
+    elif(header == 'Retailer'):
+        obj["retailer"]= value.strip()
+    elif(header == 'Brand Filter'):
+        obj["brand_filter"]= value.strip()
+    elif(header == 'Brand Format Filter'):
+        obj["brand_format_filter"]= value.strip()
+    elif(header == 'Strategic Cell Filter'):
+        obj["strategic_cell_filter"]= value.strip()
+    elif(header == 'Year'):
+        obj["year"]= value
+    elif(header == 'Date'):
+        obj["date"] =value
+    elif(header == 'Base Price Elasticity'):
+        obj["base_price_elasticity"]= round(float(value),3)
+    elif(header == 'Cross Elasticity'):
+        obj["cross_elasticity"]= round(float(value),3)
+    elif(header == 'Net Elasticity'):
+        obj["net_elasticity"]= round(float(value),3)
+    elif(header == 'Base Units'):
+        obj["base_units"]= round(float(value),3)
+    elif(header == 'List Price'):
+        obj["list_price"]= round(float(value),3)
+    elif(header == 'Retailer Median Base Price'):
+        obj["retailer_median_base_price"]= round(float(value),3)
+    elif(header == 'Retailer Median Base Price  w\o VAT'):
+        obj["retailer_median_base_price_w_o_vat"]= round(float(value),3)
+    elif(header == 'On Inv. %'):
+        obj["on_inv_percent"]= round(float(value) * 100,3) 
+    elif(header == 'Off Inv. %'):
+        obj["off_inv_percent"]= round(float(value) * 100,3) 
+    elif(header == 'TPR %'):
+        obj["tpr_percent"]= round(float(value) * 100,3) 
+    elif(header == 'GMAC%, LSV'):
+        obj["gmac_percent_lsv"]= round(float(value) * 100,3)
+    elif(header == 'Product Group Weight (grams)'):
+        obj["product_group_weight"]= round(float(value),3)
+
+    # return obj
+
+    # headers = ['Category' , 'Product Group' , 'Retailer' ,'Brand Filter','Brand Format Filter',
+    # 'Strategic Cell Filter','Year' , 'Date','Base Price Elasticity','Cross Elasticity',
+    # 'Net Elasticity','Base Units','List Price','Retailer Median Base Price',
+    # 'Retailer Median Base Price  w\o VAT','On Inv. %','Off Inv. %','TPR %','GMAC%, LSV',
+    # 'Product Group Weight (grams)']
+    # pass

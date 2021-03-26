@@ -6,6 +6,8 @@ from scenario_planner import views
 
 router = DefaultRouter()
 router.register('savedscenario', views.ScenarioViewSet)
+router.register('scenario-metrics', views.ScenarioPlannerMetricsViewSet)
+router.register('scenario-metrics-obj', views.ScenarioPlannerMetricsViewSetObject)
 app_name = "scenario"
 
 urlpatterns = [

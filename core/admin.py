@@ -2,10 +2,73 @@ from django.contrib import admin
 # from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 # from django.utils.translation import ugettext_lazy as _
 from core import models
+from django import forms
+from django.urls import path
+from django.shortcuts import render,redirect
+from utils.excel import read_excel
+import openpyxl
 # Register your models here.
+class CsvImportForm(forms.Form):
+    csv_file = forms.FileField()
+# @admin.register(models.Scenario)
+class ScenarioPlannerMetricsAdmin(admin.ModelAdmin):
+    list_display = [field.name for field in models.ScenarioPlannerMetrics._meta.get_fields()]
+    list_filter = ('year','category','product_group','retailer','brand_filter',
+    'brand_format_filter','strategic_cell_filter')
+    actions = ['delete_all']
+    change_list_template = "admin/upload_excel.html"
+    def delete_all(self, request, queryset):
+        for q in queryset:
+            q.delete()
+        # models.ScenarioPlannerMetrics.objects.all().delete()
+    delete_all.short_description = "delete all"
+    def get_urls(self):
+        urls = super().get_urls()
+        my_urls = [
+            path('import-csv/', self.import_csv),
+        ]
+        return my_urls + urls
+    def import_csv(self, request):
+        if request.method == "POST":
+            csv_file = request.FILES["csv_file"]
+            read_excel(csv_file)
+            self.message_user(request, "Your csv file has been imported")
+            return redirect("..")
+        form = CsvImportForm()
+        payload = {"form": form}
+        return render(
+            request, "admin/excel_form.html", payload
+        )
 
+    # def get_urls(self):
+    #     urls = super().get_urls()
+    #     my_urls = [
+    #         ...
+    #         path('import-csv/', self.import_csv),
+    #     ]
+    #     return my_urls + urls
+
+    # def import_csv(self, request):
+    #     if request.method == "POST":
+    #         csv_file = request.FILES["csv_file"]
+    #         reader = csv.reader(csv_file)
+    #         # Create Hero objects from passed in data
+    #         # ...
+    #         self.message_user(request, "Your csv file has been imported")
+    #         return redirect("..")
+    #     form = CsvImportForm()
+    #     payload = {"form": form}
+    #     return render(
+    #         request, "admin/csv_form.html", payload
+    #     )
+
+class ScenarioAdmin(admin.ModelAdmin):
+    list_display = ['name' ,'user' , 'comments' , 'is_yearly']
 admin.site.register(models.User)
-admin.site.register(models.Scenario)
+admin.site.register(models.ScenarioPlannerMetrics,ScenarioPlannerMetricsAdmin)
+admin.site.register(models.Scenario,ScenarioAdmin)
+
+# admin.site.register(models.Scenario,ScenarioAdmin)
 
 # class UserAdmin(BaseUserAdmin):
 #     ordering = ['id']
