@@ -3,12 +3,16 @@ from rest_framework import viewsets, mixins
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 
 from core.models import Scenario , ScenarioPlannerMetrics
 from scenario_planner import serializers as sc
 from rest_framework import serializers
 from utils import exceptions as exception
 from utils import excel as excel
+from utils import optimizer as optimizer
 # import xlwt
 # from xlrd import ope
 from xlwt import Workbook
@@ -168,3 +172,30 @@ def WriteToExcel(weather_data, town=None):
     xlsx_data = " output.getvalue()"
     # xlsx_data contains the Excel file
     return xlsx_data
+
+class ModelOptimize(APIView):
+    serializer_class = sc.CommentSerializer
+    def get(self, request, format=None):
+        content = optimizer.process()
+        # serializer = sc.CommentSerializer()
+        # print(serializer , "serializer ")
+        
+        return Response(content)
+    
+    def post(self, request, format=None):
+        content = None
+        
+        serializer = sc.CommentSerializer(data=request.data)
+        # print(serializer.is_valid() , "serializer data  valid?")
+        # print(request.data , "request data ")
+        # print(serializer.errors , "errors")
+        # import pdb
+        # pdb.set_trace()
+        if serializer.is_valid():
+            # print(serializer.data , "serializer data ")
+            # content = optimizer.process(serializer.data)
+            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        return Response(content, status=status.HTTP_201_CREATED)
+    

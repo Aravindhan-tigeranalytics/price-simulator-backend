@@ -1,0 +1,13 @@
+model_coefficients,names,PPG_Item
+14.609,Intercept,ITEM216_Lenta
+0.571,flag_promo_under1,ITEM216_Lenta
+0.545,flag_promo_under2,ITEM216_Lenta
+0.546,flag_children_protection_day,ITEM216_Lenta
+-0.141,trend_year,ITEM216_Lenta
+-2.112,wk_sold_median_base_price_byppg_log,ITEM216_Lenta
+0.01,tpr_discount_byppg,ITEM216_Lenta
+0.312,Catalogue_Dist,ITEM216_Lenta
+0.007,ACV_Selling,ITEM216_Lenta
+0.451,SI,ITEM216_Lenta
+-0.007,ITEM5006_Lenta_PromotedDiscount,ITEM216_Lenta
+0.995,ITEM5006_Lenta_RegularPrice,ITEM216_Lenta

@@ -101,16 +101,16 @@ DATABASES = {
 #     }
 # }
 ## local
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#         'NAME': 'localpricesimulatordb',
-#         'USER':'postgres',
-#         'PASSWORD': 'tiger@123',
-#         'HOST': 'localhost',
-#         'PORT':5432,
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'localpricesimulatordb',
+        'USER':'postgres',
+        'PASSWORD': 'tiger@123',
+        'HOST': 'localhost',
+        'PORT':5432,
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
@@ -133,7 +133,8 @@ import utils
 
 #Custom Exception 
 REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'utils.app_exception_handler.custom_exception_handler'
+    'EXCEPTION_HANDLER': 'utils.app_exception_handler.custom_exception_handler',
+    # 'COERCE_DECIMAL_TO_STRING': False
 }
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
