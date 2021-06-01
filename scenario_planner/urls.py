@@ -15,5 +15,7 @@ urlpatterns = [
     path('download/', views.down),
     path('downloads/', views.ExampleViewSet.as_view({'post' : 'download'})),
     path('getExcel/', views.ExampleViewSet.as_view({'post' : 'getData'})),
-    path('optimize/',views.ModelOptimize.as_view())
+    path('optimize/',views.ModelOptimize.as_view()),
+    path('promo-simulate/',views.PromoSimulatorView.as_view({'get': 'get'}))
+    # path('promo-simulate/',views.PromoSimulatorView.as_view())
 ]

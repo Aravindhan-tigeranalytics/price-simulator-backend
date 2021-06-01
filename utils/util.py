@@ -1,9 +1,30 @@
 import itertools 
 import datetime
 import random
+import re
+
+def _divide(n1 , n2):
+    if not n1 or not n2:
+        return 0
+    return n1/n2
+
+def _regex(pattern,string):
+    return re.compile(pattern).search(string)
+
+def average(n1,n2):
+    if not n1:
+        return n2
+    return (n1 + n2)/2
+
 def _sortList(ut):
     return sorted(ut, key=lambda x: x.date, reverse=False)
-# newlist = sorted(ut, key=lambda x: x.count, reverse=True)
+
+def generate_slug_string(s1,s2,s3):
+    return "{}-{}-{}".format(remove_duplicate_spaces(s1),remove_duplicate_spaces(s2),remove_duplicate_spaces(s3))
+
+def remove_duplicate_spaces(s):
+    return "".join(s.split()).lower()
+
 def grouping(a_list , init_date):
     key_and_group= []
     an_iterator = itertools.groupby(a_list, lambda x : x.category+x.product_group+x.retailer) 

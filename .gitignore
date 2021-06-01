@@ -12,3 +12,5 @@ db.sqlite3
 test.py
 *.xlsx
 *.xlsm
+local_settings.py
+local-requirements.txt

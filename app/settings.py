@@ -46,10 +46,12 @@ INSTALLED_APPS = [
     'corsheaders',
     'core',
     'user',
-    'scenario_planner'
+    'scenario_planner',
+     'debug_toolbar'
 ]
 
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -59,7 +61,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
+INTERNAL_IPS = [
+    # ...
+    '127.0.0.1',
+    # ...
+]
+                                        
 ROOT_URLCONF = 'app.urls'
 
 TEMPLATES = [
@@ -161,3 +168,8 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = None
+
+# try:
+#     from . import local_settings
+# except
+#     pass

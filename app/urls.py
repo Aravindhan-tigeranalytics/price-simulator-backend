@@ -15,11 +15,13 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+import debug_toolbar
 admin.site.site_header = "MARS Admin"
 admin.site.site_title = "MARS Admin Portal"
 admin.site.index_title = "Welcome to MARS Portal"
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/user/', include('user.urls')),
-    path('api/scenario/', include('scenario_planner.urls'))
+    path('api/scenario/', include('scenario_planner.urls')),
+    path('__debug__/', include(debug_toolbar.urls)),
 ]

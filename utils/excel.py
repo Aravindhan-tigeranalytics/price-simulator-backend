@@ -1,10 +1,20 @@
+from numpy import save
 import xlsxwriter
 import datetime
 import openpyxl
+import decimal
+# from openpyxl import worksheet
 from datetime import datetime,timedelta
-from core.models import ScenarioPlannerMetrics
-from utils.models import ScenarioPlannerMetricModel
-from utils import util
+from core import models as model
+from utils import models
+from . import constants as const
+from utils.models import ScenarioPlannerMetricModel,PromoMeta
+from utils import util , roi
+
+def _get_sheet_value(sheet , row , column):
+    val = sheet.cell(row = row, column = column).value
+    # print(val , "value returuning")
+    return sheet.cell(row = row, column = column).value
 def excel(data , output):
     ROW_CONST = 5
     COL_CONST = 1
@@ -162,10 +172,155 @@ def dateformat():
 
     x = datetime.datetime.now()
     return x.strftime("%b %d %Y %H:%M:%S")
+    
+def read_promo_coeff(file):
+    headers = const.COEFF_HEADER
+    book = openpyxl.load_workbook(file,data_only=True)
+    sheet = book['MODEL_COEFFICIENT']
+    columns = sheet.max_column
+    rows = sheet.max_row
+    print(columns , rows , "columns and rows")
+    col_ = [i for i in range(1,len(headers)+1)]
+    row_ =0
+    for row in range(row_+2 , rows+1):
+        db_meta = model.ModelMeta()
+        db_coeff = model.ModelCoefficient()
+        for c in range(0,len(col_)):
+            
+            # obj = {}
+            # print(row , c," :rowcvalue")'Account Name' , 'Corporate Segment' , 'PPG'
+            cell_obj = sheet.cell(row = row,column = col_[c])
+            if(headers[c] in const.PROMO_MODEL_META_MAP):
+                print(headers[c] , const.PROMO_MODEL_META_MAP[headers[c]],cell_obj.value , "generated value")
+                setattr(db_meta,const.PROMO_MODEL_META_MAP[headers[c]],cell_obj.value)
+            elif(headers[c] in const.PROMO_MODEL_COEFF_MAP):
+                setattr(db_coeff,const.PROMO_MODEL_COEFF_MAP[headers[c]],
+                        cell_obj.value if cell_obj.value else 0.0)
+            
+        # print(db_meta.product_group , db_meta.corporate_segment , db_meta.account_name , "from object before save")
+        db_meta.slug = util.generate_slug_string(db_meta.account_name,db_meta.corporate_segment,db_meta.product_group)
+        if not model.ModelMeta.objects.filter(slug=db_meta.slug).exists():
+        # import pdb
+        # pdb.set_trace()
+            db_meta.save()
+        
+        # print(db_meta.product_group , db_meta.corporate_segment , db_meta.account_name , "from object")
+        # print(saved_meta , "saved meta value")
+        db_coeff.model_meta = model.ModelMeta.objects.filter(
+            account_name=db_meta.account_name,corporate_segment=db_meta.corporate_segment,
+            product_group=db_meta.product_group).first()
+        db_coeff.save()
+            # ob.append(cell_obj.value)
+    # print(ob , "OBBB")
+            # _genObj(obj,cell_obj.value,headers[c])
+    #     ob.append(ScenarioPlannerMetricModel(obj))
+    # print(len(ob) , "OBJECY LIST")
+    # _update_date(ob)
+    book.close()
 
-# if __name__ == "__main__":
-#     excel()
-    # dateformat()
+
+def read_promo_data(file):
+    headers = const.DATA_HEADER
+    book = openpyxl.load_workbook(file,data_only=True)
+    sheet = book['MODEL_DATA']
+    columns = sheet.max_column
+    rows = sheet.max_row
+
+    col_ = [i for i in range(1,len(headers)+1)]
+    row_ =0
+    for row in range(row_+2 , rows+1):
+        
+        db_meta = PromoMeta()
+        db_data = model.ModelData()
+        for c in range(0,len(col_)):
+            cell_obj = sheet.cell(row = row,column = col_[c])
+            if(headers[c] in const.PROMO_MODEL_META_MAP):
+                setattr(db_meta,const.PROMO_MODEL_META_MAP[headers[c]],cell_obj.value)
+            elif(headers[c] in const.PROMO_MODEL_DATA_MAP):
+                setattr(db_data,const.PROMO_MODEL_DATA_MAP[headers[c]],cell_obj.value)
+                
+        # model.ModelData.objects.get(
+        #     account_name=db_meta.account_name,corporate_segment=db_meta.corporate_segment,
+        #     product_group=db_meta.product_group
+        # )
+        db_data.model_meta = model.ModelMeta.objects.get(
+            
+            slug=util.generate_slug_string(db_meta.account_name,
+                                           db_meta.corporate_segment,
+                                           db_meta.product_group)
+            
+        )
+        db_data.save()
+    book.close()
+    
+def read_roi_data(file):
+    # mode , cre = model.ModelMeta.objects.get_or_create(
+    #         account_name = 'acc',
+    #         corporate_segment ='ss',
+    #         product_group = 'sss')
+    # import pdb
+    # pdb.set_trace()
+    headers = const.ROI_HEADER
+    book = openpyxl.load_workbook(file,data_only=True)
+    sheet = book['ROI_Data_All_retailers_with_ext']
+    columns = sheet.max_column
+    rows = sheet.max_row
+    col_= []
+    row_ =1
+    header_found = False
+    for row in range(1,rows+1):
+        print(row , "row count")
+        for col in range(1,columns+1):
+            print(col , "column count")
+            cell_obj = sheet.cell(row = row, column = col)
+            if cell_obj.value in headers:
+                header_found = True
+                print(cell_obj.value , 'object value')
+                # col_taken = True
+                col_.append(col)
+        if header_found:
+           break 
+    print(col_ , "coldddd")
+    # import pdb
+    # pdb.set_trace()
+    for row in range(row_+1 , rows+1):
+        
+        meta , created = model.ModelMeta.objects.get_or_create(
+            account_name = _get_sheet_value(sheet ,row , 1),
+            corporate_segment = _get_sheet_value(sheet ,row , 2),
+            product_group = _get_sheet_value(sheet ,row , 3),
+            # brand_filter = _get_sheet_value(sheet ,row , 4),
+            # brand_format_filter = _get_sheet_value(sheet ,row , 5),
+            # strategic_cell_filter = _get_sheet_value(sheet ,row , 5),
+            slug = util.generate_slug_string(
+                _get_sheet_value(sheet ,row , 1),
+               _get_sheet_value(sheet ,row , 2),
+                _get_sheet_value(sheet ,row , 3)
+            )
+        )
+        if created:
+            # print(created , "created")
+            # print(meta , "meta")
+            meta.brand_filter = _get_sheet_value(sheet ,row , 4)
+            meta.brand_format_filter =_get_sheet_value(sheet ,row , 5)
+            meta.strategic_cell_filter =_get_sheet_value(sheet ,row , 6)
+            meta.save()
+            # meta.slug = util.generate_slug_string(
+            #     _get_sheet_value(sheet ,row , 1),
+            #    _get_sheet_value(sheet ,row , 2),
+            #     _get_sheet_value(sheet ,row , 3))
+        roi = model.ModelROI(
+            model_meta = meta,
+            year = _get_sheet_value(sheet ,row , 9),
+            week = _get_sheet_value(sheet ,row , 12),
+            on_inv = _get_sheet_value(sheet ,row , 17),
+            off_inv = _get_sheet_value(sheet ,row , 18),
+             gmac = _get_sheet_value(sheet ,row , 20),
+            list_price = _get_sheet_value(sheet ,row , 23),
+        )
+        roi.save() 
+                
+    # print(col_ , "final col_")
 
 def read_excel(loc):
     # ScenarioPlannerMetrics.objects.all().delete()
@@ -227,14 +382,14 @@ def _update_date(obj):
 
     li = util.grouping(obj , max(obj,key=lambda x:x.date).date + timedelta(days=7))
     for o in li:
-        metric = ScenarioPlannerMetrics()
+        metric = model.ScenarioPlannerMetrics()
         _updateMetricFromObject(metric , o)
         metric.save()
     print(min(li,key=lambda x:x.date).date , "min date")
     print(max(li,key=lambda x:x.date).date , "max date")
     print(max(li,key=lambda x:x.date).date + timedelta(days=7) , "initial date")
     
-def _updateMetricFromObject(metric:ScenarioPlannerMetrics , obj : ScenarioPlannerMetricModel):
+def _updateMetricFromObject(metric:model.ScenarioPlannerMetrics , obj : ScenarioPlannerMetricModel):
     # print(obj.year , "object year")
      
     metric.category = obj.category
@@ -258,7 +413,7 @@ def _updateMetricFromObject(metric:ScenarioPlannerMetrics , obj : ScenarioPlanne
     metric.gmac_percent_lsv = obj.gmac_percent_lsv
     metric.product_group_weight = obj.product_group_weight
 
-def _updateMetric(metric:ScenarioPlannerMetrics , value,header):
+def _updateMetric(metric:model.ScenarioPlannerMetrics , value,header):
     if(header == 'Category'):
         metric.category = value.strip()
     elif(header == 'Product Group'):
@@ -300,7 +455,7 @@ def _updateMetric(metric:ScenarioPlannerMetrics , value,header):
     elif(header == 'Product Group Weight (grams)'):
         metric.product_group_weight = round(float(value),3)
 
-def _updateMetricDup(metric:ScenarioPlannerMetrics , value,header):
+def _updateMetricDup(metric:model.ScenarioPlannerMetrics , value,header):
     # print(value , "Value " , type(value) , " TYPE VALUE")
     if(header == 'Category'):
         metric.category = value.strip()
@@ -386,12 +541,34 @@ def _genObj(obj,value,header):
         obj["gmac_percent_lsv"]= round(float(value) * 100,3)
     elif(header == 'Product Group Weight (grams)'):
         obj["product_group_weight"]= round(float(value),3)
+        
+        
+def lift(file1,file2):
+    retailer = 'Tander'
+    ppg = 'A.Korkunov 192g'
+    segment = 'BOXES'
+    base_value = roi.main(file1,file2,retailer , ppg , segment)
+    # len(base_value)
+    # base_value['Incrementa']
+    # base_value['Base']
+    # print(base_value , "base value")
+    data = model.ModelData.objects.select_related('model_meta').filter(
+        model_meta__account_name = retailer,
+        model_meta__corporate_segment = segment,
+        model_meta__product_group = ppg
+    ).order_by('week')
+    print(len(data) , "len of data")
+    # import pdb
+    # pdb.set_trace()
+    for i in range(0,len(data)):
+        query = data.get(week = i+1)
+        # import pdb
+        # pdb.set_trace()
+        query.incremental_unit = decimal.Decimal(round(base_value['Incremental'][i],6))
+        query.base_unit =  decimal.Decimal(round(base_value['Base'][i],6))
+        query.save()
+        print('saved')
+    # import pdb
+    # pdb.set_trace()
+    
 
-    # return obj
-
-    # headers = ['Category' , 'Product Group' , 'Retailer' ,'Brand Filter','Brand Format Filter',
-    # 'Strategic Cell Filter','Year' , 'Date','Base Price Elasticity','Cross Elasticity',
-    # 'Net Elasticity','Base Units','List Price','Retailer Median Base Price',
-    # 'Retailer Median Base Price  w\o VAT','On Inv. %','Off Inv. %','TPR %','GMAC%, LSV',
-    # 'Product Group Weight (grams)']
-    # pass

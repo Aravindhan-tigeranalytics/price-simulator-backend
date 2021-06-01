@@ -1,18 +1,26 @@
 # from xlwt import Workbook
-from rest_framework import viewsets, mixins
+from utils import util
+from rest_framework import fields, viewsets, mixins
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.renderers import JSONRenderer
 from rest_framework import status
-
-from core.models import Scenario , ScenarioPlannerMetrics
+from django.db.models.query import Prefetch
+from django.shortcuts import get_object_or_404
+from core.models import ModelMeta, ModelROI, Scenario , ScenarioPlannerMetrics,ModelData,ModelCoefficient
 from scenario_planner import serializers as sc
 from rest_framework import serializers
+
+import utils
+from . import calculations as cal
 from utils import exceptions as exception
 from utils import excel as excel
 from utils import optimizer as optimizer
+from json import loads, dumps
+
 # import xlwt
 # from xlrd import ope
 from xlwt import Workbook
@@ -46,8 +54,8 @@ mixins.UpdateModelMixin,mixins.DestroyModelMixin):
         query = self.queryset.filter(user=self.request.user)
         if(query.count() > 20):
             raise exception.CountExceedException
-        if(query.filter(name = serializer.validated_data['name']).exists()):
-            raise exception.AlredyExistsException
+        # if(query.filter(name = serializer.validated_data['name']).exists()):
+        #     raise exception.AlredyExistsException
         super().create(request,args,kwargs)
         
 
@@ -177,25 +185,225 @@ class ModelOptimize(APIView):
     serializer_class = sc.CommentSerializer
     def get(self, request, format=None):
         content = optimizer.process()
-        # serializer = sc.CommentSerializer()
-        # print(serializer , "serializer ")
-        
         return Response(content)
     
     def post(self, request, format=None):
         content = None
         
         serializer = sc.CommentSerializer(data=request.data)
-        # print(serializer.is_valid() , "serializer data  valid?")
-        # print(request.data , "request data ")
-        # print(serializer.errors , "errors")
-        # import pdb
-        # pdb.set_trace()
+        
         if serializer.is_valid():
-            # print(serializer.data , "serializer data ")
-            # content = optimizer.process(serializer.data)
             
             return Response(serializer.data, status=status.HTTP_201_CREATED)
             
         return Response(content, status=status.HTTP_201_CREATED)
+
+# class PromoSimulatorView(viewsets.GenericViewSet,mixins.ListModelMixin):
+#     queryset = ModelData.objects.select_related('model_meta').prefetch_related(
+#         Prefetch('model_meta__coefficient',
+#                  queryset=ModelCoefficient.objects.all(),
+#                  to_attr='prefetched_coeff')
+#         ).order_by('id')[:10]
+     
+#     serializer_class = sc.ModelDataSerializer
+#     # serializer_class = sc.PromoSimulatorSerializer
+#     def get(self, request, format=None):
+#         serializer = sc.ModelDataSerializer()
+#         return Response(serializer.data, status=status.HTTP_201_CREATED)
+#     def post(self, request, format=None):
+#         serializer = sc.ModelDataSerializer()
+#         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class PromoSimulatorView(viewsets.GenericViewSet):
+    queryset = ModelMeta.objects.prefetch_related(
+        Prefetch(
+            'data',
+        queryset = ModelData.objects.all().order_by('week'),
+        to_attr='prefetched_data'
+        ),
+        # 'data',
+        Prefetch(
+            'coefficient',
+            queryset=ModelCoefficient.objects.all(),
+            to_attr='prefetched_coeff'
+        ),
+        Prefetch(
+            'roi',
+            queryset=ModelROI.objects.all().order_by('week'),
+            to_attr='prefetched_roi'
+        )
+    ).order_by('id')
+     
+    def get(self, request, format=None):
+        # query=ModelMeta.objects.all()
+        
+        serializer = sc.ModelMetaGetSerializer()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
     
+    def get_serializer_class(self):
+        return sc.ModelMetaGetSerializer
+    
+    def get_queryset(self):
+        return super().get_queryset()
+    
+    def post(self, request, format=None):
+        query = self.queryset
+        get_serializer = sc.ModelMetaGetSerializer(request.data)
+        value_dict = loads(dumps((get_serializer.to_internal_value(request.data))))
+        
+        print(value_dict , "value dict")
+        query = query.get(account_name = value_dict['account_name'],
+                  corporate_segment=value_dict['corporate_segment'],
+                  product_group = value_dict['product_group'])
+        # import pdb
+        # pdb.set_trace()
+        # query2 = query
+        # query.prefetched_data[0].week = 57
+        # print( query.prefetched_data[0].week , "0 week ")
+        # print( query2.prefetched_data[0].week , "0 week ")
+        # print(query.__dict__ , "query dict ")
+        # import pdb
+        # pdb.set_trace()
+        # print( query.prefetched_data[0].week , "0 week ")
+        # query.prefetched_data[0].week = 57
+        # print( query.prefetched_data[0].week , "0 week after ")
+        # cal.update_week_value(query , value_dict)
+        # import pdb
+        # pdb.set_trace()
+        # print()
+        # base = query.__dict__
+        import copy
+        
+        simulated = copy.deepcopy(query)
+        # simulated.prefetched_data[2].tpr_discount = 20
+        # cal.update_week_value(simulated , value_dict)
+        # simulated['prefetched_data'][0].week = 57
+        # print(base['prefetched_data'][0].week , "base value")
+        # print(simulated['prefetched_data'][0].week , "simulated value")
+        # import pdb
+        # pdb.set_trace()
+        # serializer = sc.ModelMetaSerializer(query.__dict__)
+        # print(query.prefetched_data[0].tpr_discount,"query base")
+        # print(simulated.prefetched_data[0].tpr_discount,"query simulated")
+        serializer = sc.ModelMetaSerializer(query)
+        # import pdb
+        # pdb.set_trace()
+        # print(query.prefetched_data[0].tpr_discount , "tpr discount before update")
+        # query.prefetched_data[0].week = 57
+        # cal.update_week_value(query , value_dict)
+        # print(query.prefetched_data[0].tpr_discount , "tpr discount after update")
+        # import pdb
+        # pdb.set_trace()
+        serializer2 = sc.ModelMetaSerializer(simulated)
+        # import pdb
+        # pdb.set_trace()
+        sales = 0
+        units = 0
+        te= 0
+        lsv = 0
+        nsv = 0
+        mac = 0
+        rp = 0
+        asp = 0
+        avg_promo_selling_price = 0
+        roi = 0
+        rp_percent = 0
+        mac_percent = 0
+        volume = 0
+        te_per_unit = 0
+        te_percent_of_lsv = 0
+        base_units = 0
+        increment_units = 0
+        lift = 0
+       
+        
+        for i in range(0,52):
+            
+            sales = sales + serializer.data['prefetched_data'][i]['base']['sales']
+            units = units + serializer.data['prefetched_data'][i]['base']['predicted_units']
+            # import pdb
+            # pdb.set_trace()
+            base_units = base_units + serializer.data['prefetched_data'][i]['base']['base_unit']
+            volume = volume + serializer.data['prefetched_data'][i]['base']['total_weight_in_tons']
+            te_per_unit = te_per_unit + serializer.data['prefetched_data'][i]['base']['te_per_units']
+            increment_units = increment_units + serializer.data['prefetched_data'][i]['base']['incremental_unit']
+            # increment_units = increment_units + serializer2.data['prefetched_data'][i]['base']['predicted_units']
+            te = te + serializer.data['prefetched_data'][i]['base']['trade_expense']
+            nsv = nsv + serializer.data['prefetched_data'][i]['base']['total_nsv']
+            mac = mac + serializer.data['prefetched_data'][i]['base']['mars_mac']
+            lsv = lsv + serializer.data['prefetched_data'][i]['base']['total_lsv']
+            rp = rp + serializer.data['prefetched_data'][i]['base']['retailer_margin']
+            roi = roi + serializer.data['prefetched_data'][i]['base']['roi']
+            asp = util.average(asp,query.prefetched_data[i].wk_sold_avg_price_byppg)
+            avg_promo_selling_price = util.average(avg_promo_selling_price,serializer.data['prefetched_data'][i]['base']['promo_asp'])
+            rp_percent = util.average(rp_percent,serializer.data['prefetched_data'][i]['base']['retailer_margin_percent_of_rsp'])
+            mac_percent = util.average(mac_percent,serializer.data['prefetched_data'][i]['base']['mars_mac_percent_of_nsv'])
+            te_percent_of_lsv = util.average(te_percent_of_lsv,serializer.data['prefetched_data'][i]['base']['te_percent_of_lsv'])
+            lift = lift + (serializer.data['prefetched_data'][i]['base']['incremental_unit']/serializer.data['prefetched_data'][i]['base']['base_unit'])
+            serializer.data['prefetched_data'][i]['simulated'] = serializer2.data['prefetched_data'][i]['base']
+        json_data = serializer.data
+        # import pdb
+        # pdb.set_trace()
+        json_data['units'] = units
+        json_data['incremental_units'] = increment_units
+        json_data['base_units'] = base_units
+        json_data['sales'] = sales
+        json_data['volumes_in_tonnes'] = volume
+        json_data['te'] = te
+        json_data['roi'] = roi
+        json_data['nsv'] = nsv
+        json_data['mac'] = mac
+        json_data['lsv'] = lsv
+        json_data['rp'] = rp
+        json_data['average_selling_price'] = asp
+        json_data['avg_promo_selling_price'] = avg_promo_selling_price
+        json_data['te_per_unit'] = te_per_unit
+        json_data['te_percent_of_lsv'] = te_percent_of_lsv
+        json_data['rp_percent_of_rsp'] = rp_percent
+        json_data['mac_percent_of_nsv'] = mac_percent
+        json_data['lift'] = lift
+        # print(json_data['units'] , "units data")
+        # json_data['calculated_units'] = units
+        # json_data = JSONRenderer().render(serializer.data)
+        # import pdb
+        # pdb.set_trace()
+        # serializer.data['unitss'] = units
+        # res ={}
+        # res['old'] = serializer.data
+        # res['new'] = serializer2.data
+        
+        # print(serializer.data , "serializer data")
+        return Response(json_data, status=status.HTTP_201_CREATED)
+    
+# class PromoSimulatorView(APIView):
+#     queryset = ModelMeta.objects.prefetch_related(
+#         'data',
+#         Prefetch(
+#             'coefficient',
+#             queryset=ModelCoefficient.objects.all(),
+#             to_attr='prefetched_coeff'
+#         )
+#     ).order_by('id')
+     
+#     def get(self, request, format=None):
+#         query=ModelMeta.objects.all()
+        
+#         serializer = sc.ModelMetaGetSerializer()
+#         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+#     # def get_serializer_class(self):
+#     #     return sc.ModelMetaGetSerializer
+    
+#     # def get_queryset(self):
+#     #     return super().get_queryset()
+    
+#     def post(self, request, format=None):
+#         query = self.queryset
+#         get_serializer = sc.ModelMetaGetSerializer(request.data)
+#         value_dict = loads(dumps((get_serializer.to_internal_value(request.data))))
+#         print(value_dict , "value dict")
+#         query = query.get(account_name = value_dict['account_name'],
+#                   corporate_segment=value_dict['corporate_segment'],
+#                   product_group = value_dict['product_group'])
+#         serializer = sc.ModelMetaSerializer(query)
+#         return Response(serializer.data, status=status.HTTP_201_CREATED)
