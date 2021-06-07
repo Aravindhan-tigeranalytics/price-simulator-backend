@@ -1,10 +1,19 @@
-PATH = 'D:/projects/MARSBACKEND/price-simulator-backend/data/'
+PATH = '/mnt/y/tiger/price-simulator-backend/data/'
 ROI_FILE_NAME = "ROI_DATA_Internal_Promo_2021.csv"
 MODEL_COEFF_FILE_NAME =  "Model_Coeff_Lenta_Orbit OTC.csv"
 MODEL_DATA_FILE_NAME ="Model_Data_Lenta_Orbit OTC.csv" 
 RETAILER ="Lenta"
 PRODUCT_GROUP ="Orbit OTC"
 SKU ="ORBIT(MARS) YAGODNIY MIKS BERRY MIX F 10P 0.0136KG WP"
+
+#Optimiser
+OPT_ROI_FILE_NAME = "ROI_DATA_Magnit_Internal_Promo_2021.csv"
+OPT_MODEL_COEFF_FILE_NAME = "Model_Coeff_Magnit_A.Korkunov 192g_flag_2_all.csv"
+OPT_MODEL_DATA_FILE_NAME = "Model_Data_Magnit_A.Korkunov 192g_flag_2_all.csv"
+OPT_RETAILER_NAME ="Magnit"
+OPT_PRODUCT_GROUP_NAME ="A.Korkunov 192g"
+OPT_SKU_NAME ="KORKUNOV ASSORT A D.CH.COAT ASR. 0.192KG K A"
+
 
 DATA_HEADER = ['Account Name' , 'Corporate Segment' , 'PPG','Brand Filter' ,
                'Brand Format Filter','Strategic Cell Filter','Year','Quarter','Month','Period',
