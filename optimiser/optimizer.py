@@ -14,7 +14,7 @@ from pulp import *
 import pandas as pd
 from itertools import combinations
 from utils import constants as CONST
-from optimiser import test
+from optimiser import process
 
 class my_dictionary(dict): 
   
@@ -523,7 +523,7 @@ def process(constraints = None):
   # print(Model_Coeff.columns)
   # print(Model_Data.columns)
 
-  Model_Coeff,Model_Data,ROI_data = test.get_list_value_from_query(CONST.OPT_RETAILER_NAME,CONST.OPT_PRODUCT_GROUP_NAME)
+  Model_Coeff,Model_Data,ROI_data = process.get_list_value_from_query(CONST.OPT_RETAILER_NAME,CONST.OPT_PRODUCT_GROUP_NAME)
 
   # print(ROI_data)
   # print(Model_Coeff)
