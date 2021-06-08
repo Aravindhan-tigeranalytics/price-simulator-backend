@@ -3,6 +3,13 @@ import datetime
 import random
 import re
 
+# def get_key(val):
+#     for key, value in my_dict.items():
+#          if val == value:
+#              return key
+ 
+#     return "key doesn't exist"
+
 def _divide(n1 , n2):
     if not n1 or not n2:
         return 0

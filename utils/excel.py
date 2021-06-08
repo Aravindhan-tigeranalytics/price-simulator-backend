@@ -572,3 +572,79 @@ def lift(file1,file2):
     # pdb.set_trace()
     
 
+def lift_test():
+    from django.db.models.query import Prefetch
+    from django.forms.models import model_to_dict
+    from . import constants as const
+    import pandas as pd
+    
+    
+    retailer = "Tander"
+    ppg = 'A.Korkunov 192g'
+    coeff_values = [ 'model_meta__id','model_meta__account_name', 
+                    'model_meta__corporate_segment', 'model_meta__product_group', 'model_meta__brand_filter',
+                    'model_meta__brand_format_filter', 'model_meta__strategic_cell_filter','wmape', 'rsq',
+                    'intercept', 'median_base_price_log', 'tpr_discount', 'tpr_discount_lag1',
+                    'tpr_discount_lag2', 'catalogue', 'display', 'acv', 'si', 
+                    'si_month', 'si_quarter', 'c_1_crossretailer_discount', 'c_1_crossretailer_log_price', 'c_1_intra_discount', 
+                    'c_2_intra_discount', 'c_3_intra_discount', 'c_4_intra_discount', 'c_5_intra_discount',
+                    'c_1_intra_log_price', 'c_2_intra_log_price', 'c_3_intra_log_price', 'c_4_intra_log_price', 'c_5_intra_log_price', 'category_trend', 'trend_month', 'trend_quarter', 'trend_year', 'month_no', 'flag_promotype_motivation', 'flag_promotype_n_pls_1', 'flag_promotype_traffic', 'flag_nonpromo_1', 'flag_nonpromo_2', 'flag_nonpromo_3', 'flag_promo_1', 'flag_promo_2', 'flag_promo_3', 'holiday_flag_1', 'holiday_flag_2', 'holiday_flag_3', 'holiday_flag_4', 'holiday_flag_5', 'holiday_flag_6', 'holiday_flag_7', 'holiday_flag_8', 'holiday_flag_9', 'holiday_flag_10' 
+                    ]
+    data_values = ['model_meta__id','model_meta__account_name', 
+                    'model_meta__corporate_segment', 'model_meta__product_group', 'model_meta__brand_filter',
+                    'model_meta__brand_format_filter', 'model_meta__strategic_cell_filter',
+                    'year','quater','month','period','date','week',
+                    'intercept', 'median_base_price_log', 'tpr_discount', 'tpr_discount_lag1',
+                    'tpr_discount_lag2', 'catalogue', 'display', 'acv', 'si', 
+                    'si_month', 'si_quarter', 'c_1_crossretailer_discount', 'c_1_crossretailer_log_price', 'c_1_intra_discount', 
+                    'c_2_intra_discount', 'c_3_intra_discount', 'c_4_intra_discount', 'c_5_intra_discount',
+                    'c_1_intra_log_price', 'c_2_intra_log_price', 'c_3_intra_log_price', 'c_4_intra_log_price', 'c_5_intra_log_price', 'category_trend', 'trend_month', 'trend_quarter', 'trend_year', 'month_no', 'flag_promotype_motivation', 'flag_promotype_n_pls_1', 'flag_promotype_traffic', 'flag_nonpromo_1', 'flag_nonpromo_2', 'flag_nonpromo_3', 'flag_promo_1', 'flag_promo_2', 'flag_promo_3', 'holiday_flag_1', 'holiday_flag_2', 'holiday_flag_3', 'holiday_flag_4', 'holiday_flag_5', 'holiday_flag_6', 'holiday_flag_7', 'holiday_flag_8', 'holiday_flag_9', 'holiday_flag_10', 
+                    'wk_sold_avg_price_byppg',
+                    'average_weight_in_grams','weighted_weight_in_grams']
+    coefficient = model.ModelCoefficient.objects.select_related('model_meta').filter(
+        model_meta__account_name = retailer,
+        model_meta__product_group = ppg
+    ).values_list(*coeff_values)
+    data = model.ModelData.objects.select_related('model_meta').filter(
+        model_meta__account_name = retailer,
+        model_meta__product_group = ppg
+    ).values_list(*data_values)
+    coeff_list = [list(i) for i in coefficient]
+    data_list = [list(i) for i in data]
+    print("-------------------------------------coeff-------------------------------------------------------")
+    print()
+    print()
+    print(coeff_list ,"coeff_list LIST")
+    print("----------------------------------------data----------------------------------------------------")
+    print()
+    print()
+    print(data_list , "data_list LIST")
+    print("--------------------------------------------------------------------------------------------")
+    # pd.DataFrame
+    # roi = model.ModelROI.objects.select_related('model_meta').filter(
+    #     model_meta__account_name = retailer,
+    #     model_meta__product_group = ppg
+    # ).values_list()
+    # import pdb
+    # pdb.set_trace()
+    
+    # query  = queryset.filter(account_name = retailer , product_group = ppg)
+    # coeff = [list(coeff) for coeff in query[0].prefetched_data]
+    # query.values_list('account_name','corporate_segment','product_group','brand_filter')
+    # print(query , "query")
+    # print(coeff , "coeff")
+    # print(list(query) , "list query")
+    # import pdb
+    # pdb.set_trace()
+    # meta = model_to_dict(query)
+    # import pdb
+    # pdb.set_trace()
+    # roi = [{**model_to_dict(d),**meta} for d in query.prefetched_roi]
+    # data = [model_to_dict(d) for d in query.prefetched_data]
+    # coeff = [{**model_to_dict(d),**meta} for d in query.prefetched_coeff]
+    # print(meta , "meta")
+    # print(roi , "droi")
+    # print(data , "data")
+    # print(coeff , "coeff")
+    # print({**const.PROMO_MODEL_COEFF_MAP,**const.PROMO_MODEL_META_MAP} , "PROMO_MODEL_COEFF_MAP")
+    # print( , "promo model meta map")

@@ -10,7 +10,7 @@ import openpyxl
 # Register your models here.
 class CsvImportForm(forms.Form):
     csv_file = forms.FileField()
-    roi_file  = forms.FileField()
+    # roi_file  = forms.FileField()
 # @admin.register(models.Scenario)
 
 class ModelMetaAdmin(admin.ModelAdmin):
@@ -28,14 +28,16 @@ class ModelMetaAdmin(admin.ModelAdmin):
     def import_csv(self, request):
         if request.method == "POST":
             csv_file = request.FILES["csv_file"]
-            roi_file = request.FILES["roi_file"]
+            # roi_file = request.FILES["roi_file"]
             # excel.read_promo_coeff(csv_file)
             # excel.read_promo_data(csv_file)
-            # excel.read_roi_data(csv_file)   
-            excel.lift(csv_file , roi_file)
+            excel.read_roi_data(csv_file)   
+            # excel.lift(csv_file , roi_file)
+            # excel.lift_test()
             self.message_user(request, "Your csv file has been imported")
             return redirect("..")
         form = CsvImportForm()
+        # form = {}
         payload = {"form": form}
         return render(
             request, "admin/excel_form.html", payload

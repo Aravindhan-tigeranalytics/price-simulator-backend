@@ -86,31 +86,15 @@ class ModelDataSerializer(serializers.ModelSerializer):
         model = model.ModelData
         fields = ('year' , 'quater','month','period','week','date','base')
     base = serializers.SerializerMethodField('obj')
-    # simulated = serializers.SerializerMethodField('obj')
-    
-    # def to_representation(self, instance):
-    #     import pdb
-    #     pdb.set_trace()
-    #     print(instance , "to_representation ")
-    #     # pass
-    # def to_internal_value(self, data):
-    #     print(data , "to_internal_value")
-        # pass
 
     def obj(self,ob,*args,**kwargs):
         
-        # print(args , "arguments")
-        # print(kwargs ,"kwy work arguments")
-        
-        # print(ob.week , "week value")
-      
-        # return cal.promo_simulator_calculations(ob)
         return cal.promo_simulator_calculations_test(ob)
     
     
 class ModelMetaSerializer(serializers.ModelSerializer):
     prefetched_data = ModelDataSerializer(many=True)
-    sales = serializers.SerializerMethodField('tee')
+    total_rsv_w_o_vat = serializers.SerializerMethodField('tee')
     volumes_in_tonnes = serializers.SerializerMethodField('tee') 
     te = serializers.SerializerMethodField('tee')
     base_units =  serializers.SerializerMethodField('tee')
@@ -132,7 +116,7 @@ class ModelMetaSerializer(serializers.ModelSerializer):
     class Meta:
         model = model.ModelMeta
         fields = ('account_name','corporate_segment','product_group','mac','nsv','units','volumes_in_tonnes',
-                  'sales','base_units','incremental_units','roi',
+                  'total_rsv_w_o_vat','base_units','incremental_units','roi',
                   'te','lsv','rp','average_selling_price','avg_promo_selling_price','rp_percent_of_rsp',
                   'te_percent_of_lsv','mac_percent_of_nsv','te_per_unit','lift','prefetched_data')
         # 'units','nsv','mac',
@@ -206,24 +190,8 @@ class ModelMetaGetSerializer(serializers.Serializer):
     #                     choices = OBJ_CHOICES)
     
     def __init__(self, *args, **kwargs):
-        # import pdb
-        # pdb.set_trace()
-        # print(self.fields.keys() , "keysssss")
-        # print(args,"arguments")
-        # print(kwargs , "kwargs")
-        # if kwargs:
-        #     print(kwargs['context']['request'].data , "__init__ request data ")
+
         for i in range(1,53):
-                # import pdb
-                # pdb.set_trace()
-            # import pdb
-            # pdb.set_trace()
-            # tpr = self.query[0].data.get(week=i).tpr_discount
-            # if kwargs:
-            #     self.fields['week-' + str(i)] = DynamicInputSerializer(kwargs['context']['request'].data)
-            # else:
-            # promo_depth = serializers.IntegerField(initial = tpr,default=tpr)
-            # self.fields['promo_depth'] =serializers.IntegerField(initial = tpr,default=tpr)
             self.fields['week-' + str(i)] = DynamicInputSerializer()
                 
             
