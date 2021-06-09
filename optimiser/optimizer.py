@@ -14,7 +14,11 @@ from pulp import *
 import pandas as pd
 from itertools import combinations
 from utils import constants as CONST
-from optimiser import process
+from optimiser import process as process_calc
+import logging.config
+
+logging.config.dictConfig(CONST.LOGGING_CONFIG)
+logger = logging.getLogger(__name__)
 
 class my_dictionary(dict): 
   
@@ -28,6 +32,7 @@ class my_dictionary(dict):
 
 
 def predict_sales(coeffs,data):
+    logging.info('Calculate Predict Sales')
     predict = 0
     for i in coeffs['names']:
         if(i=="Intercept"):
@@ -41,6 +46,7 @@ def predict_sales(coeffs,data):
 
 ##### Promo wave/slot calculation#######  
 def promo_wave_cal(tpr_data):
+  logging.info('Promo Wave/Slot Calculation')
   tpr_data['Promo_wave']=0
   c=1
   i=0
@@ -80,6 +86,7 @@ def _predict(pred_df, model_coef, var_col="model_coefficient_name", coef_col="mo
     -------
     ndarray
     """
+    logging.info('Calculate Predict')
     idv_cols = [col for col in model_coef[var_col] if col != intercept_name]
     idv_coef = model_coef.loc[model_coef[var_col].isin(idv_cols), coef_col]
     idv_df = pred_df.loc[:, idv_cols]
@@ -119,6 +126,7 @@ def set_baseline_value(model_df, model_coef, var_col="model_coefficient_name", c
     -------
     pd.DataFrame
     """
+    logging.info('Set Baseline Value')
     # Get baseline value
     if baseline_value is None:
         baseline_value = {"wk_sold_median_base_price_byppg_log": ["Rolling Max", 26],
@@ -202,6 +210,8 @@ def get_var_contribution_wt_baseline_defined(df, model_coef, wk_sold_price, var_
     -------
     tuple of pd.DataFrame
     """
+    logging.info('Get variable contribution with baseline defined')
+
     # Predict Sales
     ppg_cols = ["PPG_Cat", "PPG_MFG", "PPG_Item_No", "PPG_Description"]
     model_df = df.drop(columns=ppg_cols).copy()
@@ -286,6 +296,8 @@ def get_var_contribution_wo_baseline_defined(df, model_coef, wk_sold_price,  all
     -------
     tuple of pd.DataFrame
     """
+    logging.info('Get variable contribution without baseline defined')
+
     # Predict Sales
     ppg_cols = ["PPG_Cat", "PPG_MFG", "PPG_Item_No", "PPG_Description"]
     ppg = df["PPG_Item_No"].to_list()[0]
@@ -425,8 +437,10 @@ def get_var_contribution_variants(dist_df, var_col_name, value_col_name):
                          how="left", on=["Year", var_col_name])
     
     return dist_df_1, dist_df_2, dist_df_3
+
 #Base variable change as required
 def base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef):
+  logging.info('Base variable change as required')
   m=1
   dt_dist = pd.DataFrame()
   quar_dist = pd.DataFrame()
@@ -511,19 +525,20 @@ def base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef):
 
 
 def process(constraints = None):
+  logging.info('Main Funtion Begin')
   # path = CONST.PATH
   BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   path = os.path.join(BASE_DIR + "/data/")
-
-  # ROI_data = pd.read_csv(path + CONST.OPT_ROI_FILE_NAME)
-  # Model_Coeff = pd.read_csv(path + CONST.OPT_MODEL_COEFF_FILE_NAME)
-  # Model_Data = pd.read_csv(path + CONST.OPT_MODEL_DATA_FILE_NAME)
+  logger.error("Test!!")
+  ROI_data = pd.read_csv(path + CONST.OPT_ROI_FILE_NAME)
+  Model_Coeff = pd.read_csv(path + CONST.OPT_MODEL_COEFF_FILE_NAME)
+  Model_Data = pd.read_csv(path + CONST.OPT_MODEL_DATA_FILE_NAME)
   
   # print(ROI_data.columns)
   # print(Model_Coeff.columns)
   # print(Model_Data.columns)
 
-  Model_Coeff,Model_Data,ROI_data = process.get_list_value_from_query(CONST.OPT_RETAILER_NAME,CONST.OPT_PRODUCT_GROUP_NAME)
+  # Model_Coeff,Model_Data,ROI_data = process_calc.get_list_value_from_query(CONST.OPT_RETAILER_NAME,CONST.OPT_PRODUCT_GROUP_NAME)
 
   # print(ROI_data)
   # print(Model_Coeff)
@@ -531,8 +546,8 @@ def process(constraints = None):
 
   # exit()
   Ret_name = CONST.OPT_RETAILER_NAME
-  # PPG_name = CONST.OPT_PRODUCT_GROUP_NAME
-  PPG_name = 'Tander'
+  PPG_name = CONST.OPT_PRODUCT_GROUP_NAME
+  # PPG_name = 'Tander'
   Any_SKU_Name = CONST.OPT_SKU_NAME
   promo_list_PPG = ROI_data[(ROI_data['Retailer'] == Ret_name) & (ROI_data['PPG Name'] == PPG_name)].reset_index(drop=True)
 
@@ -806,6 +821,7 @@ def process(constraints = None):
 
 
 def get_te_dict(baseline_data,config,Financial_information):
+  logging.info('Fetching TE Dict')
   Fin_info= baseline_data[['Promo','List_Price','COGS','median_baseprice','Promotion_Cost','TE','tpr_discount_byppg']].drop_duplicates().reset_index(drop=True)
   TE_dict= dict(zip(Financial_information.tpr_discount_byppg, Financial_information.TE))
   tprs = config["MARS_TPRS"]
@@ -825,6 +841,7 @@ def get_te_dict(baseline_data,config,Financial_information):
 
 
 def get_required_base(baseline_data,Model_Coeff,TE_dict,config):
+  logging.info('Get required base')
   model_cols = Model_Coeff['names'].to_list()
   model_cols.remove('Intercept')
   Base=baseline_data[['wk_base_price_perunit_byppg','Promo', 'TE', 'List_Price','COGS']+model_cols]
@@ -879,6 +896,7 @@ def get_required_base(baseline_data,Model_Coeff,TE_dict,config):
 
 
 def optimizer_fun(baseline_data,Required_base,config):
+  logging.info('Optimizer function')
   baseline_df =baseline_data[['Baseline_Prediction','Baseline_Sales',"Baseline_GSV","Baseline_Trade_Expense","Baseline_NSV","Baseline_MAC","Baseline_RP"]].sum().astype(int)
   config_constrain = config['config_constrain']
   constrain_params = config['constrain_params']
@@ -1137,6 +1155,7 @@ def optimizer_fun(baseline_data,Required_base,config):
 
 
 def optimal_summary_fun(baseline_data,Model_Coeff,optimal_calendar,TE_dict,config):
+  logging.info('Optimal Summary Function')
   model_cols = Model_Coeff['names'].to_list()
   model_cols.remove('Intercept')
   Base=baseline_data[["Date",'wk_base_price_perunit_byppg','Promo', 'TE', 'List_Price','COGS','TE On Inv', 'GMAC', 'TE Off Inv']+model_cols]
@@ -1172,6 +1191,7 @@ def optimal_summary_fun(baseline_data,Model_Coeff,optimal_calendar,TE_dict,confi
 
 
 def get_opt_base_comparison(baseline_data,optimal_data,Model_Coeff,config):
+  logging.info('Get optimal base comparison')
   Segment = config['Segment']
   train_data=baseline_data.copy()
   model_coef = Model_Coeff.copy()
@@ -1309,6 +1329,7 @@ def get_opt_base_comparison(baseline_data,optimal_data,Model_Coeff,config):
 
 
 def get_calendar_summary(baseline_data,optimal_data,opt_base):
+  logging.info('Get calendar summary data')
   base_scenario=baseline_data.copy()
   Optimal_scenario=optimal_data.copy()
   # Optimal_scenario=pd.read_csv(path+"Training_data_"+str(prd)+"_Optimal.csv")
