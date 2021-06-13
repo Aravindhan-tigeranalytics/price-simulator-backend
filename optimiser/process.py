@@ -121,6 +121,7 @@ def get_list_value_from_query(retailer,ppg):
 
 # print(dataframe)
 # print(coe_dataframe)
+
 # print(model_dataframe)
 
 def get_list_from_db(retailer,ppg):
@@ -201,5 +202,6 @@ def get_list_from_db(retailer,ppg):
     'Promo_flg_date_1', 'Intercept']:
         data_dt[i] = data_dt[i].astype(float)
     return data_dt , roi_dt , coeff_dt
+
 
 
