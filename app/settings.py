@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'core',
     'user',
     'scenario_planner',
-     'debug_toolbar'
+     'debug_toolbar',
+     'optimiser'
 ]
 
 MIDDLEWARE = [

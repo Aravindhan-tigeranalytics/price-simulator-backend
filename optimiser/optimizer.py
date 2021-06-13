@@ -14,7 +14,7 @@ from pulp import *
 import pandas as pd
 from itertools import combinations
 from utils import constants as CONST
-from optimiser import test
+from optimiser import process as pr
 
 class my_dictionary(dict): 
   
@@ -523,16 +523,17 @@ def process(constraints = None):
   # print(Model_Coeff.columns)
   # print(Model_Data.columns)
 
-  Model_Coeff,Model_Data,ROI_data = test.get_list_value_from_query(CONST.OPT_RETAILER_NAME,CONST.OPT_PRODUCT_GROUP_NAME)
+  # Model_Coeff,Model_Data,ROI_data = pr.get_list_value_from_query(CONST.OPT_RETAILER_NAME_ALT,CONST.OPT_PRODUCT_GROUP_NAME)
+  Model_Data,ROI_data, Model_Coeff = pr.get_list_from_db(CONST.OPT_RETAILER_NAME_ALT,CONST.OPT_PRODUCT_GROUP_NAME)
 
   # print(ROI_data)
   # print(Model_Coeff)
   # print(Model_Data)
 
   # exit()
-  Ret_name = CONST.OPT_RETAILER_NAME
+  Ret_name = CONST.OPT_RETAILER_NAME_ALT
   # PPG_name = CONST.OPT_PRODUCT_GROUP_NAME
-  PPG_name = 'Tander'
+  PPG_name = CONST.OPT_PRODUCT_GROUP_NAME
   Any_SKU_Name = CONST.OPT_SKU_NAME
   promo_list_PPG = ROI_data[(ROI_data['Retailer'] == Ret_name) & (ROI_data['PPG Name'] == PPG_name)].reset_index(drop=True)
 
@@ -576,7 +577,7 @@ def process(constraints = None):
                                                           Period_data["TE On Inv"] * Period_data["Discount, NRV %"] + Period_data["TE Off Inv"] * Period_data["TE On Inv"] * Period_data["Discount, NRV %"])
 
 
-  baseprice_post_July = math.exp(max(Model_Data[((pd.DatetimeIndex(Model_Data['Unnamed: 0']).year == 2020) & (pd.DatetimeIndex(Model_Data['Unnamed: 0'],dayfirst=True).month >=7 ))]["wk_sold_median_base_price_byppg_log"]))
+  baseprice_post_July = math.exp(max(Model_Data[((pd.DatetimeIndex(Model_Data['Unnamed: 0']).year == 2022) & (pd.DatetimeIndex(Model_Data['Unnamed: 0'],dayfirst=True).month >=7 ))]["wk_sold_median_base_price_byppg_log"]))
   # baseprice_post_July = 1.097257*baseprice_pre_July
   # print(baseprice_pre_July)
   print(baseprice_post_July)
@@ -592,15 +593,15 @@ def process(constraints = None):
   Period_data['tpr_discount_byppg']=((Period_data['median_baseprice']-Period_data['wk_sold_avg_price_byppg'])/Period_data['median_baseprice'])*100
 
   # Filter the model data for last 52 weeks
-  index_2019=Model_Data.shape[0]-52
-  Model_Data['Year_Flag']=Model_Data['Unnamed: 0'].apply(lambda x: x.split('-')[0])  ## for otc make it 2
-  index_2020=Model_Data[Model_Data['Year_Flag']=='2020'].index.tolist()[0]
-  pred_data1=Model_Data[index_2020:Model_Data.shape[0]]
-  pred_data2=Model_Data[index_2019:index_2020]
-  pred_data = pred_data1.append(pred_data2).reset_index(drop = "True")
+  # index_2019=Model_Data.shape[0]-52
+  # Model_Data['Year_Flag']=Model_Data['Unnamed: 0'].apply(lambda x: x.split('-')[0])  ## for otc make it 2
+  # index_2020=Model_Data[Model_Data['Year_Flag']=='2020'].index.tolist()[0]
+  # pred_data1=Model_Data[index_2020:Model_Data.shape[0]]
+  # pred_data2=Model_Data[index_2019:index_2020]
+  # pred_data = pred_data1.append(pred_data2).reset_index(drop = "True")
   Model_Coeff_list_Keep=list(Model_Coeff['names'])
-  Model_Coeff_list_Keep.remove(Model_Coeff_list_Keep[0])
-  pred_data=pred_data[Model_Coeff_list_Keep]
+  Model_Coeff_list_Keep.remove(Model_Coeff_list_Keep[-1]) # remoce intercept
+  pred_data=Model_Data[Model_Coeff_list_Keep]
   pred_data['Date']=pd.date_range("2022", freq="W", periods=52)
   pred_data['flag_old_mans_day']=np.where(pred_data["Date"].isin(['2022-10-09']),1,0)
   pred_data['Promo_flg_date_1'] = 0

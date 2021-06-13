@@ -12,10 +12,27 @@ from . import fields as field
 class ScenarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = model.Scenario
-        fields = ('id', 'name', 'comments', 'savedump','is_yearly')
+        fields = ('id','scenario_type', 'name', 'comments', 'savedump','is_yearly')
         read_only_fields = ('id',)
+    # def create(self, validated_data):
+    #     print(validated_data , "validated data ")
+    #     # import pdb
+    #     # pdb.set_trace()
+    #     return super().create(validated_data)
+    
+    def validate_savedump(self, value):
+        
+        import ast
+        res = ast.literal_eval(value) 
+        if 'account_name' not in res:
+            raise serializers.ValidationError("Account name sould be present")
+      
+        
+        return res
 
     def validate(self,data):
+        # import pdb
+        # pdb.set_trace()
         print(data , "DATA")
         if not data['name']:
             raise exception.EmptyException
@@ -25,6 +42,12 @@ class ScenarioPlannerMetricsSerializer(serializers.ModelSerializer):
     class Meta:
         model = model.ScenarioPlannerMetrics
         fields = '__all__'
+
+class PromoScenarioSavedList(serializers.ModelSerializer):
+    class Meta:
+        model = model.Scenario
+        fields = ('id', 'name', 'comments')
+        read_only_fields = ('id',)
 
 class ScenarioPlannerMetricsSerializerObject(serializers.ModelSerializer):
     my_field = serializers.SerializerMethodField('obj')
@@ -217,4 +240,39 @@ class ModelMetaGetSerializer(serializers.Serializer):
         # print(self)
         # import pdb
         # pdb.set_trace()
+class ModelMetaGetSerializerTest(serializers.Serializer):
+    OBJ_CHOICES = (
+        ("cell", "Choose Strategic Cell"), 
+    )
+    OBJ_CHOICES2 = (
+       ("brand", "Choose Brand"), 
+    )
+    OBJ_CHOICES3 = (
+       ("format", "Choose Brand Format"), 
+    )
+    # query = model.ModelMeta.objects.prefetch_related('data').all()
+    # account_name = serializers.ChoiceField(choices = [])
+    # corporate_segment = field.ChoiceField(choices=[i + i for i in list(query.values_list('corporate_segment').distinct())])
+    strategic_cell = serializers.ChoiceField(choices=
+                                       OBJ_CHOICES)
+    brand = serializers.ChoiceField(choices=
+                              OBJ_CHOICES2)
+    brand_format = serializers.ChoiceField(choices=
+                                     OBJ_CHOICES3)
+    # product_group = field.ChoiceField(choices=[i + i for i in list(query.values_list('product_group').distinct())])
+   
+    promo_elasticity = serializers.IntegerField(initial = 0,default=0)
+    param_depth_all = serializers.IntegerField(initial = 0,default=0)
+    
+    def __init__(self, *args, **kwargs):
         
+        if 'query' in kwargs:
+            
+            query = kwargs.pop('query')
+            print(query , "querty")
+            # import pdb
+            # pdb.set_trace()
+            self.fields['account_name'] = serializers.ChoiceField(choices=
+                                       [i + i for i in list(query.values_list('account_name').distinct())])
+            
+        super().__init__(*args, **kwargs)

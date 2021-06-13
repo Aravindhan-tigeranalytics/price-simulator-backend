@@ -47,7 +47,7 @@ class UnitModel:
         # pdb.set_trace()
         # if promo_elasticity:
         self.simulate_predicted_units = self.base_unit * (
-            ((1 - ((tpr_percent + co_investment)/100))** promo_elasticity))
+            ((1 - ((tpr_percent + co_investment)/100))** promo_elasticity)) # if 0 use predicted_units
         # self.asp = average_selling_price 
         # import pdb
         # pdb.set_trace()

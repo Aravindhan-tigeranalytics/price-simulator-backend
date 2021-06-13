@@ -11,6 +11,7 @@ OPT_ROI_FILE_NAME = "ROI_DATA_Magnit_Internal_Promo_2021.csv"
 OPT_MODEL_COEFF_FILE_NAME = "Model_Coeff_Magnit_A.Korkunov 192g_flag_2_all.csv"
 OPT_MODEL_DATA_FILE_NAME = "Model_Data_Magnit_A.Korkunov 192g_flag_2_all.csv"
 OPT_RETAILER_NAME ="Magnit"
+OPT_RETAILER_NAME_ALT ="Tander"
 OPT_PRODUCT_GROUP_NAME ="A.Korkunov 192g"
 OPT_SKU_NAME ="KORKUNOV ASSORT A D.CH.COAT ASR. 0.192KG K A"
 
@@ -45,7 +46,11 @@ COEFF_HEADER = ['Account Name' , 'Corporate Segment' , 'PPG' ,
 
 ROI_HEADER = [
     'Account Name','Corporate Segment','PPG','Brand Filter','Brand Format Filter','Strategic Cell Filter',
-    'Year','Week','TE Off Inv','TE On Inv','GMAC','List_Price'
+    'Nielsen SKU Name','Date','Year','Week','Activity name','Mechanic','Discount, NRV %','TE Off Inv','TE On Inv','GMAC','List_Price'
+]
+COEFF_MAP_HEADER = [
+    'Account Name','Corporate Segment','PPG','Brand Filter','Brand Format Filter','Strategic Cell Filter',
+    'Coefficient','Coefficient_new' , 'Value'
 ]
 
 PROMO_MODEL_META_MAP = {
@@ -131,3 +136,8 @@ ROI_MAP = {
 }
 PROMO_MODEL_COEFF_MAP = {**CALCULATION_METRIC , **COEFF_MAP}
 PROMO_MODEL_DATA_MAP = {**CALCULATION_METRIC , **DATA_MAP}
+
+
+def get_key_from_value(dict_map , value):
+    return list(dict_map.keys())[list(dict_map.values()).index(value)]
+    # print(key_list[position])
