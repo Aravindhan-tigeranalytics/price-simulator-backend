@@ -1,8 +1,12 @@
 from django.db import models
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, \
     PermissionsMixin
 from django.conf import settings
 from django.db.models import constraints
+from decimal import Decimal
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 # Create your models here.
 
 
@@ -35,6 +39,16 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class Scenario(models.Model):
+    SCENARIO_CHOICES = (
+    ("pricing", "pricing"),
+    ("promo", "promo"),
+
+)
+    scenario_type = models.CharField(
+        max_length=20,
+        choices=SCENARIO_CHOICES,
+        default='pricing'
+    )
     name = models.CharField(max_length=255)
     comments = models.CharField(max_length=500, default='')
     savedump = models.TextField(default='')
@@ -98,9 +112,14 @@ class ModelCalculationMetrics(models.Model):
     intercept = models.DecimalField(verbose_name="Intercept", max_digits=20 , decimal_places=15)
     median_base_price_log = models.DecimalField(verbose_name="Median Base Price Log",
                                                 max_digits=20 , decimal_places=15)
-    tpr_discount = models.DecimalField(verbose_name="TPR Discount", max_digits=20 , decimal_places=15)
-    tpr_discount_lag1 = models.DecimalField(max_digits=20 , decimal_places=15)
-    tpr_discount_lag2 = models.DecimalField(max_digits=20 , decimal_places=15)
+    tpr_discount = models.DecimalField(verbose_name="TPR Discount", max_digits=20 , decimal_places=15,
+                                       validators=[MinValueValidator(Decimal(0.0)), MaxValueValidator(Decimal(100.0))])
+    co_investment = models.DecimalField(verbose_name="Co investment", max_digits=20 , decimal_places=15,default=0.0,
+                                       validators=[MinValueValidator(Decimal(0.0)), MaxValueValidator(Decimal(100.0))])
+    tpr_discount_lag1 = models.DecimalField(max_digits=20 , decimal_places=15,
+                                             validators=[MaxValueValidator(Decimal(100.0))])
+    tpr_discount_lag2 = models.DecimalField(max_digits=20 , decimal_places=15,
+                                             validators=[MaxValueValidator(Decimal(100.0))])
     catalogue = models.DecimalField(max_digits=20 , decimal_places=15)
     display = models.DecimalField(max_digits=20 , decimal_places=15)
     acv = models.DecimalField(max_digits=20 , decimal_places=15)
@@ -188,13 +207,48 @@ class ModelROI(models.Model):
     model_meta = models.ForeignKey(
         'core.ModelMeta' , related_name="roi" , on_delete=models.CASCADE
     )
+    neilson_sku_name = models.CharField(max_length=500,null=True)
+    activity_name = models.CharField(max_length=500,null=True)
+    mechanic = models.CharField(max_length=500,null=True)
     year = models.IntegerField(verbose_name="Year" , null=True)
-    week = models.IntegerField(verbose_name="Week",null=True)
-    on_inv = models.DecimalField(max_digits=20 , decimal_places=15,default=0.05)
-    off_inv = models.DecimalField(max_digits=20 , decimal_places=15,default=0.1993)
-    list_price = models.DecimalField(max_digits=20 , decimal_places=15,default=168.43)
-    gmac= models.DecimalField(max_digits=20 , decimal_places=15,default=0.7292)
+    month = models.IntegerField(verbose_name="Month" , null=True,
+                                validators=[MinValueValidator(1), MaxValueValidator(12)])
+    week = models.IntegerField(verbose_name="Week",null=True,
+                               validators=[MinValueValidator(1), MaxValueValidator(52)])
+    on_inv = models.DecimalField(max_digits=20 , decimal_places=15,default=0.05,null=True,
+                                 validators=[MinValueValidator(Decimal(0.0)), MaxValueValidator(Decimal(1.0))])
+    off_inv = models.DecimalField(max_digits=20 , decimal_places=15,default=0.1993,null=True,
+                                  validators=[MinValueValidator(Decimal(0.0)), MaxValueValidator(Decimal(1.0))])
+    list_price = models.DecimalField(max_digits=20 , decimal_places=15,default=168.43,null=True)
+    date = models.DateField(verbose_name="Date",null=True)
+    gmac= models.DecimalField(max_digits=20 , decimal_places=15,default=0.7292,
+                              validators=[MinValueValidator(Decimal(0.0)), MaxValueValidator(Decimal(1.0))])
+    discount_nrv = models.DecimalField(max_digits=20 , decimal_places=15,default=0.0)
     
     
     class Meta:
         db_table = 'model_roi'
+        
+
+class CoeffMap(models.Model):
+    model_meta = models.ForeignKey(
+        'core.ModelMeta' , related_name="coeff_map" , on_delete=models.CASCADE
+    )
+    coefficient_old = models.CharField(max_length=100,verbose_name="Cefficient")
+    coefficient_new =  models.CharField(max_length=100,verbose_name="Coefficient New")
+    value= models.DecimalField(max_digits=20 , decimal_places=15,default=0.0 , null=True)    
+    class Meta:
+        db_table = 'coeff_map'
+
+
+
+
+# @receiver(pre_save, sender=ModelMeta)
+def add_slug_to_article_if_not_exists(sender, instance, *args, **kwargs):
+    
+    print(sender , "sender in")
+    print(instance , "instance in signals")
+    if instance and not instance.slug:
+        slug = "{}-{}-{}".format(instance.account_name,instance.corporate_segment,instance.product_group)
+        instance.slug = slug
+pre_save.connect(add_slug_to_article_if_not_exists, sender=ModelMeta)  

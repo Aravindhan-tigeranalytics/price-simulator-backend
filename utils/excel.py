@@ -12,7 +12,7 @@ from utils.models import ScenarioPlannerMetricModel,PromoMeta
 from utils import util , roi
 
 def _get_sheet_value(sheet , row , column):
-    val = sheet.cell(row = row, column = column).value
+    # val = sheet.cell(row = row, column = column).value
     # print(val , "value returuning")
     return sheet.cell(row = row, column = column).value
 def excel(data , output):
@@ -311,15 +311,20 @@ def read_roi_data(file):
             #     _get_sheet_value(sheet ,row , 3))
         roi = model.ModelROI(
             model_meta = meta,
+            neilson_sku_name = _get_sheet_value(sheet ,row , 7),
+            date = _get_sheet_value(sheet ,row , 8),
             year = _get_sheet_value(sheet ,row , 9),
             week = _get_sheet_value(sheet ,row , 12),
+            activity_name = _get_sheet_value(sheet ,row , 14),
+            mechanic = _get_sheet_value(sheet ,row , 15),
+            discount_nrv = _get_sheet_value(sheet ,row , 16),
             on_inv = _get_sheet_value(sheet ,row , 17),
             off_inv = _get_sheet_value(sheet ,row , 18),
              gmac = _get_sheet_value(sheet ,row , 20),
             list_price = _get_sheet_value(sheet ,row , 23),
         )
         roi.save() 
-                
+    book.close()            
     # print(col_ , "final col_")
 
 def read_excel(loc):
@@ -571,4 +576,209 @@ def lift(file1,file2):
     # import pdb
     # pdb.set_trace()
     
+def read_coeff_map(file):
+    headers = const.COEFF_MAP_HEADER
+    book = openpyxl.load_workbook(file,data_only=True)
+    sheet = book['COEFF_MAPPING']
+    columns = sheet.max_column
+    rows = sheet.max_row
+    col_= []
+    row_ =1
+    header_found = False
+    for row in range(1,rows+1):
+        print(row , "row count")
+        for col in range(1,columns+1):
+            print(col , "column count")
+            cell_obj = sheet.cell(row = row, column = col)
+            if cell_obj.value in headers:
+                header_found = True
+                print(cell_obj.value , 'object value')
+                # col_taken = True
+                col_.append(col)
+        if header_found:
+           break 
+    print(col_ , "coldddd")
+    # import pdb
+    # pdb.set_trace()
+    for row in range(row_+1 , rows+1):
+        
+        meta , created = model.ModelMeta.objects.get_or_create(
+            account_name = _get_sheet_value(sheet ,row , 1),
+            corporate_segment = _get_sheet_value(sheet ,row , 2),
+            product_group = _get_sheet_value(sheet ,row , 3),
+            # brand_filter = _get_sheet_value(sheet ,row , 4),
+            # brand_format_filter = _get_sheet_value(sheet ,row , 5),
+            # strategic_cell_filter = _get_sheet_value(sheet ,row , 5),
+            slug = util.generate_slug_string(
+                _get_sheet_value(sheet ,row , 1),
+               _get_sheet_value(sheet ,row , 2),
+                _get_sheet_value(sheet ,row , 3)
+            )
+        )
+        if created:
+            # print(created , "created")
+            # print(meta , "meta")
+            meta.brand_filter = _get_sheet_value(sheet ,row , 4)
+            meta.brand_format_filter =_get_sheet_value(sheet ,row , 5)
+            meta.strategic_cell_filter =_get_sheet_value(sheet ,row , 6)
+            meta.save()
+            # meta.slug = util.generate_slug_string(
+            #     _get_sheet_value(sheet ,row , 1),
+            #    _get_sheet_value(sheet ,row , 2),
+            #     _get_sheet_value(sheet ,row , 3))
+        c_map = model.CoeffMap(
+            model_meta = meta,
+            coefficient_old = _get_sheet_value(sheet ,row , 7),
+            coefficient_new = _get_sheet_value(sheet ,row , 8),
+            value = _get_sheet_value(sheet ,row , 9),
+            # off_inv = _get_sheet_value(sheet ,row , 18),
+            #  gmac = _get_sheet_value(sheet ,row , 20),
+            # list_price = _get_sheet_value(sheet ,row , 23),
+        )
+        c_map.save() 
+    book.close()
 
+def lift_test():
+    from django.db.models.query import Prefetch
+    from django.forms.models import model_to_dict
+    from . import constants as const
+    from django.db.models import F , Value
+    from django.db.models.functions import Concat,Abs
+    import pandas as pd
+    
+    
+    retailer = "Tander"
+    ppg = 'A.Korkunov 192g'
+    # new used in db
+    # old used in dataframe
+    coeff_map_values = [
+        'model_meta__id','model_meta__account_name', 
+                    'model_meta__corporate_segment', 'model_meta__product_group','coefficient_new',
+                    'value','coefficient_old'
+        
+    ]
+    roi_values = [
+        'model_meta__id','model_meta__account_name', 
+                    'model_meta__corporate_segment', 'model_meta__product_group', 'model_meta__brand_filter',
+                    'model_meta__brand_format_filter', 'model_meta__strategic_cell_filter',
+                   'neilson_sku_name','activity_name','mechanic','week','date'
+        
+    ]
+    coeff_values = [ 'model_meta__id','model_meta__account_name', 
+                    'model_meta__corporate_segment', 'model_meta__product_group', 'model_meta__brand_filter',
+                    'model_meta__brand_format_filter', 'model_meta__strategic_cell_filter','wmape', 'rsq',
+                    'intercept', 'median_base_price_log', 'tpr_discount', 'tpr_discount_lag1',
+                    'tpr_discount_lag2', 'catalogue', 'display', 'acv', 'si', 
+                    'si_month', 'si_quarter', 'c_1_crossretailer_discount', 'c_1_crossretailer_log_price', 'c_1_intra_discount', 
+                    'c_2_intra_discount', 'c_3_intra_discount', 'c_4_intra_discount', 'c_5_intra_discount',
+                    'c_1_intra_log_price', 'c_2_intra_log_price', 'c_3_intra_log_price', 'c_4_intra_log_price', 'c_5_intra_log_price', 'category_trend', 'trend_month', 'trend_quarter', 'trend_year', 'month_no', 'flag_promotype_motivation', 'flag_promotype_n_pls_1', 'flag_promotype_traffic', 'flag_nonpromo_1', 'flag_nonpromo_2', 'flag_nonpromo_3', 'flag_promo_1', 'flag_promo_2', 'flag_promo_3', 'holiday_flag_1', 'holiday_flag_2', 'holiday_flag_3', 'holiday_flag_4', 'holiday_flag_5', 'holiday_flag_6', 'holiday_flag_7', 'holiday_flag_8', 'holiday_flag_9', 'holiday_flag_10' 
+                    ]
+    data_values = [
+                    'date',
+                    ]
+    coeff_map = model.CoeffMap.objects.select_related('model_meta').filter(
+        model_meta__account_name = 'Tander',model_meta__product_group = 'A.Korkunov 192g'
+        ).values_list(
+           *coeff_map_values
+            ).annotate( 
+                       PPG_Item=Concat(
+                         Value('ITEM_'),
+                         F('model_meta__account_name'),Value('_'), F('model_meta__product_group')))
+    
+    
+    roi = model.ModelROI.objects.select_related('model_meta').filter(
+        model_meta__account_name = 'Tander',model_meta__product_group = 'A.Korkunov 192g'
+        ).values_list(
+            'neilson_sku_name','year','model_meta__product_group','model_meta__account_name','date',
+            'activity_name','mechanic','discount_nrv','week','off_inv','on_inv','gmac',
+            'model_meta__product_group','list_price'
+            ).annotate(
+                cogs=F('list_price') - (F('list_price') * F('gmac'))
+                )
+    
+    # coefficient = model.ModelCoefficient.objects.select_related('model_meta').filter(
+    #     model_meta__account_name = retailer,
+    #     model_meta__product_group = ppg
+    # ).values_list(*coeff_values)
+    # data = model.ModelData.objects.select_related('model_meta').filter(
+    #     model_meta__account_name = retailer,
+    #     model_meta__product_group = ppg
+    # ).values_list(*data_values)
+    # import pdb
+    # pdb.set_trace()
+    coeff_list = []
+    data_frame_map = {
+        
+    }
+    for i in coeff_map:
+        coeff_list.append(i[-3:])
+        data_values.append(const.CALCULATION_METRIC[i[-4]])
+        # import pdb
+        # pdb.set_trace()
+        data_frame_map[i[-4]] = i[-2]
+    # import pdb
+    # pdb.set_trace()
+    data = model.ModelData.objects.select_related('model_meta').filter(
+        model_meta__account_name = retailer,
+        model_meta__product_group = ppg
+    ).values_list(*data_values)
+    val_dt = ['Unnamed: 0']
+   
+    val_dt = val_dt +  [data_frame_map[const.get_key_from_value(const.CALCULATION_METRIC , i)] for i in data_values[1:]]
+    coeff_list = [list(i[-3:]) for i in coeff_map]
+    data_list = [list(i) for i in data]
+    
+    roi_list = [list(i) for i in roi]
+    
+    
+    
+    print("-------------------------------------coeff-------------------------------------------------------")
+    print()
+    print()
+    print(data_list ,"data_list LIST")
+    print("----------------------------------------data----------------------------------------------------")
+    print()
+    print()
+    # print(const.CALCULATION_METRIC , "CALCULATION_METRIC")
+    print()
+    print()
+    # print(data_frame_map , "data data_frame_map")
+    print()
+    print()
+    
+    # print(data_values , "data values")
+    print()
+    print()
+    print(val_dt , "data val_dt")
+    # print(roi_list , "ROI LIST")
+    print("--------------------------------------------------------------------------------------------")
+    # print(roi_list[0] , "ROI LIST")
+    
+    # pd.DataFrame
+    # roi = model.ModelROI.objects.select_related('model_meta').filter(
+    #     model_meta__account_name = retailer,
+    #     model_meta__product_group = ppg
+    # ).values_list()
+    # import pdb
+    # pdb.set_trace()
+    
+    # query  = queryset.filter(account_name = retailer , product_group = ppg)
+    # coeff = [list(coeff) for coeff in query[0].prefetched_data]
+    # query.values_list('account_name','corporate_segment','product_group','brand_filter')
+    # print(query , "query")
+    # print(coeff , "coeff")
+    # print(list(query) , "list query")
+    # import pdb
+    # pdb.set_trace()
+    # meta = model_to_dict(query)
+    # import pdb
+    # pdb.set_trace()
+    # roi = [{**model_to_dict(d),**meta} for d in query.prefetched_roi]
+    # data = [model_to_dict(d) for d in query.prefetched_data]
+    # coeff = [{**model_to_dict(d),**meta} for d in query.prefetched_coeff]
+    # print(meta , "meta")
+    # print(roi , "droi")
+    # print(data , "data")
+    # print(coeff , "coeff")
+    # print({**const.PROMO_MODEL_COEFF_MAP,**const.PROMO_MODEL_META_MAP} , "PROMO_MODEL_COEFF_MAP")
+    # print( , "promo model meta map")

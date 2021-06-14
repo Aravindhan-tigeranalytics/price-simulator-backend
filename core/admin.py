@@ -29,11 +29,12 @@ class ModelMetaAdmin(admin.ModelAdmin):
         if request.method == "POST":
             csv_file = request.FILES["csv_file"]
             # roi_file = request.FILES["roi_file"]
-            # excel.read_promo_coeff(csv_file)
-            # excel.read_promo_data(csv_file)
+            excel.read_promo_coeff(csv_file)
+            excel.read_promo_data(csv_file)
             excel.read_roi_data(csv_file)   
             # excel.lift(csv_file , roi_file)
-            # excel.lift_test()
+            excel.lift_test()
+            # excel.read_coeff_map(csv_file)
             self.message_user(request, "Your csv file has been imported")
             return redirect("..")
         form = CsvImportForm()
@@ -108,6 +109,10 @@ class ModelDataAdmin(admin.ModelAdmin):
 class ModelROIAdmin(admin.ModelAdmin):
     search_fields = ['model_meta__id','model_meta__slug','model_meta__account_name']
     list_display = [field.name for field in models.ModelROI._meta.fields]
+    
+class CoeffMapAdmin(admin.ModelAdmin):
+    search_fields = ['model_meta__id','model_meta__slug','model_meta__account_name']
+    list_display = [field.name for field in models.CoeffMap._meta.fields]
 
 
 admin.site.register(models.User)
@@ -117,6 +122,7 @@ admin.site.register(models.ModelMeta,ModelMetaAdmin)
 admin.site.register(models.ModelCoefficient,ModelCoefficientAdmin)
 admin.site.register(models.ModelData,ModelDataAdmin)
 admin.site.register(models.ModelROI,ModelROIAdmin)
+admin.site.register(models.CoeffMap,CoeffMapAdmin)
 
 # admin.site.register(models.Scenario,ScenarioAdmin)
 

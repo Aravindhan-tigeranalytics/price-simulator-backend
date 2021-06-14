@@ -121,4 +121,87 @@ def get_list_value_from_query(retailer,ppg):
 
 # print(dataframe)
 # print(coe_dataframe)
+
 # print(model_dataframe)
+
+def get_list_from_db(retailer,ppg):
+    from django.db.models import F , Value
+    from django.db.models.functions import Concat
+    from utils import constants as const
+    retailer = retailer
+    ppg = ppg
+    # new used in db
+    # old used in dataframe
+    coeff_map_values = [
+        'model_meta__id','model_meta__account_name', 
+                    'model_meta__corporate_segment', 'model_meta__product_group','coefficient_new',
+                    'value','coefficient_old'
+        
+    ]
+    data_values = [
+                    'date',
+                    ]
+    coeff_map = model.CoeffMap.objects.select_related('model_meta').filter(
+        model_meta__account_name = 'Tander',model_meta__product_group = 'A.Korkunov 192g'
+        ).values_list(
+           *coeff_map_values
+            ).annotate( 
+                       PPG_Item=Concat(
+                         Value('ITEM_'),
+                         F('model_meta__account_name'),Value('_'), F('model_meta__product_group')))
+    
+    roi = model.ModelROI.objects.select_related('model_meta').filter(
+        model_meta__account_name = 'Tander',model_meta__product_group = 'A.Korkunov 192g'
+        ).values_list(
+            'neilson_sku_name','year','model_meta__product_group','model_meta__account_name','date',
+            'activity_name','mechanic','discount_nrv','week','off_inv','on_inv','gmac',
+            'model_meta__product_group','list_price'
+            ).annotate(
+                cogs=F('list_price') - (F('list_price') * F('gmac'))
+                )
+    coeff_list = []
+    data_frame_map = {
+        
+    }
+    for i in coeff_map:
+        coeff_list.append(i[-3:])
+        data_values.append(const.CALCULATION_METRIC[i[-4]])
+        # import pdb
+        # pdb.set_trace()
+        data_frame_map[i[-4]] = i[-2]
+    data = model.ModelData.objects.select_related('model_meta').filter(
+        model_meta__account_name = retailer,
+        model_meta__product_group = ppg
+    ).values_list(*data_values)
+    val_dt = ['Unnamed: 0']
+    
+    val_dt = val_dt +  [data_frame_map[const.get_key_from_value(const.CALCULATION_METRIC , i)] for i in data_values[1:]]
+    coeff_list = [list(i[-3:]) for i in coeff_map]
+    data_list = [list(i) for i in data]
+    roi_list = [list(i) for i in roi]
+    coeff_col = ['model_coefficients','names','PPG_Item']
+    roi_col = [
+'Nielsen SKU Name','Year','PPG Name','Retailer','DATE','Activity name','Mechanic','Discount, NRV %','Weeknum','TE On Inv','TE Off Inv',
+'GMAC','PPG' , 'List_Price' , 'COGS'
+
+]
+    coeff_dt = pd.DataFrame(coeff_list, columns = coeff_col)
+    roi_dt = pd.DataFrame(roi_list, columns = roi_col)
+    data_dt = pd.DataFrame(data_list, columns = val_dt)
+    coeff_dt['model_coefficients'] = coeff_dt['model_coefficients'].astype(float)
+    dec_col = ['Discount, NRV %', 'TE On Inv',
+    'TE Off Inv', 'GMAC', 'List_Price', 'COGS']
+    roi_dt['DATE'] = pd.to_datetime(roi_dt['DATE'])
+    for i in dec_col:
+        roi_dt[i]= roi_dt[i].astype(float)
+    data_dt['Unnamed: 0']= pd.to_datetime(data_dt['Unnamed: 0'])
+    for i in [ 'tpr_discount_byppg', 'flag_old_mans_day', 'SI',
+    'ITEM_2029_Tander_PromotedDiscount',
+    'ITEM_2028_Tander_PromotedDiscount', 'ITEM_2010_Tander_RegularPrice',
+    'Catalogue_Dist', 'wk_sold_median_base_price_byppg_log',
+    'Promo_flg_date_1', 'Intercept']:
+        data_dt[i] = data_dt[i].astype(float)
+    return data_dt , roi_dt , coeff_dt
+
+
+

@@ -8,8 +8,8 @@ from optimiser import optimizer
 class ModelOptimize(APIView):
     serializer_class = sc.CommentSerializer
     def get(self, request, format=None):
-        content = optimizer.process()
-        return Response(content)
+        serializer = sc.CommentSerializer()
+        return Response(serializer.data)
     
     def post(self, request, format=None):
         content = None

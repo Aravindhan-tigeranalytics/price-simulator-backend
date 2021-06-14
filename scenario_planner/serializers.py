@@ -12,10 +12,27 @@ from . import fields as field
 class ScenarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = model.Scenario
-        fields = ('id', 'name', 'comments', 'savedump','is_yearly')
+        fields = ('id','scenario_type', 'name', 'comments', 'savedump','is_yearly')
         read_only_fields = ('id',)
+    # def create(self, validated_data):
+    #     print(validated_data , "validated data ")
+    #     # import pdb
+    #     # pdb.set_trace()
+    #     return super().create(validated_data)
+    
+    def validate_savedump(self, value):
+        
+        import ast
+        res = ast.literal_eval(value) 
+        if 'account_name' not in res:
+            raise serializers.ValidationError("Account name sould be present")
+      
+        
+        return res
 
     def validate(self,data):
+        # import pdb
+        # pdb.set_trace()
         print(data , "DATA")
         if not data['name']:
             raise exception.EmptyException
@@ -25,6 +42,12 @@ class ScenarioPlannerMetricsSerializer(serializers.ModelSerializer):
     class Meta:
         model = model.ScenarioPlannerMetrics
         fields = '__all__'
+
+class PromoScenarioSavedList(serializers.ModelSerializer):
+    class Meta:
+        model = model.Scenario
+        fields = ('id', 'name', 'comments')
+        read_only_fields = ('id',)
 
 class ScenarioPlannerMetricsSerializerObject(serializers.ModelSerializer):
     my_field = serializers.SerializerMethodField('obj')
@@ -86,31 +109,15 @@ class ModelDataSerializer(serializers.ModelSerializer):
         model = model.ModelData
         fields = ('year' , 'quater','month','period','week','date','base')
     base = serializers.SerializerMethodField('obj')
-    # simulated = serializers.SerializerMethodField('obj')
-    
-    # def to_representation(self, instance):
-    #     import pdb
-    #     pdb.set_trace()
-    #     print(instance , "to_representation ")
-    #     # pass
-    # def to_internal_value(self, data):
-    #     print(data , "to_internal_value")
-        # pass
 
     def obj(self,ob,*args,**kwargs):
         
-        # print(args , "arguments")
-        # print(kwargs ,"kwy work arguments")
-        
-        # print(ob.week , "week value")
-      
-        # return cal.promo_simulator_calculations(ob)
         return cal.promo_simulator_calculations_test(ob)
     
     
 class ModelMetaSerializer(serializers.ModelSerializer):
     prefetched_data = ModelDataSerializer(many=True)
-    sales = serializers.SerializerMethodField('tee')
+    total_rsv_w_o_vat = serializers.SerializerMethodField('tee')
     volumes_in_tonnes = serializers.SerializerMethodField('tee') 
     te = serializers.SerializerMethodField('tee')
     base_units =  serializers.SerializerMethodField('tee')
@@ -132,7 +139,7 @@ class ModelMetaSerializer(serializers.ModelSerializer):
     class Meta:
         model = model.ModelMeta
         fields = ('account_name','corporate_segment','product_group','mac','nsv','units','volumes_in_tonnes',
-                  'sales','base_units','incremental_units','roi',
+                  'total_rsv_w_o_vat','base_units','incremental_units','roi',
                   'te','lsv','rp','average_selling_price','avg_promo_selling_price','rp_percent_of_rsp',
                   'te_percent_of_lsv','mac_percent_of_nsv','te_per_unit','lift','prefetched_data')
         # 'units','nsv','mac',
@@ -206,24 +213,8 @@ class ModelMetaGetSerializer(serializers.Serializer):
     #                     choices = OBJ_CHOICES)
     
     def __init__(self, *args, **kwargs):
-        # import pdb
-        # pdb.set_trace()
-        # print(self.fields.keys() , "keysssss")
-        # print(args,"arguments")
-        # print(kwargs , "kwargs")
-        # if kwargs:
-        #     print(kwargs['context']['request'].data , "__init__ request data ")
+
         for i in range(1,53):
-                # import pdb
-                # pdb.set_trace()
-            # import pdb
-            # pdb.set_trace()
-            # tpr = self.query[0].data.get(week=i).tpr_discount
-            # if kwargs:
-            #     self.fields['week-' + str(i)] = DynamicInputSerializer(kwargs['context']['request'].data)
-            # else:
-            # promo_depth = serializers.IntegerField(initial = tpr,default=tpr)
-            # self.fields['promo_depth'] =serializers.IntegerField(initial = tpr,default=tpr)
             self.fields['week-' + str(i)] = DynamicInputSerializer()
                 
             
@@ -249,4 +240,39 @@ class ModelMetaGetSerializer(serializers.Serializer):
         # print(self)
         # import pdb
         # pdb.set_trace()
+class ModelMetaGetSerializerTest(serializers.Serializer):
+    OBJ_CHOICES = (
+        ("cell", "Choose Strategic Cell"), 
+    )
+    OBJ_CHOICES2 = (
+       ("brand", "Choose Brand"), 
+    )
+    OBJ_CHOICES3 = (
+       ("format", "Choose Brand Format"), 
+    )
+    # query = model.ModelMeta.objects.prefetch_related('data').all()
+    # account_name = serializers.ChoiceField(choices = [])
+    # corporate_segment = field.ChoiceField(choices=[i + i for i in list(query.values_list('corporate_segment').distinct())])
+    strategic_cell = serializers.ChoiceField(choices=
+                                       OBJ_CHOICES)
+    brand = serializers.ChoiceField(choices=
+                              OBJ_CHOICES2)
+    brand_format = serializers.ChoiceField(choices=
+                                     OBJ_CHOICES3)
+    # product_group = field.ChoiceField(choices=[i + i for i in list(query.values_list('product_group').distinct())])
+   
+    promo_elasticity = serializers.IntegerField(initial = 0,default=0)
+    param_depth_all = serializers.IntegerField(initial = 0,default=0)
+    
+    def __init__(self, *args, **kwargs):
         
+        if 'query' in kwargs:
+            
+            query = kwargs.pop('query')
+            print(query , "querty")
+            # import pdb
+            # pdb.set_trace()
+            self.fields['account_name'] = serializers.ChoiceField(choices=
+                                       [i + i for i in list(query.values_list('account_name').distinct())])
+            
+        super().__init__(*args, **kwargs)

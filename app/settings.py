@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'core',
     'user',
     'scenario_planner',
-     'debug_toolbar'
+     'debug_toolbar',
+     'optimiser'
 ]
 
 MIDDLEWARE = [
@@ -113,7 +114,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'localpricesimulatordb',
         'USER':'postgres',
-        'PASSWORD': 'tiger@123',
+        'PASSWORD': '123',
         'HOST': 'localhost',
         'PORT':5432,
     }

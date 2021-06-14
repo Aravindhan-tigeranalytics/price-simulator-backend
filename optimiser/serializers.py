@@ -23,14 +23,18 @@ class CommentSerializer(serializers.Serializer):
     OBJ_CHOICES3 = (
         ("cell", "Choose Corporate Segment"), 
     )
+    query = model.ModelMeta.objects.prefetch_related('data').all()
+    account_name = field.ChoiceField(choices=[i + i for i in list(query.values_list('account_name').distinct())])
+    corporate_segment = field.ChoiceField(choices=[i + i for i in list(query.values_list('corporate_segment').distinct())])
 
     # query = model.ModelMeta.objects.prefetch_related('data').all()
     # account_name = field.ChoiceField(choices=[i + i for i in list(query.values_list('account_name').distinct())])
     # corporate_segment = field.ChoiceField(choices=[i + i for i in list(query.values_list('corporate_segment').distinct())])
-    account_name = serializers.ChoiceField(choices=
-                                       OBJ_CHOICES1)
-    corporate_segment = serializers.ChoiceField(choices=
-                                       OBJ_CHOICES2)
+    # account_name = serializers.ChoiceField(choices=
+    #                                    OBJ_CHOICES1)
+    # corporate_segment = serializers.ChoiceField(choices=
+    #                                    OBJ_CHOICES2)
+    product_group = field.ChoiceField(choices=[i + i for i in list(query.values_list('product_group').distinct())])
     strategic_cell = serializers.ChoiceField(choices=
                                        OBJ_CHOICES3)
 

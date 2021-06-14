@@ -14,11 +14,15 @@ from pulp import *
 import pandas as pd
 from itertools import combinations
 from utils import constants as CONST
+
+from optimiser import process as pr
+
 from optimiser import process as process_calc
 import logging.config
 
 logging.config.dictConfig(CONST.LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
+
 
 class my_dictionary(dict): 
   
@@ -30,6 +34,40 @@ class my_dictionary(dict):
     def add(self, key, value): 
         self[key] = value 
 
+def _update_params(config , request_value):
+    MINIMIZE_PARAMS = ['Trade_Expense']
+    # {'account_name': 'Tander', 'corporate_segment': 'LOOSE', 'product_group': 'A.Korkunov 192g',
+    #  'strategic_cell': 'cell', 'objective_function': 'MAC', 'max_promotion': 23, 'min_promotion': 16, 
+    #  'config_mac': True, 'config_rp': True, 'config_trade_expense': False, 
+    #  'config_units': False, 'config_mac_perc': False, 'config_min_length': True, 
+    #  'config_max_length': True, 'config_promo_gap': True, 'param_mac': 1.0, 'param_rp': 1.0, 
+    #  'param_trade_expense': 1.0, 'param_units': 1.0, 'param_mac_perc': 1.0, 'param_min_length': 2, 
+    #  'param_max_length': 5, 'param_promo_gap': 4}
+    
+    
+    # config = {"Reatiler":"Magnit","PPG":'A.Korkunov_192g','Segment':"Choco","MARS_TPRS":[],"Co_investment":0,
+    #       "Objective_metric":"MAC","Objective":"Maximize",
+    #       "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
+    #                           ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
+    #                 'promo_gap':True},
+    #       "constrain_params": {'MAC':1,'RP':1,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
+    #                             'min_consecutive_promo':6,'max_consecutive_promo':6,
+    #                 'promo_gap':2,'tot_promo_min':10,'tot_promo_max':26,'compul_no_promo_weeks':[],'compul_promo_weeks' :[]}}
+  
+    config['Reatiler'] = request_value['account_name']
+    config['PPG'] = request_value['product_group']
+    config['Objective_metric'] = request_value['objective_function']
+    config['Objective'] = 'Minimize' if(request_value['objective_function'] in MINIMIZE_PARAMS) else 'Maximize'
+    config['Segment'] = request_value['corporate_segment']
+   
+    config['constrain_params']['tot_promo_min'] = request_value['min_promotion']
+    config['constrain_params']['tot_promo_max'] = request_value['max_promotion']
+    # config['Segment'] = request_value['corporate_segment']
+    # config['Segment'] = request_value['corporate_segment']
+    
+    
+
+      # pass
 
 def predict_sales(coeffs,data):
     logging.info('Calculate Predict Sales')
@@ -530,32 +568,42 @@ def process(constraints = None):
   BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   path = os.path.join(BASE_DIR + "/data/")
   logger.error("Test!!")
-  ROI_data = pd.read_csv(path + CONST.OPT_ROI_FILE_NAME)
-  Model_Coeff = pd.read_csv(path + CONST.OPT_MODEL_COEFF_FILE_NAME)
-  Model_Data = pd.read_csv(path + CONST.OPT_MODEL_DATA_FILE_NAME)
+  # ROI_data = pd.read_csv(path + CONST.OPT_ROI_FILE_NAME)
+  # Model_Coeff = pd.read_csv(path + CONST.OPT_MODEL_COEFF_FILE_NAME)
+  # Model_Data = pd.read_csv(path + CONST.OPT_MODEL_DATA_FILE_NAME)
   
   # print(ROI_data.columns)
   # print(Model_Coeff.columns)
   # print(Model_Data.columns)
 
+
+  # Model_Coeff,Model_Data,ROI_data = pr.get_list_value_from_query(CONST.OPT_RETAILER_NAME_ALT,CONST.OPT_PRODUCT_GROUP_NAME)
+  Model_Data,ROI_data, Model_Coeff = pr.get_list_from_db(CONST.OPT_RETAILER_NAME_ALT,CONST.OPT_PRODUCT_GROUP_NAME)
+
   # Model_Coeff,Model_Data,ROI_data = process_calc.get_list_value_from_query(CONST.OPT_RETAILER_NAME,CONST.OPT_PRODUCT_GROUP_NAME)
+
 
   # print(ROI_data)
   # print(Model_Coeff)
   # print(Model_Data)
 
   # exit()
-  Ret_name = CONST.OPT_RETAILER_NAME
-  PPG_name = CONST.OPT_PRODUCT_GROUP_NAME
-  # PPG_name = 'Tander'
-  Any_SKU_Name = CONST.OPT_SKU_NAME
+
+  # Ret_name = CONST.OPT_RETAILER_NAME_ALT
+  Ret_name = constraints['account_name']
+  # PPG_name = CONST.OPT_PRODUCT_GROUP_NAME
+  # PPG_name = CONST.OPT_PRODUCT_GROUP_NAME
+  PPG_name = constraints['product_group']
+
+  # Any_SKU_Name = CONST.OPT_SKU_NAME
+  Any_SKU_Name = ROI_data['Nielsen SKU Name'][0]
   promo_list_PPG = ROI_data[(ROI_data['Retailer'] == Ret_name) & (ROI_data['PPG Name'] == PPG_name)].reset_index(drop=True)
 
-  print(promo_list_PPG.shape)
+  # print(promo_list_PPG.shape)
   # Removing mismatched promo
   promo_list_PPG = promo_list_PPG.loc[~(promo_list_PPG['Weeknum'].isin([1,2])) ].reset_index(drop=True)
   # promo_list_PPG['Discount, NRV %']=np.where(promo_list_PPG['Discount, NRV %']!=0,0.15,0)
-  print(promo_list_PPG.shape)
+  # print(promo_list_PPG.shape)
   # Create Period Mapping File 
   Period_map = pd.DataFrame(pd.date_range("2022", freq="W", periods=52), columns=['Date'])
   Period_map['WK Num']=Period_map.index+1
@@ -591,7 +639,7 @@ def process(constraints = None):
                                                           Period_data["TE On Inv"] * Period_data["Discount, NRV %"] + Period_data["TE Off Inv"] * Period_data["TE On Inv"] * Period_data["Discount, NRV %"])
 
 
-  baseprice_post_July = math.exp(max(Model_Data[((pd.DatetimeIndex(Model_Data['Unnamed: 0']).year == 2020) & (pd.DatetimeIndex(Model_Data['Unnamed: 0'],dayfirst=True).month >=7 ))]["wk_sold_median_base_price_byppg_log"]))
+  baseprice_post_July = math.exp(max(Model_Data[((pd.DatetimeIndex(Model_Data['Unnamed: 0']).year == 2022) & (pd.DatetimeIndex(Model_Data['Unnamed: 0'],dayfirst=True).month >=7 ))]["wk_sold_median_base_price_byppg_log"]))
   # baseprice_post_July = 1.097257*baseprice_pre_July
   # print(baseprice_pre_July)
   print(baseprice_post_July)
@@ -607,15 +655,15 @@ def process(constraints = None):
   Period_data['tpr_discount_byppg']=((Period_data['median_baseprice']-Period_data['wk_sold_avg_price_byppg'])/Period_data['median_baseprice'])*100
 
   # Filter the model data for last 52 weeks
-  index_2019=Model_Data.shape[0]-52
-  Model_Data['Year_Flag']=Model_Data['Unnamed: 0'].apply(lambda x: x.split('-')[0])  ## for otc make it 2
-  index_2020=Model_Data[Model_Data['Year_Flag']=='2020'].index.tolist()[0]
-  pred_data1=Model_Data[index_2020:Model_Data.shape[0]]
-  pred_data2=Model_Data[index_2019:index_2020]
-  pred_data = pred_data1.append(pred_data2).reset_index(drop = "True")
+  # index_2019=Model_Data.shape[0]-52
+  # Model_Data['Year_Flag']=Model_Data['Unnamed: 0'].apply(lambda x: x.split('-')[0])  ## for otc make it 2
+  # index_2020=Model_Data[Model_Data['Year_Flag']=='2020'].index.tolist()[0]
+  # pred_data1=Model_Data[index_2020:Model_Data.shape[0]]
+  # pred_data2=Model_Data[index_2019:index_2020]
+  # pred_data = pred_data1.append(pred_data2).reset_index(drop = "True")
   Model_Coeff_list_Keep=list(Model_Coeff['names'])
-  Model_Coeff_list_Keep.remove(Model_Coeff_list_Keep[0])
-  pred_data=pred_data[Model_Coeff_list_Keep]
+  Model_Coeff_list_Keep.remove(Model_Coeff_list_Keep[-1]) # remoce intercept
+  pred_data=Model_Data[Model_Coeff_list_Keep]
   pred_data['Date']=pd.date_range("2022", freq="W", periods=52)
   pred_data['flag_old_mans_day']=np.where(pred_data["Date"].isin(['2022-10-09']),1,0)
   pred_data['Promo_flg_date_1'] = 0
@@ -623,10 +671,10 @@ def process(constraints = None):
   a=[i for i in pred_data.columns if re.search("RegularPrice",i)]
   print(a)
   for comp in a:
-    print(max(pred_data[comp]))
+    # print(max(pred_data[comp]))
     pred_data[comp] = max(pred_data[comp])
   #   pred_data[comp] = np.log(1.097257) + max(pred_data[comp])
-    print(max(pred_data[comp]))
+    # print(max(pred_data[comp]))
   # Add competitor price hike regular price
   Catalogue_temp=pred_data[pred_data['tpr_discount_byppg']>0]['Catalogue_Dist'].mean()
   pred_data=pred_data.drop(['wk_sold_median_base_price_byppg_log',],axis=1)
@@ -635,7 +683,7 @@ def process(constraints = None):
 
   # If the change is very less for eg in train 23% and ROI 24% Please proceed to the next step but if the difference is non tpr week is tpr week check the ROI file for dates of promotion redo and come to this stage
   Final_Pred_Data['QC']=Final_Pred_Data['tpr_discount_byppg'].astype(int)-Final_Pred_Data['tpr_discount_byppg_train'].astype(int)
-  print(Final_Pred_Data['QC'].sum())
+  # print(Final_Pred_Data['QC'].sum())
   Final_Pred_Data[Final_Pred_Data['QC']>0]
 
 
@@ -678,6 +726,10 @@ def process(constraints = None):
 
   baseline_df =Final_Pred_Data[['Baseline_Prediction','Baseline_Sales',"Baseline_GSV","Baseline_Trade_Expense","Baseline_NSV","Baseline_MAC","Baseline_RP"]].sum().astype(int)
   baseline_df['Baseline_MAC']
+  
+  # import pdb
+  # pdb.set_trace()
+  
 
   config = {"Reatiler":"Magnit","PPG":'A.Korkunov_192g',"MARS_TPRS":[],"Co_investment":0,
          "Objective_metric":"MAC","Objective":"Maximize",
@@ -699,6 +751,7 @@ def process(constraints = None):
                                 'min_consecutive_promo':6,'max_consecutive_promo':6,
                     'promo_gap':2,'tot_promo_min':10,'tot_promo_max':26,'compul_no_promo_weeks':[],'compul_promo_weeks' :[]}}
   
+  _update_params(config , constraints)
   TE_dict = get_te_dict(baseline_data,config,Financial_information)
   Required_base = get_required_base(baseline_data,Model_Coeff,TE_dict,config)
   Required_base.tail()
@@ -816,6 +869,7 @@ def process(constraints = None):
   opt_base = get_opt_base_comparison(baseline_data,Optimal_data,Model_Coeff,config)
   summary = get_calendar_summary(baseline_data,Optimal_data,opt_base)
   parsed = json.loads(summary.to_json(orient="records"))
+  logging.info('Main Funtion Ends')
   return parsed
 
 
@@ -944,6 +998,7 @@ def optimizer_fun(baseline_data,Required_base,config):
     L2=lpSum([WK_vars[Required_base['WK_ID'][i]]*Required_base['Sales'][i]  for i in range(0,Required_base.shape[0])])
     prob+= L1 >= L2*(baseline_df['Baseline_RP']/baseline_df['Baseline_Sales'])*constrain_params['RP_Perc']
 
+  logger.info('Before loop')
   # Set up constraints such that only one tpr is chose for a week
   for i in range(0,52):
     prob+=lpSum([WK_vars[Required_base['WK_ID'][i+j*52]]  for j in range(0,promo_loop)])<=1
@@ -1130,6 +1185,7 @@ def optimizer_fun(baseline_data,Required_base,config):
   prob.solve()
   print(LpStatus[prob.status])
   print(pulp.value(prob.objective))
+  logger.info('After loop')
   Weeks =[]
   value = []
   for variable in prob.variables():
