@@ -34,6 +34,40 @@ class my_dictionary(dict):
     def add(self, key, value): 
         self[key] = value 
 
+def _update_params(config , request_value):
+    MINIMIZE_PARAMS = ['Trade_Expense']
+    # {'account_name': 'Tander', 'corporate_segment': 'LOOSE', 'product_group': 'A.Korkunov 192g',
+    #  'strategic_cell': 'cell', 'objective_function': 'MAC', 'max_promotion': 23, 'min_promotion': 16, 
+    #  'config_mac': True, 'config_rp': True, 'config_trade_expense': False, 
+    #  'config_units': False, 'config_mac_perc': False, 'config_min_length': True, 
+    #  'config_max_length': True, 'config_promo_gap': True, 'param_mac': 1.0, 'param_rp': 1.0, 
+    #  'param_trade_expense': 1.0, 'param_units': 1.0, 'param_mac_perc': 1.0, 'param_min_length': 2, 
+    #  'param_max_length': 5, 'param_promo_gap': 4}
+    
+    
+    # config = {"Reatiler":"Magnit","PPG":'A.Korkunov_192g','Segment':"Choco","MARS_TPRS":[],"Co_investment":0,
+    #       "Objective_metric":"MAC","Objective":"Maximize",
+    #       "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
+    #                           ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
+    #                 'promo_gap':True},
+    #       "constrain_params": {'MAC':1,'RP':1,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
+    #                             'min_consecutive_promo':6,'max_consecutive_promo':6,
+    #                 'promo_gap':2,'tot_promo_min':10,'tot_promo_max':26,'compul_no_promo_weeks':[],'compul_promo_weeks' :[]}}
+  
+    config['Reatiler'] = request_value['account_name']
+    config['PPG'] = request_value['product_group']
+    config['Objective_metric'] = request_value['objective_function']
+    config['Objective'] = 'Minimize' if(request_value['objective_function'] in MINIMIZE_PARAMS) else 'Maximize'
+    config['Segment'] = request_value['corporate_segment']
+   
+    config['constrain_params']['tot_promo_min'] = request_value['min_promotion']
+    config['constrain_params']['tot_promo_max'] = request_value['max_promotion']
+    # config['Segment'] = request_value['corporate_segment']
+    # config['Segment'] = request_value['corporate_segment']
+    
+    
+
+      # pass
 
 def predict_sales(coeffs,data):
     logging.info('Calculate Predict Sales')
@@ -534,9 +568,9 @@ def process(constraints = None):
   BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   path = os.path.join(BASE_DIR + "/data/")
   logger.error("Test!!")
-  ROI_data = pd.read_csv(path + CONST.OPT_ROI_FILE_NAME)
-  Model_Coeff = pd.read_csv(path + CONST.OPT_MODEL_COEFF_FILE_NAME)
-  Model_Data = pd.read_csv(path + CONST.OPT_MODEL_DATA_FILE_NAME)
+  # ROI_data = pd.read_csv(path + CONST.OPT_ROI_FILE_NAME)
+  # Model_Coeff = pd.read_csv(path + CONST.OPT_MODEL_COEFF_FILE_NAME)
+  # Model_Data = pd.read_csv(path + CONST.OPT_MODEL_DATA_FILE_NAME)
   
   # print(ROI_data.columns)
   # print(Model_Coeff.columns)
@@ -555,18 +589,21 @@ def process(constraints = None):
 
   # exit()
 
-  Ret_name = CONST.OPT_RETAILER_NAME_ALT
+  # Ret_name = CONST.OPT_RETAILER_NAME_ALT
+  Ret_name = constraints['account_name']
   # PPG_name = CONST.OPT_PRODUCT_GROUP_NAME
-  PPG_name = CONST.OPT_PRODUCT_GROUP_NAME
+  # PPG_name = CONST.OPT_PRODUCT_GROUP_NAME
+  PPG_name = constraints['product_group']
 
-  Any_SKU_Name = CONST.OPT_SKU_NAME
+  # Any_SKU_Name = CONST.OPT_SKU_NAME
+  Any_SKU_Name = ROI_data['Nielsen SKU Name'][0]
   promo_list_PPG = ROI_data[(ROI_data['Retailer'] == Ret_name) & (ROI_data['PPG Name'] == PPG_name)].reset_index(drop=True)
 
-  print(promo_list_PPG.shape)
+  # print(promo_list_PPG.shape)
   # Removing mismatched promo
   promo_list_PPG = promo_list_PPG.loc[~(promo_list_PPG['Weeknum'].isin([1,2])) ].reset_index(drop=True)
   # promo_list_PPG['Discount, NRV %']=np.where(promo_list_PPG['Discount, NRV %']!=0,0.15,0)
-  print(promo_list_PPG.shape)
+  # print(promo_list_PPG.shape)
   # Create Period Mapping File 
   Period_map = pd.DataFrame(pd.date_range("2022", freq="W", periods=52), columns=['Date'])
   Period_map['WK Num']=Period_map.index+1
@@ -634,10 +671,10 @@ def process(constraints = None):
   a=[i for i in pred_data.columns if re.search("RegularPrice",i)]
   print(a)
   for comp in a:
-    print(max(pred_data[comp]))
+    # print(max(pred_data[comp]))
     pred_data[comp] = max(pred_data[comp])
   #   pred_data[comp] = np.log(1.097257) + max(pred_data[comp])
-    print(max(pred_data[comp]))
+    # print(max(pred_data[comp]))
   # Add competitor price hike regular price
   Catalogue_temp=pred_data[pred_data['tpr_discount_byppg']>0]['Catalogue_Dist'].mean()
   pred_data=pred_data.drop(['wk_sold_median_base_price_byppg_log',],axis=1)
@@ -646,7 +683,7 @@ def process(constraints = None):
 
   # If the change is very less for eg in train 23% and ROI 24% Please proceed to the next step but if the difference is non tpr week is tpr week check the ROI file for dates of promotion redo and come to this stage
   Final_Pred_Data['QC']=Final_Pred_Data['tpr_discount_byppg'].astype(int)-Final_Pred_Data['tpr_discount_byppg_train'].astype(int)
-  print(Final_Pred_Data['QC'].sum())
+  # print(Final_Pred_Data['QC'].sum())
   Final_Pred_Data[Final_Pred_Data['QC']>0]
 
 
@@ -689,6 +726,10 @@ def process(constraints = None):
 
   baseline_df =Final_Pred_Data[['Baseline_Prediction','Baseline_Sales',"Baseline_GSV","Baseline_Trade_Expense","Baseline_NSV","Baseline_MAC","Baseline_RP"]].sum().astype(int)
   baseline_df['Baseline_MAC']
+  
+  # import pdb
+  # pdb.set_trace()
+  
 
   config = {"Reatiler":"Magnit","PPG":'A.Korkunov_192g',"MARS_TPRS":[],"Co_investment":0,
          "Objective_metric":"MAC","Objective":"Maximize",
@@ -710,6 +751,7 @@ def process(constraints = None):
                                 'min_consecutive_promo':6,'max_consecutive_promo':6,
                     'promo_gap':2,'tot_promo_min':10,'tot_promo_max':26,'compul_no_promo_weeks':[],'compul_promo_weeks' :[]}}
   
+  _update_params(config , constraints)
   TE_dict = get_te_dict(baseline_data,config,Financial_information)
   Required_base = get_required_base(baseline_data,Model_Coeff,TE_dict,config)
   Required_base.tail()
