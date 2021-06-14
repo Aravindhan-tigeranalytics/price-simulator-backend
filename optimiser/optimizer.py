@@ -529,7 +529,7 @@ def process(constraints = None):
   # path = CONST.PATH
   BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   path = os.path.join(BASE_DIR + "/data/")
-  logger.error("Test!!")
+
   ROI_data = pd.read_csv(path + CONST.OPT_ROI_FILE_NAME)
   Model_Coeff = pd.read_csv(path + CONST.OPT_MODEL_COEFF_FILE_NAME)
   Model_Data = pd.read_csv(path + CONST.OPT_MODEL_DATA_FILE_NAME)
@@ -816,6 +816,7 @@ def process(constraints = None):
   opt_base = get_opt_base_comparison(baseline_data,Optimal_data,Model_Coeff,config)
   summary = get_calendar_summary(baseline_data,Optimal_data,opt_base)
   parsed = json.loads(summary.to_json(orient="records"))
+  logging.info('Main Funtion Ends')
   return parsed
 
 
@@ -944,6 +945,7 @@ def optimizer_fun(baseline_data,Required_base,config):
     L2=lpSum([WK_vars[Required_base['WK_ID'][i]]*Required_base['Sales'][i]  for i in range(0,Required_base.shape[0])])
     prob+= L1 >= L2*(baseline_df['Baseline_RP']/baseline_df['Baseline_Sales'])*constrain_params['RP_Perc']
 
+  logger.info('Before loop')
   # Set up constraints such that only one tpr is chose for a week
   for i in range(0,52):
     prob+=lpSum([WK_vars[Required_base['WK_ID'][i+j*52]]  for j in range(0,promo_loop)])<=1
@@ -1130,6 +1132,7 @@ def optimizer_fun(baseline_data,Required_base,config):
   prob.solve()
   print(LpStatus[prob.status])
   print(pulp.value(prob.objective))
+  logger.info('After loop')
   Weeks =[]
   value = []
   for variable in prob.variables():
