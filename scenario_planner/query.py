@@ -14,7 +14,7 @@ data_values = ['model_meta__id','model_meta__account_name',
                 'model_meta__corporate_segment', 'model_meta__product_group', 'model_meta__brand_filter',
                 'model_meta__brand_format_filter', 'model_meta__strategic_cell_filter',
                 'year','quater','month','period','date','week',
-                'intercept', 'median_base_price_log', 'tpr_discount', 'tpr_discount_lag1',
+                'intercept', 'median_base_price_log', 'tpr_discount','promo_depth','co_investment', 'tpr_discount_lag1',
                 'tpr_discount_lag2', 'catalogue', 'display', 'acv', 'si', 
                 'si_month', 'si_quarter', 'c_1_crossretailer_discount', 'c_1_crossretailer_log_price', 'c_1_intra_discount', 
                 'c_2_intra_discount', 'c_3_intra_discount', 'c_4_intra_discount', 'c_5_intra_discount',
@@ -35,6 +35,9 @@ def get_list_value_from_query(coeff_model:model.ModelCoefficient,
                               data_model:model.ModelData,
                               roi_model:model.ModelROI,
                               retailer,ppg):
+    '''
+    returns list form of ORM query
+    '''
     coefficient = coeff_model.objects.select_related('model_meta').filter(
                     model_meta__account_name = retailer,
                     model_meta__product_group = ppg

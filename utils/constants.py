@@ -28,7 +28,7 @@ DATA_HEADER = ['Account Name' , 'Corporate Segment' , 'PPG','Brand Filter' ,
     'Flag_promotype_traffic','Flag_nonpromo_1','Flag_nonpromo_2','Flag_nonpromo_3','Flag_promo_1',
     'Flag_promo_2','Flag_promo_3','Holiday_Flag1','Holiday_Flag2','Holiday_Flag3','Holiday_Flag4',
     'Holiday_Flag5','Holiday_Flag6','Holiday_Flag7','Holiday_Flag8','Holiday_Flag9','Holiday_Flag10',
-    'wk_sold_avg_price_byppg','Average Weight in grams','Weighted Weight in grams']
+    'Average Weight in grams','Weighted Weight in grams','Promo_Depth','Coinvestment','Optimiser_flag']
 
 COEFF_HEADER = ['Account Name' , 'Corporate Segment' , 'PPG' ,
                 'Brand Filter' ,
@@ -122,9 +122,12 @@ DATA_MAP = {
     'Period':'period',
     'Date':'date',
     'Week':'week',
+    'Coinvestment':'co_investment',
+    'Promo_Depth':'promo_depth',
     'wk_sold_avg_price_byppg' : 'wk_sold_avg_price_byppg',
-     'Average Weight in grams':'average_weight_in_grams',
-    'Weighted Weight in grams':'weighted_weight_in_grams'
+    'Average Weight in grams':'average_weight_in_grams',
+    'Weighted Weight in grams':'weighted_weight_in_grams',
+    'Optimiser_flag' : 'optimiser_flag'
 }
 ROI_MAP = {
     'Year':'year',

@@ -1,7 +1,7 @@
 from django.db.models import fields, query
 from numpy import source
 from rest_framework import serializers
-from utils import exceptions as exception
+from utils import exceptions as exception, models
 # from core.models import Scenario,ScenarioPlannerMetrics
 from core import models as model
 from utils import optimizer as optimizer
@@ -20,20 +20,22 @@ class ScenarioSerializer(serializers.ModelSerializer):
     #     # pdb.set_trace()
     #     return super().create(validated_data)
     
-    def validate_savedump(self, value):
+    # def validate_savedump(self, value):
+        # import pdb
+        # pdb.set_trace()
         
-        import ast
-        res = ast.literal_eval(value) 
-        if 'account_name' not in res:
-            raise serializers.ValidationError("Account name sould be present")
+        # import ast
+        # res = ast.literal_eval(value) 
+        # if 'account_name' not in res:
+        #     raise serializers.ValidationError("Account name sould be present")
       
         
-        return res
+        # return res
 
     def validate(self,data):
         # import pdb
         # pdb.set_trace()
-        print(data , "DATA")
+        # print(data , "DATA")
         if not data['name']:
             raise exception.EmptyException
         return data
@@ -52,7 +54,7 @@ class PromoScenarioSavedList(serializers.ModelSerializer):
 class ScenarioPlannerMetricsSerializerObject(serializers.ModelSerializer):
     my_field = serializers.SerializerMethodField('obj')
     def obj(self,metric):
-        print(metric , "metics additionsl")
+        # print(metric , "metics additionsl")
         return "hola"
     class Meta:
         model = model.ScenarioPlannerMetrics
@@ -199,12 +201,10 @@ class ModelMetaGetSerializer(serializers.Serializer):
     query = model.ModelMeta.objects.prefetch_related('data').all()
     account_name = field.ChoiceField(choices=[i + i for i in list(query.values_list('account_name').distinct())])
     corporate_segment = field.ChoiceField(choices=[i + i for i in list(query.values_list('corporate_segment').distinct())])
-    strategic_cell = serializers.ChoiceField(choices=
-                                       OBJ_CHOICES)
-    brand = serializers.ChoiceField(choices=
-                              OBJ_CHOICES2)
-    brand_format = serializers.ChoiceField(choices=
-                                     OBJ_CHOICES3)
+    strategic_cell = serializers.ChoiceField(choices=[i + i for i in list(query.filter(strategic_cell_filter__isnull=False).values_list('strategic_cell_filter').distinct())])
+    brand = serializers.ChoiceField(choices=[i + i for i in list(query.filter(brand_filter__isnull=False).values_list('brand_filter').distinct())])
+    brand_format = serializers.ChoiceField(choices=[i + i for i in list(query.filter(brand_format_filter__isnull=False).values_list('brand_format_filter').distinct())])
+
     product_group = field.ChoiceField(choices=[i + i for i in list(query.values_list('product_group').distinct())])
    
     promo_elasticity = serializers.IntegerField(initial = 0,default=0)
@@ -240,39 +240,42 @@ class ModelMetaGetSerializer(serializers.Serializer):
         # print(self)
         # import pdb
         # pdb.set_trace()
-class ModelMetaGetSerializerTest(serializers.Serializer):
-    OBJ_CHOICES = (
-        ("cell", "Choose Strategic Cell"), 
-    )
-    OBJ_CHOICES2 = (
-       ("brand", "Choose Brand"), 
-    )
-    OBJ_CHOICES3 = (
-       ("format", "Choose Brand Format"), 
-    )
+class ModelMetaGetSerializerTest(serializers.ModelSerializer):
+    class Meta:
+        model = model.ModelMeta
+        fields = ['id','account_name','corporate_segment','product_group','brand_filter','brand_format_filter','strategic_cell_filter']
+    # OBJ_CHOICES = (
+    #     ("cell", "Choose Strategic Cell"), 
+    # )
+    # OBJ_CHOICES2 = (
+    #    ("brand", "Choose Brand"), 
+    # )
+    # OBJ_CHOICES3 = (
+    #    ("format", "Choose Brand Format"), 
+    # )
     # query = model.ModelMeta.objects.prefetch_related('data').all()
     # account_name = serializers.ChoiceField(choices = [])
     # corporate_segment = field.ChoiceField(choices=[i + i for i in list(query.values_list('corporate_segment').distinct())])
-    strategic_cell = serializers.ChoiceField(choices=
-                                       OBJ_CHOICES)
-    brand = serializers.ChoiceField(choices=
-                              OBJ_CHOICES2)
-    brand_format = serializers.ChoiceField(choices=
-                                     OBJ_CHOICES3)
+    # strategic_cell = serializers.ChoiceField(choices=
+    #                                    OBJ_CHOICES)
+    # brand = serializers.ChoiceField(choices=
+    #                           OBJ_CHOICES2)
+    # brand_format = serializers.ChoiceField(choices=
+                                    #  OBJ_CHOICES3)
     # product_group = field.ChoiceField(choices=[i + i for i in list(query.values_list('product_group').distinct())])
    
-    promo_elasticity = serializers.IntegerField(initial = 0,default=0)
-    param_depth_all = serializers.IntegerField(initial = 0,default=0)
+    # promo_elasticity = serializers.IntegerField(initial = 0,default=0)
+    # param_depth_all = serializers.IntegerField(initial = 0,default=0)
     
-    def __init__(self, *args, **kwargs):
+    # def __init__(self, *args, **kwargs):
         
-        if 'query' in kwargs:
+    #     if 'query' in kwargs:
             
-            query = kwargs.pop('query')
-            print(query , "querty")
-            # import pdb
-            # pdb.set_trace()
-            self.fields['account_name'] = serializers.ChoiceField(choices=
-                                       [i + i for i in list(query.values_list('account_name').distinct())])
+    #         query = kwargs.pop('query')
+    #         print(query , "querty")
+    #         # import pdb
+    #         # pdb.set_trace()
+    #         self.fields['account_name'] = serializers.ChoiceField(choices=
+    #                                    [i + i for i in list(query.values_list('account_name').distinct())])
             
-        super().__init__(*args, **kwargs)
+    #     super().__init__(*args, **kwargs)

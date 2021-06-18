@@ -1,0 +1,9 @@
+MODEL_INTERCEPT_ERROR = 'Intercept value should be 1 for model data'
+MODEL_MEDIAN_BASE_PRICE_ERROR = 'Modelmedian base price should not be negative'
+ZERO_TO_HUNDRED_ERROR = "{} should be between 0 to 100"
+ZERO_TO_ONE_ERROR = "{} should be between 0 to 1"
+MODEL_TPR = ZERO_TO_HUNDRED_ERROR.format("Model TPR Discount")
+MODEL_TPR_LAG1 = ZERO_TO_HUNDRED_ERROR.format("Model TPR Discount lag1")
+MODEL_TPR_LAG2 = ZERO_TO_HUNDRED_ERROR.format("Model TPR Discount lag2")
+MODEL_CATALOGUE_ERROR = ZERO_TO_ONE_ERROR.format("Model catalogue")
+MODEL_DISPLAY_ERROR = 'Model Diaplay should be 0 or 1'

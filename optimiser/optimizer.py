@@ -16,7 +16,7 @@ from itertools import combinations
 from utils import constants as CONST
 
 from optimiser import process as pr
-
+from utils import units_calculation as cal
 from optimiser import process as process_calc
 import logging.config
 
@@ -35,6 +35,9 @@ class my_dictionary(dict):
         self[key] = value 
 
 def _update_params(config , request_value):
+    '''
+    update the optimizer parameter from request
+    '''
     MINIMIZE_PARAMS = ['Trade_Expense']
     # {'account_name': 'Tander', 'corporate_segment': 'LOOSE', 'product_group': 'A.Korkunov 192g',
     #  'strategic_cell': 'cell', 'objective_function': 'MAC', 'max_promotion': 23, 'min_promotion': 16, 
@@ -50,22 +53,49 @@ def _update_params(config , request_value):
     #       "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
     #                           ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
     #                 'promo_gap':True},
-    #       "constrain_params": {'MAC':1,'RP':1,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
+    #       "constrain_params": {'MAC':1,'RP':1,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,
+    # 'MAC_Perc':1,'RP_Perc':1,
     #                             'min_consecutive_promo':6,'max_consecutive_promo':6,
     #                 'promo_gap':2,'tot_promo_min':10,'tot_promo_max':26,'compul_no_promo_weeks':[],'compul_promo_weeks' :[]}}
   
+ 
     config['Reatiler'] = request_value['account_name']
     config['PPG'] = request_value['product_group']
+    config['MARS_TPRS'] =  [int(i) if i else 0 for i in request_value['mars_tpr'].split(",")] if request_value['mars_tpr'] else []
+    config['Co_investment'] = request_value['co_investment']
     config['Objective_metric'] = request_value['objective_function']
     config['Objective'] = 'Minimize' if(request_value['objective_function'] in MINIMIZE_PARAMS) else 'Maximize'
     config['Segment'] = request_value['corporate_segment']
    
-    config['constrain_params']['tot_promo_min'] = request_value['min_promotion']
-    config['constrain_params']['tot_promo_max'] = request_value['max_promotion']
-    # config['Segment'] = request_value['corporate_segment']
-    # config['Segment'] = request_value['corporate_segment']
+    config['constrain_params']['MAC'] = request_value['param_mac']
+    config['constrain_params']['RP'] = request_value['param_rp']
+    config['constrain_params']['Trade_Expense'] = request_value['param_trade_expense']
+    config['constrain_params']['Units'] = request_value['param_units']
+    config['constrain_params']['NSV'] = request_value['param_nsv']
+    config['constrain_params']['GSV'] = request_value['param_gsv']
+    config['constrain_params']['Sales'] = request_value['param_sales']
+    config['constrain_params']['MAC_Perc'] = request_value['param_mac_perc']
+    config['constrain_params']['RP_Perc'] = request_value['param_rp_perc']
+    config['constrain_params']['min_consecutive_promo'] = request_value['param_min_consecutive_promo']
+    config['constrain_params']['max_consecutive_promo'] = request_value['param_max_consecutive_promo']
+    config['constrain_params']['promo_gap'] = request_value['param_promo_gap']
+    config['constrain_params']['tot_promo_min'] = request_value['param_total_promo_min']
+    config['constrain_params']['tot_promo_max'] = request_value['param_total_promo_max']
+    config['constrain_params']['compul_no_promo_weeks'] = [int(i) if i else 0 for i in request_value['param_compulsory_no_promo_weeks'].split(",")] if request_value['param_compulsory_no_promo_weeks'] else []
+    config['constrain_params']['compul_promo_weeks'] = [int(i) if i else 0 for i in request_value['param_compulsory_promo_weeks'].split(",")] if request_value['param_compulsory_promo_weeks'] else []
     
-    
+    config['config_constrain']['MAC'] = config['config_constrain']['MAC'] + (request_value['config_mac']/100)
+    config['config_constrain']['RP'] =  config['config_constrain']['RP'] + (request_value['config_rp']/100)
+    config['config_constrain']['Trade_Expense'] = config['config_constrain']['Trade_Expense'] +  (request_value['config_trade_expense']/100)
+    config['config_constrain']['Units'] = config['config_constrain']['Units'] + (request_value['config_units']/100)
+    config['config_constrain']['NSV'] = config['config_constrain']['NSV'] + (request_value['config_nsv']/100)
+    config['config_constrain']['GSV'] = config['config_constrain']['GSV'] + (request_value['config_gsv']/100)
+    config['config_constrain']['Sales'] = config['config_constrain']['Sales'] + (request_value['config_sales']/100)
+    config['config_constrain']['MAC_Perc'] = config['config_constrain']['MAC_Perc'] + (request_value['config_mac_perc']/100)
+    config['config_constrain']['RP_Perc'] = config['config_constrain']['RP_Perc'] + (request_value['config_rp_perc']/100)
+    config['config_constrain']['min_consecutive_promo'] = request_value['config_min_consecutive_promo']
+    config['config_constrain']['max_consecutive_promo'] = request_value['config_max_consecutive_promo']
+    config['config_constrain']['promo_gap'] = request_value['config_promo_gap']
 
       # pass
 
@@ -104,35 +134,35 @@ def promo_wave_cal(tpr_data):
       i=i+1
   return tpr_data['Promo_wave']    
 
-def _predict(pred_df, model_coef, var_col="model_coefficient_name", coef_col="model_coefficient_value", intercept_name="(Intercept)"):
-    """Predict Sales.
+# def _predict(pred_df, model_coef, var_col="model_coefficient_name", coef_col="model_coefficient_value", intercept_name="(Intercept)"):
+#     """Predict Sales.
 
-    Parameters
-    ----------
-    pred_df : pd.DataFrame
-        Dataframe consisting of IDVs
-    model_coef : pd.DataFrame
-        Dataframe consisting of model coefficient and its value
-    var_col : str
-        Column containing model variable
-    coef_col : str
-        Column containing model variables and their coefficient estimate
-    intercept_name : str
-        Name of intercept variable
+#     Parameters
+#     ----------
+#     pred_df : pd.DataFrame
+#         Dataframe consisting of IDVs
+#     model_coef : pd.DataFrame
+#         Dataframe consisting of model coefficient and its value
+#     var_col : str
+#         Column containing model variable
+#     coef_col : str
+#         Column containing model variables and their coefficient estimate
+#     intercept_name : str
+#         Name of intercept variable
 
-    Returns
-    -------
-    ndarray
-    """
-    logging.info('Calculate Predict')
-    idv_cols = [col for col in model_coef[var_col] if col != intercept_name]
-    idv_coef = model_coef.loc[model_coef[var_col].isin(idv_cols), coef_col]
-    idv_df = pred_df.loc[:, idv_cols]
+#     Returns
+#     -------
+#     ndarray
+#     """
+#     logging.info('Calculate Predict')
+#     idv_cols = [col for col in model_coef[var_col] if col != intercept_name]
+#     idv_coef = model_coef.loc[model_coef[var_col].isin(idv_cols), coef_col]
+#     idv_df = pred_df.loc[:, idv_cols]
 
-    intercept = model_coef.loc[~model_coef[var_col].isin(idv_cols), coef_col].to_list()[0]
-    prediction = idv_df.values.dot(idv_coef.values) + intercept
+#     intercept = model_coef.loc[~model_coef[var_col].isin(idv_cols), coef_col].to_list()[0]
+#     prediction = idv_df.values.dot(idv_coef.values) + intercept
     
-    return prediction
+#     return prediction
 
 
 def set_baseline_value(model_df, model_coef, var_col="model_coefficient_name", coef_col="model_coefficient_value", intercept_name="(Intercept)", baseline_value=None):
@@ -215,7 +245,8 @@ def set_baseline_value(model_df, model_coef, var_col="model_coefficient_name", c
             baseline_df[i] = tmp_df["Final_baseprice"].reset_index(drop=True)
         else:
             # Do nothing
-            print()
+            # print()
+            pass
             
     # Parameters not specified in  Baseline condition
     other_params = [i for i in baseline_df.columns if (i not in baseline_value["Parameters"].to_list()) and (i !=intercept_name)]
@@ -253,19 +284,19 @@ def get_var_contribution_wt_baseline_defined(df, model_coef, wk_sold_price, var_
     # Predict Sales
     ppg_cols = ["PPG_Cat", "PPG_MFG", "PPG_Item_No", "PPG_Description"]
     model_df = df.drop(columns=ppg_cols).copy()
-    model_df["Predicted_sales"] = np.exp(_predict(model_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name))
+    model_df["Predicted_sales"] = np.exp(cal._predict(model_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name))
     
     # Predict Baseline Sales
     tmp_model_df = model_df.copy()    
     base_var, baseline_df = set_baseline_value(tmp_model_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name, baseline_value=baseline_value)
-    baseline_df["Predicted_baseline_sales"] = np.exp(_predict(baseline_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name))
+    baseline_df["Predicted_baseline_sales"] = np.exp(cal._predict(baseline_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name))
     model_df["Predicted_baseline_sales"] = baseline_df["Predicted_baseline_sales"]
     model_df["incremental_predicted"] = model_df["Predicted_sales"] - model_df["Predicted_baseline_sales"]
     
     # Calculate raw contribution
     model_df[intercept_name] = 1
     baseline_df[intercept_name] = 1
-    pred_xb = _predict(model_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name)
+    pred_xb = cal._predict(model_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name)
     rc_sum = 0
     abs_sum = 0
         
@@ -294,8 +325,8 @@ def get_var_contribution_wt_baseline_defined(df, model_coef, wk_sold_price, var_
     price_dist_df[numeric_cols] = price_dist_df[numeric_cols].mul(wk_sold_price.values, axis=0)
     
     # Get variable contribution variants
-    dt_unit_dist_df, qtr_unit_dist_df, yr_unit_dist_df = get_var_contribution_variants(unit_dist_df, "model_coefficient_name", value_col_name="units")
-    dt_price_dist_df, qtr_price_dist_df, yr_price_dist_df = get_var_contribution_variants(price_dist_df, "model_coefficient_name", value_col_name="price")
+    dt_unit_dist_df, qtr_unit_dist_df, yr_unit_dist_df = cal.get_var_contribution_variants(unit_dist_df, "model_coefficient_name", value_col_name="units")
+    dt_price_dist_df, qtr_price_dist_df, yr_price_dist_df = cal.get_var_contribution_variants(price_dist_df, "model_coefficient_name", value_col_name="price")
     overall_dt_dist_df = dt_unit_dist_df.merge(dt_price_dist_df, how="left", on=["Date", "model_coefficient_name"])
     overall_qtr_dist_df = qtr_unit_dist_df.merge(qtr_price_dist_df, how="left", on=["Quarter", "model_coefficient_name"])
     overall_yr_dist_df = yr_unit_dist_df.merge(yr_price_dist_df, how="left", on=["Year", "model_coefficient_name"])
@@ -308,173 +339,173 @@ def get_var_contribution_wt_baseline_defined(df, model_coef, wk_sold_price, var_
     return overall_dt_dist_df, overall_qtr_dist_df, overall_yr_dist_df
 
 
-def get_var_contribution_wo_baseline_defined(df, model_coef, wk_sold_price,  all_df=None, var_col="model_coefficient_name", coef_col="model_coefficient_value", intercept_name="(Intercept)", base_var=None):
-    """Get variable contribution without baseline defined.
+# def get_var_contribution_wo_baseline_defined(df, model_coef, wk_sold_price,  all_df=None, var_col="model_coefficient_name", coef_col="model_coefficient_value", intercept_name="(Intercept)", base_var=None):
+#     """Get variable contribution without baseline defined.
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Dataframe consisting of IDVs
-    model_coef : pd.DataFrame
-        Dataframe consisting of model variables and their coefficient estimate
-    wk_sold_price : pd.DataFrame
-        Dataframe consisting of weekly sold price
-    all_df : pd.DataFrame
-        Dataframe consisting of IDVs of all PPGs        
-    var_col : str
-        Column containing model variable
-    coef_col : str
-        Column containing model variables' coefficient estimate
-    intercept_name : str
-        Name of intercept variable
-    base_var : list of str
-        Base variables
+#     Parameters
+#     ----------
+#     df : pd.DataFrame
+#         Dataframe consisting of IDVs
+#     model_coef : pd.DataFrame
+#         Dataframe consisting of model variables and their coefficient estimate
+#     wk_sold_price : pd.DataFrame
+#         Dataframe consisting of weekly sold price
+#     all_df : pd.DataFrame
+#         Dataframe consisting of IDVs of all PPGs        
+#     var_col : str
+#         Column containing model variable
+#     coef_col : str
+#         Column containing model variables' coefficient estimate
+#     intercept_name : str
+#         Name of intercept variable
+#     base_var : list of str
+#         Base variables
 
-    Returns
-    -------
-    tuple of pd.DataFrame
-    """
-    logging.info('Get variable contribution without baseline defined')
+#     Returns
+#     -------
+#     tuple of pd.DataFrame
+#     """
+#     logging.info('Get variable contribution without baseline defined')
 
-    # Predict Sales
-    ppg_cols = ["PPG_Cat", "PPG_MFG", "PPG_Item_No", "PPG_Description"]
-    ppg = df["PPG_Item_No"].to_list()[0]
-    model_df = df.drop(columns=ppg_cols).copy()
-    model_df["Predicted_sales"] = np.exp(_predict(model_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name))
+#     # Predict Sales
+#     ppg_cols = ["PPG_Cat", "PPG_MFG", "PPG_Item_No", "PPG_Description"]
+#     ppg = df["PPG_Item_No"].to_list()[0]
+#     model_df = df.drop(columns=ppg_cols).copy()
+#     model_df["Predicted_sales"] = np.exp(_predict(model_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name))
 
-    # Get base and impact variables
-    if base_var is None:
-        tpr_features = [i for i in model_coef[var_col] if "PromotedDiscount" in i]
-        rp_features = [i for i in model_coef[var_col] if "RegularPrice" in i]
-        base_var = ["wk_sold_median_base_price_byppg_log"] + rp_features + ["ACV_Selling", "category_trend", "flag_qtr2", "flag_qtr3", "flag_qtr4", "monthno"]
-        base_var = [i for i in base_var if i in model_coef[var_col].to_list()]
+#     # Get base and impact variables
+#     if base_var is None:
+#         tpr_features = [i for i in model_coef[var_col] if "PromotedDiscount" in i]
+#         rp_features = [i for i in model_coef[var_col] if "RegularPrice" in i]
+#         base_var = ["wk_sold_median_base_price_byppg_log"] + rp_features + ["ACV_Selling", "category_trend", "flag_qtr2", "flag_qtr3", "flag_qtr4", "monthno"]
+#         base_var = [i for i in base_var if i in model_coef[var_col].to_list()]
         
-    base_var = [intercept_name] + base_var
-    impact_var = [i for i in model_coef[var_col] if i not in base_var]
+#     base_var = [intercept_name] + base_var
+#     impact_var = [i for i in model_coef[var_col] if i not in base_var]
 
-    # Get base and impact variables
-    model_df[intercept_name] = 1
-    tmp_model_coef = model_coef[model_coef[var_col].isin(base_var)]
-    tmp_model_df = model_df.copy()
-    if all_df is not None:
-        if "wk_sold_median_base_price_byppg_log" in tmp_model_df.columns:
-            tmp_model_df = tmp_model_df.merge(all_df.loc[all_df["PPG_Item_No"] == ppg, ["Date", "Final_baseprice"]].drop_duplicates(), how="left", on="Date")
-            tmp_model_df["Final_baseprice"] = tmp_model_df["Final_baseprice"].astype(np.float64)
-            tmp_model_df["wk_sold_median_base_price_byppg_log"] = np.log(tmp_model_df["Final_baseprice"])
-            tmp_model_df = tmp_model_df.drop(columns=["Final_baseprice"])
-        if tmp_model_df.columns.str.contains(".*RegularPrice.*RegularPrice", regex=True).any():
-            rp_interaction_cols = [col for col in tmp_model_df.columns if re.search(".*RegularPrice.*RegularPrice", col) is not None]
-            for col in rp_interaction_cols:
-                col_adj = re.sub(ppg, "", col)
-                col_adj = re.sub("_RegularPrice_", "", col_adj)
-                col_adj = re.sub("_RegularPrice", "", col_adj)
-                tmp_model_df = tmp_model_df.merge(all_df.loc[all_df["PPG_Item_No"] == ppg, ["Date", "Final_baseprice"]], how="left", on="Date")
-                temp = all_df.loc[all_df["PPG_Item_No"] == col_adj, ["Date", "wk_sold_median_base_price_byppg_log"]]
-                temp = temp.rename(columns={"wk_sold_median_base_price_byppg_log": "wk_price_log"})
-                tmp_model_df = tmp_model_df.merge(temp[["Date", "wk_price_log"]], how="left", on="Date")
-                tmp_model_df[col] = np.log(tmp_model_df["Final_baseprice"]) * tmp_model_df["wk_price_log"]
-                tmp_model_df = tmp_model_df.drop(columns=["Final_baseprice", "wk_price_log"])
-    base_val = tmp_model_df[tmp_model_coef[var_col].to_list()].values.dot(tmp_model_coef[coef_col].values)
+#     # Get base and impact variables
+#     model_df[intercept_name] = 1
+#     tmp_model_coef = model_coef[model_coef[var_col].isin(base_var)]
+#     tmp_model_df = model_df.copy()
+#     if all_df is not None:
+#         if "wk_sold_median_base_price_byppg_log" in tmp_model_df.columns:
+#             tmp_model_df = tmp_model_df.merge(all_df.loc[all_df["PPG_Item_No"] == ppg, ["Date", "Final_baseprice"]].drop_duplicates(), how="left", on="Date")
+#             tmp_model_df["Final_baseprice"] = tmp_model_df["Final_baseprice"].astype(np.float64)
+#             tmp_model_df["wk_sold_median_base_price_byppg_log"] = np.log(tmp_model_df["Final_baseprice"])
+#             tmp_model_df = tmp_model_df.drop(columns=["Final_baseprice"])
+#         if tmp_model_df.columns.str.contains(".*RegularPrice.*RegularPrice", regex=True).any():
+#             rp_interaction_cols = [col for col in tmp_model_df.columns if re.search(".*RegularPrice.*RegularPrice", col) is not None]
+#             for col in rp_interaction_cols:
+#                 col_adj = re.sub(ppg, "", col)
+#                 col_adj = re.sub("_RegularPrice_", "", col_adj)
+#                 col_adj = re.sub("_RegularPrice", "", col_adj)
+#                 tmp_model_df = tmp_model_df.merge(all_df.loc[all_df["PPG_Item_No"] == ppg, ["Date", "Final_baseprice"]], how="left", on="Date")
+#                 temp = all_df.loc[all_df["PPG_Item_No"] == col_adj, ["Date", "wk_sold_median_base_price_byppg_log"]]
+#                 temp = temp.rename(columns={"wk_sold_median_base_price_byppg_log": "wk_price_log"})
+#                 tmp_model_df = tmp_model_df.merge(temp[["Date", "wk_price_log"]], how="left", on="Date")
+#                 tmp_model_df[col] = np.log(tmp_model_df["Final_baseprice"]) * tmp_model_df["wk_price_log"]
+#                 tmp_model_df = tmp_model_df.drop(columns=["Final_baseprice", "wk_price_log"])
+#     base_val = tmp_model_df[tmp_model_coef[var_col].to_list()].values.dot(tmp_model_coef[coef_col].values)
     
-    tmp_model_coef = model_coef[model_coef[var_col].isin(impact_var)]
-    impact_val = model_df[tmp_model_coef[var_col].to_list()].values.dot(tmp_model_coef[coef_col].values)
+#     tmp_model_coef = model_coef[model_coef[var_col].isin(impact_var)]
+#     impact_val = model_df[tmp_model_coef[var_col].to_list()].values.dot(tmp_model_coef[coef_col].values)
     
-    model_df["baseline_contribution"] = np.exp(base_val)
-    model_df["incremental_contribution"] = model_df["Predicted_sales"] - model_df["baseline_contribution"]
+#     model_df["baseline_contribution"] = np.exp(base_val)
+#     model_df["incremental_contribution"] = model_df["Predicted_sales"] - model_df["baseline_contribution"]
     
-    # Calculate raw contribution for impact variables
-    row_sum =0
-    abs_sum = 0
-    for i in impact_var:
-        tmp_impact_val = model_df[i].values * model_coef.loc[model_coef[var_col]==i, coef_col].to_list()[0]
-        model_df[i + "_contribution_impact"] = np.exp(base_val + impact_val) - np.exp(base_val + impact_val - tmp_impact_val)
-        row_sum = row_sum + model_df[i + "_contribution_impact"]
-        abs_sum = abs_sum + abs(model_df[i + "_contribution_impact"])
+#     # Calculate raw contribution for impact variables
+#     row_sum =0
+#     abs_sum = 0
+#     for i in impact_var:
+#         tmp_impact_val = model_df[i].values * model_coef.loc[model_coef[var_col]==i, coef_col].to_list()[0]
+#         model_df[i + "_contribution_impact"] = np.exp(base_val + impact_val) - np.exp(base_val + impact_val - tmp_impact_val)
+#         row_sum = row_sum + model_df[i + "_contribution_impact"]
+#         abs_sum = abs_sum + abs(model_df[i + "_contribution_impact"])
 
-    y_b_s = model_df["incremental_contribution"] - row_sum
-    impact_contribution = model_df[["Date", "Predicted_sales"]].copy()
-    for i in  impact_var:
-        i_adj = i + "_contribution_impact"
-        impact_contribution[i_adj] = model_df[i_adj] + (abs(model_df[i_adj])/abs_sum) * y_b_s
+#     y_b_s = model_df["incremental_contribution"] - row_sum
+#     impact_contribution = model_df[["Date", "Predicted_sales"]].copy()
+#     for i in  impact_var:
+#         i_adj = i + "_contribution_impact"
+#         impact_contribution[i_adj] = model_df[i_adj] + (abs(model_df[i_adj])/abs_sum) * y_b_s
 
-    # Calculate raw contribution for base variables
-    base_rc = model_coef.loc[model_coef[var_col]==intercept_name, coef_col].to_list()[0]
-    impact_contribution[intercept_name + "_contribution_base"] = np.exp(base_rc)
-    for i in base_var[1:]:
-        t = tmp_model_df[i] * model_coef.loc[model_coef[var_col]==i, coef_col].to_list()[0] + base_rc
-        impact_contribution[i + "_contribution_base"] = np.exp(t) - np.exp(base_rc)
-        base_rc = t
-    impact_contribution = impact_contribution.fillna(0)
-    unit_dist_df = impact_contribution.copy()
+#     # Calculate raw contribution for base variables
+#     base_rc = model_coef.loc[model_coef[var_col]==intercept_name, coef_col].to_list()[0]
+#     impact_contribution[intercept_name + "_contribution_base"] = np.exp(base_rc)
+#     for i in base_var[1:]:
+#         t = tmp_model_df[i] * model_coef.loc[model_coef[var_col]==i, coef_col].to_list()[0] + base_rc
+#         impact_contribution[i + "_contribution_base"] = np.exp(t) - np.exp(base_rc)
+#         base_rc = t
+#     impact_contribution = impact_contribution.fillna(0)
+#     unit_dist_df = impact_contribution.copy()
     
-    # Get Dollar Sales
-    price_dist_df = unit_dist_df.copy()
-    numeric_cols = price_dist_df.select_dtypes(include="number").columns.to_list()
-    price_dist_df[numeric_cols] = price_dist_df[numeric_cols].mul(wk_sold_price.values, axis=0)
+#     # Get Dollar Sales
+#     price_dist_df = unit_dist_df.copy()
+#     numeric_cols = price_dist_df.select_dtypes(include="number").columns.to_list()
+#     price_dist_df[numeric_cols] = price_dist_df[numeric_cols].mul(wk_sold_price.values, axis=0)
     
-    # Get variable contribution variants
-    dt_unit_dist_df, qtr_unit_dist_df, yr_unit_dist_df = get_var_contribution_variants(unit_dist_df, "model_coefficient_name", value_col_name="units")
-    dt_price_dist_df, qtr_price_dist_df, yr_price_dist_df = get_var_contribution_variants(price_dist_df, "model_coefficient_name", value_col_name="price")
-    overall_dt_dist_df = dt_unit_dist_df.merge(dt_price_dist_df, how="left", on=["Date", "model_coefficient_name"])
-    overall_qtr_dist_df = qtr_unit_dist_df.merge(qtr_price_dist_df, how="left", on=["Quarter", "model_coefficient_name"])
-    overall_yr_dist_df = yr_unit_dist_df.merge(yr_price_dist_df, how="left", on=["Year", "model_coefficient_name"])
+#     # Get variable contribution variants
+#     dt_unit_dist_df, qtr_unit_dist_df, yr_unit_dist_df = cal.get_var_contribution_variants(unit_dist_df, "model_coefficient_name", value_col_name="units")
+#     dt_price_dist_df, qtr_price_dist_df, yr_price_dist_df = cal.get_var_contribution_variants(price_dist_df, "model_coefficient_name", value_col_name="price")
+#     overall_dt_dist_df = dt_unit_dist_df.merge(dt_price_dist_df, how="left", on=["Date", "model_coefficient_name"])
+#     overall_qtr_dist_df = qtr_unit_dist_df.merge(qtr_price_dist_df, how="left", on=["Quarter", "model_coefficient_name"])
+#     overall_yr_dist_df = yr_unit_dist_df.merge(yr_price_dist_df, how="left", on=["Year", "model_coefficient_name"])
     
-    ppg_df = df[ppg_cols].drop_duplicates().values.tolist()
-    overall_dt_dist_df[ppg_cols] = pd.DataFrame(ppg_df, index=overall_dt_dist_df.index)
-    overall_qtr_dist_df[ppg_cols] = pd.DataFrame(ppg_df, index=overall_qtr_dist_df.index)
-    overall_yr_dist_df[ppg_cols] = pd.DataFrame(ppg_df, index=overall_yr_dist_df.index)
+#     ppg_df = df[ppg_cols].drop_duplicates().values.tolist()
+#     overall_dt_dist_df[ppg_cols] = pd.DataFrame(ppg_df, index=overall_dt_dist_df.index)
+#     overall_qtr_dist_df[ppg_cols] = pd.DataFrame(ppg_df, index=overall_qtr_dist_df.index)
+#     overall_yr_dist_df[ppg_cols] = pd.DataFrame(ppg_df, index=overall_yr_dist_df.index)
 
-    return overall_dt_dist_df, overall_qtr_dist_df, overall_yr_dist_df
+#     return overall_dt_dist_df, overall_qtr_dist_df, overall_yr_dist_df
 
 
-def get_var_contribution_variants(dist_df, var_col_name, value_col_name):
-    """Get variable contribution by different variants.
+# def get_var_contribution_variants(dist_df, var_col_name, value_col_name):
+#     """Get variable contribution by different variants.
 
-    Parameters
-    ----------
-    dist_df : pd.DataFrame
-        Dataframe consisting of IDVs
-    var_col_name : str
-        Column name for melted IDV columns
-    value_col_name : str
-        Column name for IDV values
+#     Parameters
+#     ----------
+#     dist_df : pd.DataFrame
+#         Dataframe consisting of IDVs
+#     var_col_name : str
+#         Column name for melted IDV columns
+#     value_col_name : str
+#         Column name for IDV values
 
-    Returns
-    -------
-    tuple of pd.DataFrame
-    """
-    pct_dist_df = dist_df.copy()
-    numeric_cols = pct_dist_df.select_dtypes(include="number").columns.to_list()
-    pct_dist_df[numeric_cols] = pct_dist_df[numeric_cols].div(pct_dist_df["Predicted_sales"], axis=0)
-    dist_df_1 = pd.merge(dist_df.melt(id_vars=["Date"], var_name=var_col_name, value_name=value_col_name),
-                         pct_dist_df.melt(id_vars=["Date"], var_name=var_col_name, value_name="pct_" + value_col_name),
-                         how="left", on=["Date", var_col_name])
+#     Returns
+#     -------
+#     tuple of pd.DataFrame
+#     """
+#     pct_dist_df = dist_df.copy()
+#     numeric_cols = pct_dist_df.select_dtypes(include="number").columns.to_list()
+#     pct_dist_df[numeric_cols] = pct_dist_df[numeric_cols].div(pct_dist_df["Predicted_sales"], axis=0)
+#     dist_df_1 = pd.merge(dist_df.melt(id_vars=["Date"], var_name=var_col_name, value_name=value_col_name),
+#                          pct_dist_df.melt(id_vars=["Date"], var_name=var_col_name, value_name="pct_" + value_col_name),
+#                          how="left", on=["Date", var_col_name])
     
-    # Quarterly Aggegration
-    qtr_dist_df = dist_df.copy()
-    qtr_dist_df["Quarter"] = qtr_dist_df["Date"].dt.year.astype(str) + "-" + "Q" + qtr_dist_df["Date"].dt.quarter.astype(str)
-    qtr_dist_df = qtr_dist_df.drop(columns=["Date"])
-    qtr_dist_df = qtr_dist_df.groupby(by=["Quarter"], as_index=False).agg(np.sum)
+#     # Quarterly Aggegration
+#     qtr_dist_df = dist_df.copy()
+#     qtr_dist_df["Quarter"] = qtr_dist_df["Date"].dt.year.astype(str) + "-" + "Q" + qtr_dist_df["Date"].dt.quarter.astype(str)
+#     qtr_dist_df = qtr_dist_df.drop(columns=["Date"])
+#     qtr_dist_df = qtr_dist_df.groupby(by=["Quarter"], as_index=False).agg(np.sum)
 
-    pct_qtr_dist_df = qtr_dist_df.copy()
-    pct_qtr_dist_df[numeric_cols] = pct_qtr_dist_df[numeric_cols].div(pct_qtr_dist_df["Predicted_sales"], axis=0)
-    dist_df_2 = pd.merge(qtr_dist_df.melt(id_vars=["Quarter"], var_name=var_col_name, value_name=value_col_name),
-                         pct_qtr_dist_df.melt(id_vars=["Quarter"], var_name=var_col_name, value_name="pct_" + value_col_name),
-                         how="left", on=["Quarter", var_col_name])
+#     pct_qtr_dist_df = qtr_dist_df.copy()
+#     pct_qtr_dist_df[numeric_cols] = pct_qtr_dist_df[numeric_cols].div(pct_qtr_dist_df["Predicted_sales"], axis=0)
+#     dist_df_2 = pd.merge(qtr_dist_df.melt(id_vars=["Quarter"], var_name=var_col_name, value_name=value_col_name),
+#                          pct_qtr_dist_df.melt(id_vars=["Quarter"], var_name=var_col_name, value_name="pct_" + value_col_name),
+#                          how="left", on=["Quarter", var_col_name])
     
-    # Yearly Aggegration 
-    yr_dist_df = dist_df.copy()
-    yr_dist_df["Year"] = yr_dist_df["Date"].dt.year.astype(str)
-    yr_dist_df = yr_dist_df.drop(columns=["Date"])
-    yr_dist_df = yr_dist_df.groupby(by=["Year"], as_index=False).agg(np.sum)
+#     # Yearly Aggegration 
+#     yr_dist_df = dist_df.copy()
+#     yr_dist_df["Year"] = yr_dist_df["Date"].dt.year.astype(str)
+#     yr_dist_df = yr_dist_df.drop(columns=["Date"])
+#     yr_dist_df = yr_dist_df.groupby(by=["Year"], as_index=False).agg(np.sum)
     
-    pct_yr_dist_df = yr_dist_df.copy()
-    pct_yr_dist_df[numeric_cols] = pct_yr_dist_df[numeric_cols].div(pct_yr_dist_df["Predicted_sales"], axis=0)
-    dist_df_3 = pd.merge(yr_dist_df.melt(id_vars=["Year"], var_name=var_col_name, value_name=value_col_name),
-                         pct_yr_dist_df.melt(id_vars=["Year"], var_name=var_col_name, value_name="pct_" + value_col_name),
-                         how="left", on=["Year", var_col_name])
+#     pct_yr_dist_df = yr_dist_df.copy()
+#     pct_yr_dist_df[numeric_cols] = pct_yr_dist_df[numeric_cols].div(pct_yr_dist_df["Predicted_sales"], axis=0)
+#     dist_df_3 = pd.merge(yr_dist_df.melt(id_vars=["Year"], var_name=var_col_name, value_name=value_col_name),
+#                          pct_yr_dist_df.melt(id_vars=["Year"], var_name=var_col_name, value_name="pct_" + value_col_name),
+#                          how="left", on=["Year", var_col_name])
     
-    return dist_df_1, dist_df_2, dist_df_3
+#     return dist_df_1, dist_df_2, dist_df_3
 
 #Base variable change as required
 def base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef):
@@ -489,7 +520,7 @@ def base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef):
   price_val = model_df[[price]]
   model_df[["PPG_Cat", "PPG_MFG", "PPG_Item_No", "PPG_Description"]] = pd.DataFrame([["TEMP"]*4], index=model_df.index)
   base_var = baseline_var["Variable"].to_list()
-  overall_dt_dist_df, overall_qtr_dist_df, overall_yr_dist_df = get_var_contribution_wo_baseline_defined(model_df, model_coef, price_val, all_df=None, var_col="Variable", coef_col="Value", intercept_name="Intercept", base_var=base_var)
+  overall_dt_dist_df, overall_qtr_dist_df, overall_yr_dist_df = cal.get_var_contribution_wo_baseline_defined(model_df, model_coef, price_val, all_df=None, var_col="Variable", coef_col="Value", intercept_name="Intercept", base_var=base_var)
   overall_dt_dist_df['Iteration'] = m
   overall_qtr_dist_df['Iteration'] = m
   overall_yr_dist_df['Iteration'] = m
@@ -509,33 +540,33 @@ def base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef):
   dt_dist = pd.pivot_table(dt_dist[['Date','model_coefficient_name','units','Iteration']],index = ["Date","Iteration"],columns = "model_coefficient_name")
   dt_dist = pd.DataFrame(dt_dist).reset_index()
   dt_dist.columns = dt_dist.columns.droplevel(0) 
-  print(dt_dist.columns)
+  # print(dt_dist.columns)
   a = ["Date","Iteration"]+list(dt_dist.columns[2:])
   dt_dist.columns = a
 
   year_dist = pd.pivot_table(year_dist[['Year','model_coefficient_name','units','Iteration']],index = ["model_coefficient_name","Iteration"],columns = "Year")
   year_dist = pd.DataFrame(year_dist).reset_index()
   year_dist.columns = year_dist.columns.droplevel(0) 
-  print(year_dist.columns)
+  # print(year_dist.columns)
   a = ["model_coefficient_name","Iteration"]+list(year_dist.columns[2:])
   year_dist.columns = a
 
   year_dist1 = pd.pivot_table(year_dist1[['Year','model_coefficient_name','units%','Iteration']],index = ["model_coefficient_name","Iteration"],columns = "Year")
   year_dist1 = pd.DataFrame(year_dist1).reset_index()
   year_dist1.columns = year_dist1.columns.droplevel(0) 
-  print(year_dist1.columns)
+  # print(year_dist1.columns)
   a = ["model_coefficient_name","Iteration"]+list(year_dist1.columns[2:])
   year_dist1.columns = a
 
   aa = dt_dist.columns
-  print(aa)
+  # print(aa)
 
   ###Competitor Discounts
   Comp = [i for i in aa if "PromotedDiscount" in i]
   dt_dist['Comp'] = dt_dist[Comp].sum(axis = 1)
   ###Give tpr related Variables
   Incremental = ['tpr_discount_byppg_contribution_impact']+[i for i in aa if "Catalogue" in i]
-  print('Incremental :',Incremental)
+  # print('Incremental :',Incremental)
   dt_dist['Incremental'] = dt_dist[Incremental].sum(axis = 1)
   ###Give the remaining Base columns
   
@@ -546,7 +577,7 @@ def base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef):
   #   base_list = baseprice_cols+SI_cols+trend_cols+[i for i in model_cols if "ACV_Selling" in i ]+holiday+[i for i in model_cols if "death_rate" in i]
   base_others = baseline_var_othr["Variable"].to_list()
   base = [ 'Intercept_contribution_base']+[i+'_contribution_base' for i in base_var]+[i+'_contribution_impact' for i in base_others]
-  print("base :",base)
+  # print("base :",base)
   dt_dist['Base'] = dt_dist[base].sum(axis = 1)
 
   model_df = model_df1.copy()
@@ -565,9 +596,9 @@ def base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef):
 def process(constraints = None):
   logging.info('Main Funtion Begin')
   # path = CONST.PATH
-  BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-  path = os.path.join(BASE_DIR + "/data/")
-  logger.error("Test!!")
+  # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+  # path = os.path.join(BASE_DIR + "/data/")
+  # logger.error("Test!!")
   # ROI_data = pd.read_csv(path + CONST.OPT_ROI_FILE_NAME)
   # Model_Coeff = pd.read_csv(path + CONST.OPT_MODEL_COEFF_FILE_NAME)
   # Model_Data = pd.read_csv(path + CONST.OPT_MODEL_DATA_FILE_NAME)
@@ -578,8 +609,11 @@ def process(constraints = None):
 
 
   # Model_Coeff,Model_Data,ROI_data = pr.get_list_value_from_query(CONST.OPT_RETAILER_NAME_ALT,CONST.OPT_PRODUCT_GROUP_NAME)
-  Model_Data,ROI_data, Model_Coeff = pr.get_list_from_db(CONST.OPT_RETAILER_NAME_ALT,CONST.OPT_PRODUCT_GROUP_NAME)
+  Model_Data,ROI_data, Model_Coeff = pr.get_list_from_db(constraints['account_name'],constraints['product_group'])
+  
 
+ 
+  
   # Model_Coeff,Model_Data,ROI_data = process_calc.get_list_value_from_query(CONST.OPT_RETAILER_NAME,CONST.OPT_PRODUCT_GROUP_NAME)
 
 
@@ -614,6 +648,7 @@ def process(constraints = None):
 
 
   Period_data["Discount, NRV %"] = np.where(pd.isna(Period_data["Discount, NRV %"]),0,Period_data["Discount, NRV %"])
+  
   Period_data["List_Price"] = np.where(pd.isna(Period_data["List_Price"]),
                                         Period_data.dropna(subset = ["List_Price"])['List_Price'].unique()
                                         ,Period_data["List_Price"])
@@ -642,7 +677,7 @@ def process(constraints = None):
   baseprice_post_July = math.exp(max(Model_Data[((pd.DatetimeIndex(Model_Data['Unnamed: 0']).year == 2022) & (pd.DatetimeIndex(Model_Data['Unnamed: 0'],dayfirst=True).month >=7 ))]["wk_sold_median_base_price_byppg_log"]))
   # baseprice_post_July = 1.097257*baseprice_pre_July
   # print(baseprice_pre_July)
-  print(baseprice_post_July)
+  # print(baseprice_post_July)
   Period_data["wk_base_price_perunit_byppg"] = baseprice_post_July
   Period_data["Promo"] = np.where(Period_data['Discount, NRV %'] == 0, Period_data['wk_base_price_perunit_byppg'],
                                     Period_data['wk_base_price_perunit_byppg'] * (1-Period_data['Discount, NRV %']))
@@ -652,6 +687,7 @@ def process(constraints = None):
   Period_data['tpr_discount_byppg']=0
   Period_data['median_baseprice']=baseprice_post_July
   var='median_baseprice'
+ 
   Period_data['tpr_discount_byppg']=((Period_data['median_baseprice']-Period_data['wk_sold_avg_price_byppg'])/Period_data['median_baseprice'])*100
 
   # Filter the model data for last 52 weeks
@@ -669,7 +705,7 @@ def process(constraints = None):
   pred_data['Promo_flg_date_1'] = 0
   # pred_data['flag_builders_day']=np.where(pred_data["Date"] == '2022-08-14',1,0)
   a=[i for i in pred_data.columns if re.search("RegularPrice",i)]
-  print(a)
+  # print(a)
   for comp in a:
     # print(max(pred_data[comp]))
     pred_data[comp] = max(pred_data[comp])
@@ -704,11 +740,11 @@ def process(constraints = None):
   TE_dict= dict(zip(Financial_information.tpr_discount_byppg, Financial_information.TE))
 
   prd=0
-  Final_Pred_Data.to_csv(path+"Training_data_LPBase"+str(prd)+".csv",index=False)
+  # Final_Pred_Data.to_csv(path+"Training_data_LPBase"+str(prd)+".csv",index=False)
   #export Promos_mapping_0#Promotion_Cost
   Financial_information['RRP']=Financial_information['median_baseprice']
-  os.makedirs(path+"/Output", exist_ok=True)
-  Financial_information.to_csv(path+"Output/Promos_mapping_"+str(prd)+".csv")
+  # os.makedirs(path+"/Output", exist_ok=True)
+  # Financial_information.to_csv(path+"Output/Promos_mapping_"+str(prd)+".csv")
 
   ### Baseline Vars Calculation
   Final_Pred_Data['Baseline_Prediction']=predict_sales(Model_Coeff,Final_Pred_Data)
@@ -720,7 +756,7 @@ def process(constraints = None):
   Final_Pred_Data["Baseline_RP"] = Final_Pred_Data['Baseline_Sales']-Final_Pred_Data["Baseline_NSV"]
 
   prd=0
-  Final_Pred_Data.to_csv(path+"Training_data_"+str(prd)+".csv",index=False)
+  # Final_Pred_Data.to_csv(path+"Training_data_"+str(prd)+".csv",index=False)
   Final_Pred_Data[['Baseline_Prediction','Baseline_Sales',"Baseline_GSV","Baseline_Trade_Expense","Baseline_NSV","Baseline_MAC","Baseline_RP"]].sum().apply(lambda x: '%.3f' % x)
 
 
@@ -745,19 +781,21 @@ def process(constraints = None):
   config = {"Reatiler":"Magnit","PPG":'A.Korkunov_192g','Segment':"Choco","MARS_TPRS":[],"Co_investment":0,
           "Objective_metric":"MAC","Objective":"Maximize",
           "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
-                              ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
+                              ,'MAC_Perc':True,"RP_Perc":True,
+                              'min_consecutive_promo':True,'max_consecutive_promo':True,
                     'promo_gap':True},
           "constrain_params": {'MAC':1,'RP':1,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
                                 'min_consecutive_promo':6,'max_consecutive_promo':6,
                     'promo_gap':2,'tot_promo_min':10,'tot_promo_max':26,'compul_no_promo_weeks':[],'compul_promo_weeks' :[]}}
-  
+  # 'tot_promo_min':10,'tot_promo_max':26  no of weeks
+  # fracction
   _update_params(config , constraints)
   TE_dict = get_te_dict(baseline_data,config,Financial_information)
   Required_base = get_required_base(baseline_data,Model_Coeff,TE_dict,config)
   Required_base.tail()
   Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
   if((Optimal_calendar.shape[0]!=52) or (Optimal_calendar['Solution'].unique()!='Optimal')):
-    print("Infeasible solution - relaxing financial metrics")
+    # print("Infeasible solution - relaxing financial metrics")
     Sec_fin_metrics = ['Units','NSV','GSV','Sales','Trade_Expense',"RP_Perc"]
     Prim_fin_metrics = ['MAC_Perc','RP','MAC']
     calendar_metrics = ['compul_no_promo_weeks','compul_promo_weeks','promo_gap','max_consecutive_promo','min_consecutive_promo','tot_promo_min',
@@ -783,23 +821,23 @@ def process(constraints = None):
       relaxed_prim_metrics_opt=[]
       relaxed_prim_metrics = []
       for i in range(len(Sec_combination)):
-        print(Sec_combination[i])
+        # print(Sec_combination[i])
         metrics = Sec_combination[i]
         for metric in metrics:
           config['config_constrain'][metric]=False
-        print(config['config_constrain'])
+        # print(config['config_constrain'])
         Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
         if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
           relaxed_sec_metrics_opt = Sec_combination[i]
           for metric in metrics:
             config['config_constrain'][metric]=True
-          print("breaking while loop")
+          # print("breaking while loop")
           iteration = False
           break
         if i==(len(Sec_combination)-1):
-          print(i)
+          # print(i)
           relaxed_sec_metrics = Sec_combination[i]
-          print("Relaxing :",relaxed_sec_metrics)
+          # print("Relaxing :",relaxed_sec_metrics)
         else:
           for metric in metrics:
             config['config_constrain'][metric]=True

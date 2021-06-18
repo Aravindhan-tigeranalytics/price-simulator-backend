@@ -2,6 +2,7 @@ import itertools
 import datetime
 import random
 import re
+from utils import exceptions as ex
 
 # def get_key(val):
 #     for key, value in my_dict.items():
@@ -76,3 +77,33 @@ def printList(li,init_date):
         # print(l.date , "After update")
     # print("-----------")
 
+def _limit(val , min , max):
+    if val < min or val > max:
+        return False
+    return True
+
+def is_zero_to_hundred(val):
+    return _limit(val , 0 ,100)
+
+def is_zero_to_one(val):
+    return _limit(val , 0 ,1)
+
+def is_zero_or_one(val):
+    return val == 1 or val == 0
+
+def is_zero_or_positive(val):
+    return val >= 0
+
+def validate_import_data(validation_dict):
+    total = 0 
+    print(validation_dict , "validation dict")
+    for i in validation_dict.keys():
+        total = total + validation_dict[i]['count']
+        if validation_dict[i]['count'] != 52:
+            raise ex.ImportDataException(
+                "Account name {},Corporate segment {}, and Product group {} must have exactly 52 week data but it has {} data".format(
+                   validation_dict[i]['account_name'],validation_dict[i]['corporate_segment'],validation_dict[i]['product_group'],
+                   validation_dict[i]['count']
+                    )
+            )
+    return total

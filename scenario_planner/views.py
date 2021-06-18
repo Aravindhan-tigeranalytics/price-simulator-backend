@@ -1,4 +1,5 @@
 # from xlwt import Workbook
+from django.core.exceptions import ObjectDoesNotExist
 from utils import util
 from rest_framework import fields, viewsets, mixins
 from rest_framework.authentication import TokenAuthentication
@@ -13,11 +14,9 @@ from django.shortcuts import get_object_or_404
 from core.models import ModelMeta, ModelROI, Scenario , ScenarioPlannerMetrics,ModelData,ModelCoefficient
 from scenario_planner import serializers as sc
 from rest_framework import serializers
-from . import query as pd_query
-from utils import units_calculation as uc
+ 
+from . import mixins as mixin
 
-import utils
-from . import calculations as cal
 from utils import exceptions as exception
 from utils import excel as excel
 from utils import optimizer as optimizer
@@ -82,8 +81,8 @@ mixins.UpdateModelMixin,mixins.DestroyModelMixin , mixins.RetrieveModelMixin):
     #     serializer.save(user=self.request.user)
 
     def put(self,**kwargs):
-        print(self.request , "request")
-        print(kwargs , "kwargs")
+        # print(self.request , "request")
+        # print(kwargs , "kwargs")
         self.partial_update(self.request,**kwargs)
     
     def delete(self, request, *args, **kwargs):
@@ -98,7 +97,7 @@ class ScenarioPlannerMetricsViewSetObject(viewsets.GenericViewSet, mixins.ListMo
     queryset = ScenarioPlannerMetrics.objects.all()
     serializer_class = sc.ScenarioPlannerMetricsSerializerObject
     
-class LoadScenario(viewsets.ReadOnlyModelViewSet):
+class LoadScenario(viewsets.ReadOnlyModelViewSet,mixin.CalculationMixin):
     queryset = Scenario.objects.filter(scenario_type = 'promo')
     serializer_class = sc.PromoScenarioSavedList
     lookup_field = "id"
@@ -106,28 +105,9 @@ class LoadScenario(viewsets.ReadOnlyModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         self.get_object()
         value_dict = ast.literal_eval(self.get_object().savedump)
-        meta = {
-            'account_name' : value_dict['account_name'],
-            'corporate_segment' : value_dict['corporate_segment'],
-            'product_group' : value_dict['product_group']
-        }
+        return Response( self.calculate_finacial_metrics(value_dict),
+                        status=status.HTTP_201_CREATED)
         
-        print(value_dict , "value dict")
-        coeff_list , data_list ,roi_list = pd_query.get_list_value_from_query(ModelCoefficient,ModelData,ModelROI,value_dict['account_name'],
-                                           value_dict['product_group'] )
-
-        cloned_data_list = cal.update_from_request(data_list, value_dict)
-        
-        parsed = json.loads(uc.list_to_frame(coeff_list , data_list).to_json(orient="records"))
-        parsed_new = json.loads(uc.list_to_frame(coeff_list , cloned_data_list,flag=True).to_json(orient="records"))
-        res = cal.calculate_financial_mertrics(coeff_list , data_list ,roi_list,
-                                               parsed , 'base')
-        res_new = cal.calculate_financial_mertrics(coeff_list , cloned_data_list ,roi_list,
-                                               parsed_new , 'simulated',value_dict['promo_elasticity'])
-
-
-        return Response( {**meta,**res , **res_new}, status=status.HTTP_201_CREATED)
-    
     # @action(methods=['get'], detail=True)
     # def detail(self, *args, **kwargs):
     #     return Response({
@@ -261,7 +241,7 @@ class ModelOptimize(APIView):
 #         serializer = sc.ModelDataSerializer()
 #         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-class PromoSimulatorView(viewsets.GenericViewSet):
+class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
     queryset = ModelMeta.objects.prefetch_related(
         Prefetch(
             'data',
@@ -293,49 +273,38 @@ class PromoSimulatorView(viewsets.GenericViewSet):
         return super().get_queryset()
     
     def post(self, request, format=None):
-        query = self.queryset
         get_serializer = sc.ModelMetaGetSerializer(request.data)
         value_dict = loads(dumps((get_serializer.to_internal_value(request.data))))
-        meta = {
-            'account_name' : value_dict['account_name'],
-            'corporate_segment' : value_dict['corporate_segment'],
-            'product_group' : value_dict['product_group']
-        }
+        try:
+            response = self.calculate_finacial_metrics(value_dict)
+            return Response(response ,
+                        status=status.HTTP_201_CREATED)
+        except ObjectDoesNotExist as e:
+            return Response({'error' : str(e)},status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error' : "Something went wrong!"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
         
-        print(value_dict , "value dict")
-        coeff_list , data_list ,roi_list = pd_query.get_list_value_from_query(ModelCoefficient,ModelData,ModelROI,value_dict['account_name'],
-                                           value_dict['product_group'] )
-        # import pdb
-        # pdb.set_trace()
-        cloned_data_list = cal.update_from_request(data_list, value_dict)
-        # import pdb
-        # pdb.set_trace()
         
-        parsed = json.loads(uc.list_to_frame(coeff_list , data_list).to_json(orient="records"))
-        parsed_new = json.loads(uc.list_to_frame(coeff_list , cloned_data_list,flag=True).to_json(orient="records"))
-        res = cal.calculate_financial_mertrics(coeff_list , data_list ,roi_list,
-                                               parsed , 'base')
-        res_new = cal.calculate_financial_mertrics(coeff_list , cloned_data_list ,roi_list,
-                                               parsed_new , 'simulated',value_dict['promo_elasticity'])
-
-
-        return Response( {**meta,**res , **res_new}, status=status.HTTP_201_CREATED)
+        
     
-class PromoSimulatorViewTest(viewsets.GenericViewSet):
-    queryset = ModelMeta.objects.prefetch_related(
-        'data',
-        Prefetch(
-            'coefficient',
-            queryset=ModelCoefficient.objects.all(),
-            to_attr='prefetched_coeff'
-        )
-    ).order_by('id')
+class PromoSimulatorTestViewSet(viewsets.ModelViewSet):
+    queryset = ModelMeta.objects.all()
+    serializers = sc.ModelMetaGetSerializerTest()
+    # .prefetch_related(
+        # 'data',
+        # Prefetch(
+        #     'coefficient',
+        #     queryset=ModelCoefficient.objects.all(),
+        #     to_attr='prefetched_coeff'
+        # )
+    # ).order_by('id')
      
-    def get(self, request, format=None):
-        query=ModelMeta.objects.all()
+    # def get(self, request, format=None):
+    #     # query=ModelMeta.objects.all()
         
-        serializer = sc.ModelMetaGetSerializerTest(query=query)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    #     serializer = sc.ModelMetaGetSerializerTest()
+    #     return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     def get_serializer_class(self):
         return sc.ModelMetaGetSerializerTest
@@ -347,7 +316,7 @@ class PromoSimulatorViewTest(viewsets.GenericViewSet):
         query = self.queryset
         get_serializer = sc.ModelMetaGetSerializerTest(request.data)
         value_dict = loads(dumps((get_serializer.to_internal_value(request.data))))
-        print(value_dict , "value dict")
+        # print(value_dict , "value dict")
         query = query.get(account_name = value_dict['account_name'],
                   corporate_segment=value_dict['corporate_segment'],
                   product_group = value_dict['product_group'])

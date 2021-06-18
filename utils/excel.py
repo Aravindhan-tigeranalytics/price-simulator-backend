@@ -1,4 +1,6 @@
 from numpy import save
+from openpyxl.workbook.workbook import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 import xlsxwriter
 import datetime
 import openpyxl
@@ -12,9 +14,10 @@ from utils.models import ScenarioPlannerMetricModel,PromoMeta
 from utils import util , roi
 
 def _get_sheet_value(sheet , row , column):
-    # val = sheet.cell(row = row, column = column).value
-    # print(val , "value returuning")
-    return sheet.cell(row = row, column = column).value
+    value = sheet.cell(row = row, column = column).value
+    if(isinstance(value,float)):
+        value = str(round(value,12))
+    return value
 def excel(data , output):
     ROW_CONST = 5
     COL_CONST = 1
@@ -179,7 +182,7 @@ def read_promo_coeff(file):
     sheet = book['MODEL_COEFFICIENT']
     columns = sheet.max_column
     rows = sheet.max_row
-    print(columns , rows , "columns and rows")
+    # print(columns , rows , "columns and rows")
     col_ = [i for i in range(1,len(headers)+1)]
     row_ =0
     for row in range(row_+2 , rows+1):
@@ -191,7 +194,7 @@ def read_promo_coeff(file):
             # print(row , c," :rowcvalue")'Account Name' , 'Corporate Segment' , 'PPG'
             cell_obj = sheet.cell(row = row,column = col_[c])
             if(headers[c] in const.PROMO_MODEL_META_MAP):
-                print(headers[c] , const.PROMO_MODEL_META_MAP[headers[c]],cell_obj.value , "generated value")
+                # print(headers[c] , const.PROMO_MODEL_META_MAP[headers[c]],cell_obj.value , "generated value")
                 setattr(db_meta,const.PROMO_MODEL_META_MAP[headers[c]],cell_obj.value)
             elif(headers[c] in const.PROMO_MODEL_COEFF_MAP):
                 setattr(db_coeff,const.PROMO_MODEL_COEFF_MAP[headers[c]],
@@ -200,23 +203,165 @@ def read_promo_coeff(file):
         # print(db_meta.product_group , db_meta.corporate_segment , db_meta.account_name , "from object before save")
         db_meta.slug = util.generate_slug_string(db_meta.account_name,db_meta.corporate_segment,db_meta.product_group)
         if not model.ModelMeta.objects.filter(slug=db_meta.slug).exists():
-        # import pdb
-        # pdb.set_trace()
             db_meta.save()
         
-        # print(db_meta.product_group , db_meta.corporate_segment , db_meta.account_name , "from object")
-        # print(saved_meta , "saved meta value")
         db_coeff.model_meta = model.ModelMeta.objects.filter(
             account_name=db_meta.account_name,corporate_segment=db_meta.corporate_segment,
             product_group=db_meta.product_group).first()
         db_coeff.save()
-            # ob.append(cell_obj.value)
-    # print(ob , "OBBB")
-            # _genObj(obj,cell_obj.value,headers[c])
-    #     ob.append(ScenarioPlannerMetricModel(obj))
-    # print(len(ob) , "OBJECY LIST")
-    # _update_date(ob)
     book.close()
+
+def _get_col_map(rows , columns , sheet , headers):
+    col_ = {}
+    header_found = False
+    for row in range(1,rows+1):
+        
+        for col in range(1,columns+1):
+            
+            cell_obj = sheet.cell(row = row, column = col)
+            if cell_obj.value in headers:
+                header_found = True
+                # col_.append(col)
+                col_[cell_obj.value] = col
+        if header_found:
+           break 
+    return col_
+
+def _get_col(rows , columns , sheet , headers):
+    col_ = []
+    header_found = False
+    for row in range(1,rows+1):
+        
+        for col in range(1,columns+1):
+            
+            cell_obj = sheet.cell(row = row, column = col)
+            if cell_obj.value in headers:
+                header_found = True
+                col_.append(col)
+        if header_found:
+           break 
+    return col_
+    # print(col_ , "coldddd")
+def read_promo_data_bkp(file):
+    headers = const.DATA_HEADER
+    book = openpyxl.load_workbook(file,data_only=True)
+    sheet = book['MODEL_DATA']
+    columns = sheet.max_column
+    rows = sheet.max_row
+    col_map = _get_col_map(rows,columns,sheet,headers)
+    row_ =0
+    col_ = []
+    validation_dict = {}
+    for row in range(row_+2 , rows+1):
+        db_meta = PromoMeta()
+        db_data = model.ModelData()
+        db_data.year = sheet.cell(row = row,column = col_map['Year'])
+        for c in range(0,len(col_)):
+            cell_obj = sheet.cell(row = row,column = col_[c])
+            if(headers[c] in const.PROMO_MODEL_META_MAP):
+                setattr(db_meta,const.PROMO_MODEL_META_MAP[headers[c]],cell_obj.value)
+            elif(headers[c] in const.PROMO_MODEL_DATA_MAP):
+                if(isinstance(cell_obj.value,float)):
+                    setattr(db_data,const.PROMO_MODEL_DATA_MAP[headers[c]],str(round(cell_obj.value,12)) if cell_obj.value else 0.0)
+                else:
+                    val = bool(cell_obj.value) if headers[c] == 'Optimiser_flag' else cell_obj.value
+                    setattr(db_data,const.PROMO_MODEL_DATA_MAP[headers[c]],val)
+        
+        if not db_meta.account_name:
+            break
+        
+        slug = util.generate_slug_string(db_meta.account_name,
+                                           db_meta.corporate_segment,
+                                           db_meta.product_group)
+        
+        db_data.model_meta = model.ModelMeta.objects.get(    
+                account_name=db_meta.account_name,corporate_segment=db_meta.corporate_segment,
+            product_group=db_meta.product_group
+        )
+        db_data.full_clean()
+        db_data.save()
+        if slug not in validation_dict:
+            validation_dict[slug] = {
+                'count' : 1,
+                'account_name' : db_meta.account_name,
+                'corporate_segment' : db_meta.corporate_segment,
+                'product_group' : db_meta.product_group
+            }
+        else:
+            validation_dict[slug]['count'] = validation_dict[slug]['count'] + 1
+    book.close()
+    return validation_dict
+
+def _update_model_data_object(model_data : model.ModelData , sheet:Worksheet,row:int,col_map):
+    # cell_obj = sheet.cell(row = row,column = col_[c])
+    # cellobj.value
+    model_data.year = _get_sheet_value(sheet , row,col_map['Year'])
+    model_data.quater = _get_sheet_value(sheet , row,col_map['Quarter'])
+    model_data.month = _get_sheet_value(sheet , row,col_map['Month'])
+    model_data.period = _get_sheet_value(sheet , row,col_map['Period'])
+    model_data.week = _get_sheet_value(sheet , row,col_map['Week'])
+    model_data.date = _get_sheet_value(sheet , row,col_map['Date'])
+    # model_data.wk_sold_avg_price_byppg = _get_sheet_value(sheet , row,col_map['Year'])
+    model_data.promo_depth = _get_sheet_value(sheet , row,col_map['Promo_Depth'])
+    model_data.co_investment = _get_sheet_value(sheet , row,col_map['Coinvestment'])
+    model_data.average_weight_in_grams = _get_sheet_value(sheet , row,col_map['Average Weight in grams'])
+    model_data.weighted_weight_in_grams = _get_sheet_value(sheet , row,col_map['Weighted Weight in grams'])
+    model_data.optimiser_flag = bool(_get_sheet_value(sheet , row,col_map['Optimiser_flag']))
+    model_data.intercept = _get_sheet_value(sheet , row,col_map['Intercept'])
+    model_data.median_base_price_log = _get_sheet_value(sheet , row,col_map['Median_Base_Price_log'])
+    model_data.tpr_discount = _get_sheet_value(sheet , row,col_map['TPR_Discount'])
+    model_data.tpr_discount_lag1 = _get_sheet_value(sheet , row,col_map['TPR_Discount_lag1'])
+    model_data.tpr_discount_lag2 = _get_sheet_value(sheet , row,col_map['TPR_Discount_lag2'])
+    model_data.catalogue = _get_sheet_value(sheet , row,col_map['Catalogue'])
+    model_data.display = _get_sheet_value(sheet , row,col_map['Display'])
+    model_data.acv = _get_sheet_value(sheet , row,col_map['ACV'])
+    model_data.si = _get_sheet_value(sheet , row,col_map['SI'])
+    model_data.si_month = _get_sheet_value(sheet , row,col_map['SI_month'])
+    model_data.si_quarter = _get_sheet_value(sheet , row,col_map['SI_quarter'])
+    model_data.c_1_crossretailer_discount = _get_sheet_value(sheet , row,col_map['C_1_crossretailer_discount'])
+    model_data.c_1_crossretailer_log_price = _get_sheet_value(sheet , row,col_map['C_1_crossretailer_log_price'])
+    model_data.c_1_intra_discount = _get_sheet_value(sheet , row,col_map['C_1_intra_discount'])
+    model_data.c_2_intra_discount = _get_sheet_value(sheet , row,col_map['C_2_intra_discount'])
+    model_data.c_3_intra_discount = _get_sheet_value(sheet , row,col_map['C_3_intra_discount'])
+    model_data.c_4_intra_discount = _get_sheet_value(sheet , row,col_map['C_4_intra_discount'])
+    model_data.c_5_intra_discount = _get_sheet_value(sheet , row,col_map['C_5_intra_discount'])
+    model_data.c_1_intra_log_price = _get_sheet_value(sheet , row,col_map['C_1_intra_log_price'])
+    model_data.c_2_intra_log_price = _get_sheet_value(sheet , row,col_map['C_2_intra_log_price'])
+    model_data.c_3_intra_log_price = _get_sheet_value(sheet , row,col_map['C_3_intra_log_price'])
+    model_data.c_4_intra_log_price = _get_sheet_value(sheet , row,col_map['C_4_intra_log_price'])
+    model_data.c_5_intra_log_price = _get_sheet_value(sheet , row,col_map['C_5_intra_log_price'])
+    model_data.category_trend = _get_sheet_value(sheet , row,col_map['Category trend'])
+    model_data.trend_month = _get_sheet_value(sheet , row,col_map['Trend_month'])
+    model_data.trend_quarter = _get_sheet_value(sheet , row,col_map['Trend_quarter'])
+    model_data.trend_year = _get_sheet_value(sheet , row,col_map['Trend_year'])
+    model_data.month_no = _get_sheet_value(sheet , row,col_map['month_no'])
+    model_data.flag_promotype_motivation = _get_sheet_value(sheet , row,col_map['Flag_promotype_Motivation'])
+    model_data.flag_promotype_n_pls_1 = _get_sheet_value(sheet , row,col_map['Flag_promotype_N_pls_1'])
+    model_data.flag_promotype_traffic = _get_sheet_value(sheet , row,col_map['Flag_promotype_traffic'])
+    model_data.flag_nonpromo_1 = _get_sheet_value(sheet , row,col_map['Flag_nonpromo_1'])
+    model_data.flag_nonpromo_2 = _get_sheet_value(sheet , row,col_map['Flag_nonpromo_2'])
+    model_data.flag_nonpromo_3 = _get_sheet_value(sheet , row,col_map['Flag_nonpromo_3'])
+    model_data.flag_promo_1 = _get_sheet_value(sheet , row,col_map['Flag_promo_1'])
+    model_data.flag_promo_2 = _get_sheet_value(sheet , row,col_map['Flag_promo_2'])
+    model_data.flag_promo_3 = _get_sheet_value(sheet , row,col_map['Flag_promo_3'])
+    model_data.holiday_flag_1 = _get_sheet_value(sheet , row,col_map['Holiday_Flag1'])
+    model_data.holiday_flag_2 = _get_sheet_value(sheet , row,col_map['Holiday_Flag2'])
+    model_data.holiday_flag_3 = _get_sheet_value(sheet , row,col_map['Holiday_Flag3'])
+    model_data.holiday_flag_4 = _get_sheet_value(sheet , row,col_map['Holiday_Flag4'])
+    model_data.holiday_flag_5 = _get_sheet_value(sheet , row,col_map['Holiday_Flag5'])
+    model_data.holiday_flag_6 = _get_sheet_value(sheet , row,col_map['Holiday_Flag6'])
+    model_data.holiday_flag_7 = _get_sheet_value(sheet , row,col_map['Holiday_Flag7'])
+    model_data.holiday_flag_8 = _get_sheet_value(sheet , row,col_map['Holiday_Flag8'])
+    model_data.holiday_flag_9 = _get_sheet_value(sheet , row,col_map['Holiday_Flag9'])
+    model_data.holiday_flag_10 = _get_sheet_value(sheet , row,col_map['Holiday_Flag10'])
+    model_data.model_meta = model.ModelMeta.objects.get(
+        account_name =  _get_sheet_value(sheet , row,col_map['Account Name']),
+        corporate_segment = _get_sheet_value(sheet , row,col_map['Corporate Segment']),
+        product_group = _get_sheet_value(sheet , row,col_map['PPG'])
+    )
+
+    
+    # pass
 
 
 def read_promo_data(file):
@@ -225,44 +370,41 @@ def read_promo_data(file):
     sheet = book['MODEL_DATA']
     columns = sheet.max_column
     rows = sheet.max_row
-
-    col_ = [i for i in range(1,len(headers)+1)]
-    row_ =0
-    for row in range(row_+2 , rows+1):
-        
-        db_meta = PromoMeta()
-        db_data = model.ModelData()
-        for c in range(0,len(col_)):
-            cell_obj = sheet.cell(row = row,column = col_[c])
-            if(headers[c] in const.PROMO_MODEL_META_MAP):
-                setattr(db_meta,const.PROMO_MODEL_META_MAP[headers[c]],cell_obj.value)
-            elif(headers[c] in const.PROMO_MODEL_DATA_MAP):
-                setattr(db_data,const.PROMO_MODEL_DATA_MAP[headers[c]],cell_obj.value)
-                
-        # model.ModelData.objects.get(
-        #     account_name=db_meta.account_name,corporate_segment=db_meta.corporate_segment,
-        #     product_group=db_meta.product_group
-        # )
-        db_data.model_meta = model.ModelMeta.objects.get(
-            
-            slug=util.generate_slug_string(db_meta.account_name,
-                                           db_meta.corporate_segment,
-                                           db_meta.product_group)
-            
-        )
-        db_data.save()
-    book.close()
+     
+    col_map = _get_col_map(rows,columns,sheet,headers)
     
+    row_ =0
+    validation_dict = {}
+    for row in range(row_+2 , rows+1):    
+        db_data = model.ModelData()
+        _update_model_data_object(db_data , sheet , row , col_map)
+        if not _get_sheet_value(sheet , row,col_map['Account Name']):
+            break
+        slug = util.generate_slug_string( _get_sheet_value(sheet , row,col_map['Account Name']),
+                                            _get_sheet_value(sheet , row,col_map['Corporate Segment']),
+                                           _get_sheet_value(sheet , row,col_map['PPG']))
+        db_data.full_clean()
+        db_data.save()
+        if slug not in validation_dict:
+            validation_dict[slug] = {
+                'count' : 1,
+                'account_name' : _get_sheet_value(sheet , row,col_map['Account Name']),
+                'corporate_segment' :  _get_sheet_value(sheet , row,col_map['Corporate Segment']),
+                'product_group' : _get_sheet_value(sheet , row,col_map['PPG'])
+            }
+        else:
+            validation_dict[slug]['count'] = validation_dict[slug]['count'] + 1
+    print(validation_dict , "Validation dictionary values")
+    book.close()
+    return validation_dict
 def read_roi_data(file):
-    # mode , cre = model.ModelMeta.objects.get_or_create(
-    #         account_name = 'acc',
-    #         corporate_segment ='ss',
-    #         product_group = 'sss')
     # import pdb
     # pdb.set_trace()
     headers = const.ROI_HEADER
+    # import pdb
+    # pdb.set_trace()
     book = openpyxl.load_workbook(file,data_only=True)
-    sheet = book['ROI_Data_All_retailers_with_ext']
+    sheet = book['ROI_Data_All_retailers_flag_N_p']
     columns = sheet.max_column
     rows = sheet.max_row
     col_= []
@@ -318,8 +460,8 @@ def read_roi_data(file):
             activity_name = _get_sheet_value(sheet ,row , 14),
             mechanic = _get_sheet_value(sheet ,row , 15),
             discount_nrv = _get_sheet_value(sheet ,row , 16),
-            on_inv = _get_sheet_value(sheet ,row , 17),
-            off_inv = _get_sheet_value(sheet ,row , 18),
+            on_inv = _get_sheet_value(sheet ,row , 18),
+            off_inv = _get_sheet_value(sheet ,row , 17),
              gmac = _get_sheet_value(sheet ,row , 20),
             list_price = _get_sheet_value(sheet ,row , 23),
         )
@@ -363,36 +505,15 @@ def read_excel(loc):
         ob.append(ScenarioPlannerMetricModel(obj))
     print(len(ob) , "OBJECY LIST")
     _update_date(ob)
-        # metric.save()
-    # for row in range(row_+1 , rows+1):
-    #     metric = ScenarioPlannerMetrics()
-    #     for c in range(0,len(col_)):
-    #         cell_obj = shet.cell(row = row, column = col_[c])
-    #         _updateMetric(metric , cell_obj.value,headers[c])
-    #     metric.save()
-    # for row in range(row_+1 , rows+1):
-    #     metric = ScenarioPlannerMetrics()
-    #     for c in range(0,len(col_)):
-    #         cell_obj = shet.cell(row = row, column = col_[c])
-    #         _updateMetricDup(metric , cell_obj.value,headers[c])
-    #     metric.save()
+      
 def _update_date(obj):
-    # for o in obj:
-    #     metric = ScenarioPlannerMetrics()
-    #     _updateMetricFromObject(metric , o)
-    #     metric.save()
-    # print(min(obj,key=lambda x:x.date).date , "min date")
-    # print(max(obj,key=lambda x:x.date).date , "max date")
-    # print(max(obj,key=lambda x:x.date).date + timedelta(days=7) , "initial date")
 
     li = util.grouping(obj , max(obj,key=lambda x:x.date).date + timedelta(days=7))
     for o in li:
         metric = model.ScenarioPlannerMetrics()
         _updateMetricFromObject(metric , o)
         metric.save()
-    print(min(li,key=lambda x:x.date).date , "min date")
-    print(max(li,key=lambda x:x.date).date , "max date")
-    print(max(li,key=lambda x:x.date).date + timedelta(days=7) , "initial date")
+   
     
 def _updateMetricFromObject(metric:model.ScenarioPlannerMetrics , obj : ScenarioPlannerMetricModel):
     # print(obj.year , "object year")
@@ -588,11 +709,11 @@ def read_coeff_map(file):
     for row in range(1,rows+1):
         print(row , "row count")
         for col in range(1,columns+1):
-            print(col , "column count")
+            # print(col , "column count")
             cell_obj = sheet.cell(row = row, column = col)
             if cell_obj.value in headers:
                 header_found = True
-                print(cell_obj.value , 'object value')
+                # print(cell_obj.value , 'object value')
                 # col_taken = True
                 col_.append(col)
         if header_found:
@@ -649,136 +770,27 @@ def lift_test():
     
     retailer = "Tander"
     ppg = 'A.Korkunov 192g'
-    # new used in db
-    # old used in dataframe
-    coeff_map_values = [
-        'model_meta__id','model_meta__account_name', 
-                    'model_meta__corporate_segment', 'model_meta__product_group','coefficient_new',
-                    'value','coefficient_old'
-        
-    ]
-    roi_values = [
-        'model_meta__id','model_meta__account_name', 
-                    'model_meta__corporate_segment', 'model_meta__product_group', 'model_meta__brand_filter',
-                    'model_meta__brand_format_filter', 'model_meta__strategic_cell_filter',
-                   'neilson_sku_name','activity_name','mechanic','week','date'
-        
-    ]
-    coeff_values = [ 'model_meta__id','model_meta__account_name', 
-                    'model_meta__corporate_segment', 'model_meta__product_group', 'model_meta__brand_filter',
-                    'model_meta__brand_format_filter', 'model_meta__strategic_cell_filter','wmape', 'rsq',
-                    'intercept', 'median_base_price_log', 'tpr_discount', 'tpr_discount_lag1',
-                    'tpr_discount_lag2', 'catalogue', 'display', 'acv', 'si', 
-                    'si_month', 'si_quarter', 'c_1_crossretailer_discount', 'c_1_crossretailer_log_price', 'c_1_intra_discount', 
-                    'c_2_intra_discount', 'c_3_intra_discount', 'c_4_intra_discount', 'c_5_intra_discount',
-                    'c_1_intra_log_price', 'c_2_intra_log_price', 'c_3_intra_log_price', 'c_4_intra_log_price', 'c_5_intra_log_price', 'category_trend', 'trend_month', 'trend_quarter', 'trend_year', 'month_no', 'flag_promotype_motivation', 'flag_promotype_n_pls_1', 'flag_promotype_traffic', 'flag_nonpromo_1', 'flag_nonpromo_2', 'flag_nonpromo_3', 'flag_promo_1', 'flag_promo_2', 'flag_promo_3', 'holiday_flag_1', 'holiday_flag_2', 'holiday_flag_3', 'holiday_flag_4', 'holiday_flag_5', 'holiday_flag_6', 'holiday_flag_7', 'holiday_flag_8', 'holiday_flag_9', 'holiday_flag_10' 
-                    ]
-    data_values = [
-                    'date',
-                    ]
-    coeff_map = model.CoeffMap.objects.select_related('model_meta').filter(
-        model_meta__account_name = 'Tander',model_meta__product_group = 'A.Korkunov 192g'
-        ).values_list(
-           *coeff_map_values
-            ).annotate( 
-                       PPG_Item=Concat(
-                         Value('ITEM_'),
-                         F('model_meta__account_name'),Value('_'), F('model_meta__product_group')))
     
-    
-    roi = model.ModelROI.objects.select_related('model_meta').filter(
-        model_meta__account_name = 'Tander',model_meta__product_group = 'A.Korkunov 192g'
-        ).values_list(
-            'neilson_sku_name','year','model_meta__product_group','model_meta__account_name','date',
-            'activity_name','mechanic','discount_nrv','week','off_inv','on_inv','gmac',
-            'model_meta__product_group','list_price'
-            ).annotate(
-                cogs=F('list_price') - (F('list_price') * F('gmac'))
-                )
-    
-    # coefficient = model.ModelCoefficient.objects.select_related('model_meta').filter(
-    #     model_meta__account_name = retailer,
-    #     model_meta__product_group = ppg
-    # ).values_list(*coeff_values)
-    # data = model.ModelData.objects.select_related('model_meta').filter(
-    #     model_meta__account_name = retailer,
-    #     model_meta__product_group = ppg
-    # ).values_list(*data_values)
-    # import pdb
-    # pdb.set_trace()
-    coeff_list = []
-    data_frame_map = {
-        
-    }
-    for i in coeff_map:
-        coeff_list.append(i[-3:])
-        data_values.append(const.CALCULATION_METRIC[i[-4]])
-        # import pdb
-        # pdb.set_trace()
-        data_frame_map[i[-4]] = i[-2]
-    # import pdb
-    # pdb.set_trace()
-    data = model.ModelData.objects.select_related('model_meta').filter(
+    data = model.ModelData.objects.filter(
         model_meta__account_name = retailer,
         model_meta__product_group = ppg
-    ).values_list(*data_values)
-    val_dt = ['Unnamed: 0']
-   
-    val_dt = val_dt +  [data_frame_map[const.get_key_from_value(const.CALCULATION_METRIC , i)] for i in data_values[1:]]
-    coeff_list = [list(i[-3:]) for i in coeff_map]
-    data_list = [list(i) for i in data]
+    )
+    no_of_weeks = 0
+    no_of_waves = 0
+    max_promo = 0
+    min_promo = 0
+    duration_of_waves  =[]
+    promos = []
+    for d in data:
+        waves = []
+        if d.tpr_discount:
+            # waves/
+            no_of_weeks = no_of_weeks +1
+        if max_promo > d.tpr_discount:
+            max_promo = d.tpr_discount
+        if min_promo < d.tpr_discount:
+            min_promo = d.tpr_discount
+    print(no_of_weeks , "mo of weeks ")
+    print(max_promo , "max promo")
+    print(min_promo , "min promo")
     
-    roi_list = [list(i) for i in roi]
-    
-    
-    
-    print("-------------------------------------coeff-------------------------------------------------------")
-    print()
-    print()
-    print(data_list ,"data_list LIST")
-    print("----------------------------------------data----------------------------------------------------")
-    print()
-    print()
-    # print(const.CALCULATION_METRIC , "CALCULATION_METRIC")
-    print()
-    print()
-    # print(data_frame_map , "data data_frame_map")
-    print()
-    print()
-    
-    # print(data_values , "data values")
-    print()
-    print()
-    print(val_dt , "data val_dt")
-    # print(roi_list , "ROI LIST")
-    print("--------------------------------------------------------------------------------------------")
-    # print(roi_list[0] , "ROI LIST")
-    
-    # pd.DataFrame
-    # roi = model.ModelROI.objects.select_related('model_meta').filter(
-    #     model_meta__account_name = retailer,
-    #     model_meta__product_group = ppg
-    # ).values_list()
-    # import pdb
-    # pdb.set_trace()
-    
-    # query  = queryset.filter(account_name = retailer , product_group = ppg)
-    # coeff = [list(coeff) for coeff in query[0].prefetched_data]
-    # query.values_list('account_name','corporate_segment','product_group','brand_filter')
-    # print(query , "query")
-    # print(coeff , "coeff")
-    # print(list(query) , "list query")
-    # import pdb
-    # pdb.set_trace()
-    # meta = model_to_dict(query)
-    # import pdb
-    # pdb.set_trace()
-    # roi = [{**model_to_dict(d),**meta} for d in query.prefetched_roi]
-    # data = [model_to_dict(d) for d in query.prefetched_data]
-    # coeff = [{**model_to_dict(d),**meta} for d in query.prefetched_coeff]
-    # print(meta , "meta")
-    # print(roi , "droi")
-    # print(data , "data")
-    # print(coeff , "coeff")
-    # print({**const.PROMO_MODEL_COEFF_MAP,**const.PROMO_MODEL_META_MAP} , "PROMO_MODEL_COEFF_MAP")
-    # print( , "promo model meta map")
