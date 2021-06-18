@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib import messages
 # from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 # from django.utils.translation import ugettext_lazy as _
 from core import models
@@ -6,6 +7,7 @@ from django import forms
 from django.urls import path
 from django.shortcuts import render,redirect
 from utils import excel as excel
+from utils import util as util
 import openpyxl
 # Register your models here.
 class CsvImportForm(forms.Form):
@@ -27,18 +29,26 @@ class ModelMetaAdmin(admin.ModelAdmin):
         return my_urls + urls
     def import_csv(self, request):
         if request.method == "POST":
-            csv_file = request.FILES["csv_file"]
-            # roi_file = request.FILES["roi_file"]
-            excel.read_promo_coeff(csv_file)
-            excel.read_promo_data(csv_file)
-            excel.read_roi_data(csv_file)   
-            # excel.lift(csv_file , roi_file)
-            excel.lift_test()
-            # excel.read_coeff_map(csv_file)
-            self.message_user(request, "Your csv file has been imported")
-            return redirect("..")
+            try:
+                total_model = 0
+                csv_file = request.FILES["csv_file"]
+                # roi_file = request.FILES["roi_file"]
+                # excel.read_promo_coeff(csv_file)
+                # excel.read_roi_data(csv_file)   
+                # excel.lift(csv_file , roi_file)
+                excel.lift_test()
+                # excel.read_coeff_map(csv_file)
+                # @util.validate_import_data
+                # excel.read_promo_data(csv_file)
+                # total_model = util.validate_import_data(excel.read_promo_data(csv_file))
+                
+                self.message_user(request, "Total {} model data imported".format(total_model))
+                return redirect("..")
+            except Exception as e:
+                print(e , "Exception")
+                self.message_user(request , e , level=messages.ERROR)
+                return redirect("..")
         form = CsvImportForm()
-        # form = {}
         payload = {"form": form}
         return render(
             request, "admin/excel_form.html", payload
@@ -105,6 +115,7 @@ class ModelCoefficientAdmin(admin.ModelAdmin):
 class ModelDataAdmin(admin.ModelAdmin):
     search_fields = ['model_meta__id','model_meta__slug','model_meta__account_name']
     list_display = [field.name for field in models.ModelData._meta.fields]
+    list_filter = ('model_meta__account_name','model_meta__product_group','optimiser_flag')
 
 class ModelROIAdmin(admin.ModelAdmin):
     search_fields = ['model_meta__id','model_meta__slug','model_meta__account_name']
@@ -113,6 +124,7 @@ class ModelROIAdmin(admin.ModelAdmin):
 class CoeffMapAdmin(admin.ModelAdmin):
     search_fields = ['model_meta__id','model_meta__slug','model_meta__account_name']
     list_display = [field.name for field in models.CoeffMap._meta.fields]
+    list_filter = ('model_meta__account_name','model_meta__product_group')
 
 
 admin.site.register(models.User)

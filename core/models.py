@@ -5,8 +5,12 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, \
 from django.conf import settings
 from django.db.models import constraints
 from decimal import Decimal
-from django.db.models.signals import pre_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
+from django.core.exceptions import ValidationError
+from utils import error_message as error
+from utils import util as util
+from . import managers as manager
 # Create your models here.
 
 
@@ -96,7 +100,7 @@ class ModelMeta(models.Model):
     brand_filter = models.CharField(max_length=100,verbose_name="Brand Filter" , default='',null=True)
     brand_format_filter = models.CharField(max_length=100,verbose_name="Brand Format Filter",default='',null=True)
     strategic_cell_filter = models.CharField(max_length=100,verbose_name="Strategic Cell Filter",default='',null=True)
-    slug = models.SlugField(db_index=True, max_length=255, unique=True,default='')
+    slug = models.SlugField(max_length=255, unique=True,blank=True , null=True)
     
     def __str__(self):
         return "{}-{}-{}".format(self.account_name,self.corporate_segment,self.product_group)
@@ -109,59 +113,58 @@ class ModelMeta(models.Model):
         db_table = "model_meta"
 
 class ModelCalculationMetrics(models.Model):
-    intercept = models.DecimalField(verbose_name="Intercept", max_digits=20 , decimal_places=15)
+    intercept = models.DecimalField(verbose_name="Intercept", max_digits=30 , decimal_places=15)
     median_base_price_log = models.DecimalField(verbose_name="Median Base Price Log",
-                                                max_digits=20 , decimal_places=15)
-    tpr_discount = models.DecimalField(verbose_name="TPR Discount", max_digits=20 , decimal_places=15,
+                                                max_digits=30 , decimal_places=15)
+    tpr_discount = models.DecimalField(verbose_name="TPR Discount", max_digits=30 , decimal_places=15,
                                        validators=[MinValueValidator(Decimal(0.0)), MaxValueValidator(Decimal(100.0))])
-    co_investment = models.DecimalField(verbose_name="Co investment", max_digits=20 , decimal_places=15,default=0.0,
-                                       validators=[MinValueValidator(Decimal(0.0)), MaxValueValidator(Decimal(100.0))])
-    tpr_discount_lag1 = models.DecimalField(max_digits=20 , decimal_places=15,
+    
+    tpr_discount_lag1 = models.DecimalField(max_digits=30 , decimal_places=15,
                                              validators=[MaxValueValidator(Decimal(100.0))])
-    tpr_discount_lag2 = models.DecimalField(max_digits=20 , decimal_places=15,
+    tpr_discount_lag2 = models.DecimalField(max_digits=30 , decimal_places=15,
                                              validators=[MaxValueValidator(Decimal(100.0))])
-    catalogue = models.DecimalField(max_digits=20 , decimal_places=15)
-    display = models.DecimalField(max_digits=20 , decimal_places=15)
-    acv = models.DecimalField(max_digits=20 , decimal_places=15)
-    si = models.DecimalField(max_digits=20 , decimal_places=15)
-    si_month = models.DecimalField(max_digits=20 , decimal_places=15)
-    si_quarter = models.DecimalField(max_digits=20 , decimal_places=15)
-    c_1_crossretailer_discount = models.DecimalField(max_digits=20 , decimal_places=15)
-    c_1_crossretailer_log_price = models.DecimalField(max_digits=20 , decimal_places=15)
-    c_1_intra_discount = models.DecimalField(max_digits=20 , decimal_places=15)
-    c_2_intra_discount = models.DecimalField(max_digits=20 , decimal_places=15)
-    c_3_intra_discount = models.DecimalField(max_digits=20 , decimal_places=15)
-    c_4_intra_discount = models.DecimalField(max_digits=20 , decimal_places=15)
-    c_5_intra_discount = models.DecimalField(max_digits=20 , decimal_places=15)
-    c_1_intra_log_price = models.DecimalField(max_digits=20 , decimal_places=15)
-    c_2_intra_log_price = models.DecimalField(max_digits=20 , decimal_places=15)
-    c_3_intra_log_price = models.DecimalField(max_digits=20 , decimal_places=15)
-    c_4_intra_log_price = models.DecimalField(max_digits=20 , decimal_places=15)
-    c_5_intra_log_price = models.DecimalField(max_digits=20 , decimal_places=15)
-    category_trend = models.DecimalField(max_digits=20 , decimal_places=15)
-    trend_month = models.DecimalField(max_digits=20 , decimal_places=15)
-    trend_quarter = models.DecimalField(max_digits=20 , decimal_places=15)
-    trend_year = models.DecimalField(max_digits=20 , decimal_places=15)
-    month_no = models.DecimalField(max_digits=20 , decimal_places=15)
-    flag_promotype_motivation = models.DecimalField(max_digits=20 , decimal_places=15)
-    flag_promotype_n_pls_1 = models.DecimalField(max_digits=20 , decimal_places=15)
-    flag_promotype_traffic = models.DecimalField(max_digits=20 , decimal_places=15)
-    flag_nonpromo_1 = models.DecimalField(max_digits=20 , decimal_places=15)
-    flag_nonpromo_2 = models.DecimalField(max_digits=20 , decimal_places=15)
-    flag_nonpromo_3 = models.DecimalField(max_digits=20 , decimal_places=15)
-    flag_promo_1 = models.DecimalField(max_digits=20 , decimal_places=15)
-    flag_promo_2 = models.DecimalField(max_digits=20 , decimal_places=15)
-    flag_promo_3 = models.DecimalField(max_digits=20 , decimal_places=15)
-    holiday_flag_1 = models.DecimalField(max_digits=20 , decimal_places=15)
-    holiday_flag_2 = models.DecimalField(max_digits=20 , decimal_places=15)
-    holiday_flag_3 = models.DecimalField(max_digits=20 , decimal_places=15)
-    holiday_flag_4 = models.DecimalField(max_digits=20 , decimal_places=15)
-    holiday_flag_5 = models.DecimalField(max_digits=20 , decimal_places=15)
-    holiday_flag_6 = models.DecimalField(max_digits=20 , decimal_places=15)
-    holiday_flag_7 = models.DecimalField(max_digits=20 , decimal_places=15)
-    holiday_flag_8 = models.DecimalField(max_digits=20 , decimal_places=15)
-    holiday_flag_9 = models.DecimalField(max_digits=20 , decimal_places=15)
-    holiday_flag_10 = models.DecimalField(max_digits=20 , decimal_places=15)
+    catalogue = models.DecimalField(max_digits=30 , decimal_places=15)
+    display = models.DecimalField(max_digits=30 , decimal_places=15)
+    acv = models.DecimalField(max_digits=30 , decimal_places=15)
+    si = models.DecimalField(max_digits=30 , decimal_places=15)
+    si_month = models.DecimalField(max_digits=30 , decimal_places=15)
+    si_quarter = models.DecimalField(max_digits=30 , decimal_places=15)
+    c_1_crossretailer_discount = models.DecimalField(max_digits=30 , decimal_places=15)
+    c_1_crossretailer_log_price = models.DecimalField(max_digits=30 , decimal_places=15)
+    c_1_intra_discount = models.DecimalField(max_digits=30 , decimal_places=15)
+    c_2_intra_discount = models.DecimalField(max_digits=30 , decimal_places=15)
+    c_3_intra_discount = models.DecimalField(max_digits=30 , decimal_places=15)
+    c_4_intra_discount = models.DecimalField(max_digits=30 , decimal_places=15)
+    c_5_intra_discount = models.DecimalField(max_digits=30 , decimal_places=15)
+    c_1_intra_log_price = models.DecimalField(max_digits=30 , decimal_places=15)
+    c_2_intra_log_price = models.DecimalField(max_digits=30 , decimal_places=15)
+    c_3_intra_log_price = models.DecimalField(max_digits=30 , decimal_places=15)
+    c_4_intra_log_price = models.DecimalField(max_digits=30 , decimal_places=15)
+    c_5_intra_log_price = models.DecimalField(max_digits=30 , decimal_places=15)
+    category_trend = models.DecimalField(max_digits=30 , decimal_places=15)
+    trend_month = models.DecimalField(max_digits=30 , decimal_places=15)
+    trend_quarter = models.DecimalField(max_digits=30 , decimal_places=15)
+    trend_year = models.DecimalField(max_digits=30 , decimal_places=15)
+    month_no = models.DecimalField(max_digits=30 , decimal_places=15)
+    flag_promotype_motivation = models.DecimalField(max_digits=30 , decimal_places=15)
+    flag_promotype_n_pls_1 = models.DecimalField(max_digits=30 , decimal_places=15)
+    flag_promotype_traffic = models.DecimalField(max_digits=30 , decimal_places=15)
+    flag_nonpromo_1 = models.DecimalField(max_digits=30 , decimal_places=15)
+    flag_nonpromo_2 = models.DecimalField(max_digits=30 , decimal_places=15)
+    flag_nonpromo_3 = models.DecimalField(max_digits=30 , decimal_places=15)
+    flag_promo_1 = models.DecimalField(max_digits=30 , decimal_places=15)
+    flag_promo_2 = models.DecimalField(max_digits=30 , decimal_places=15)
+    flag_promo_3 = models.DecimalField(max_digits=30 , decimal_places=15)
+    holiday_flag_1 = models.DecimalField(max_digits=30 , decimal_places=15)
+    holiday_flag_2 = models.DecimalField(max_digits=30 , decimal_places=15)
+    holiday_flag_3 = models.DecimalField(max_digits=30 , decimal_places=15)
+    holiday_flag_4 = models.DecimalField(max_digits=30 , decimal_places=15)
+    holiday_flag_5 = models.DecimalField(max_digits=30 , decimal_places=15)
+    holiday_flag_6 = models.DecimalField(max_digits=30 , decimal_places=15)
+    holiday_flag_7 = models.DecimalField(max_digits=30 , decimal_places=15)
+    holiday_flag_8 = models.DecimalField(max_digits=30 , decimal_places=15)
+    holiday_flag_9 = models.DecimalField(max_digits=30 , decimal_places=15)
+    holiday_flag_10 = models.DecimalField(max_digits=30 , decimal_places=15)
 
     class Meta:
         abstract = True
@@ -172,29 +175,77 @@ class ModelData(ModelCalculationMetrics):
     )
     year = models.IntegerField(verbose_name="Year")
     quater = models.IntegerField(verbose_name="Quater")
-    month = models.IntegerField(verbose_name="Month")
+    month = models.IntegerField(verbose_name="Month",null=True,
+                                validators=[MinValueValidator(1), MaxValueValidator(12)])
     period =models.CharField(max_length=10,verbose_name="Period")
-    week = models.IntegerField(verbose_name="Week")
+    week = models.IntegerField(verbose_name="Week",null=True,
+                               validators=[MinValueValidator(1), MaxValueValidator(52)])
     date = models.DateField(verbose_name="Date")
-    wk_sold_avg_price_byppg = models.DecimalField(max_digits=20 , decimal_places=15,default=0.0,
-                                                  verbose_name='Week Sold Average Price by PPG')
-    average_weight_in_grams = models.DecimalField(max_digits=20 , decimal_places=15,default=0.0)
-    weighted_weight_in_grams = models.DecimalField(max_digits=20 , decimal_places=15,default=0.0)
+    wk_sold_avg_price_byppg = models.DecimalField(max_digits=30 , decimal_places=15,default=0.0,
+                                                  verbose_name='Week Sold Average Price by PPG',null=True)
+    promo_depth = models.DecimalField(verbose_name="Promo Depth", max_digits=30 ,null=True, decimal_places=15,default=0.0,
+                                       validators=[MinValueValidator(Decimal(0.0)), MaxValueValidator(Decimal(100.0))])
+
+    co_investment = models.DecimalField(verbose_name="Co investment", max_digits=30 ,null=True, decimal_places=15,default=0.0,
+                                       validators=[MinValueValidator(Decimal(0.0)), MaxValueValidator(Decimal(100.0))])
+    average_weight_in_grams = models.DecimalField(max_digits=30 , decimal_places=15,default=0.0)
+    weighted_weight_in_grams = models.DecimalField(max_digits=30 , decimal_places=15,default=0.0)
     incremental_unit = models.DecimalField(max_digits=30 , decimal_places=15,default=0.0 , null=True)
     base_unit = models.DecimalField(max_digits=30 , decimal_places=15,default=0.0 , null=True)
-    # on_inv = models.DecimalField(max_digits=20 , decimal_places=15,default=0.05)
-    # off_inv = models.DecimalField(max_digits=20 , decimal_places=15,default=0.1993)
-    # list_price = models.DecimalField(max_digits=20 , decimal_places=15,default=168.43)
-    # gmac_percent_lsv= models.DecimalField(max_digits=20 , decimal_places=15,default=0.7292)
+    optimiser_flag = models.BooleanField(default=False)
+    # on_inv = models.DecimalField(max_digits=30 , decimal_places=15,default=0.05)
+    # off_inv = models.DecimalField(max_digits=30 , decimal_places=15,default=0.1993)
+    # list_price = models.DecimalField(max_digits=30 , decimal_places=15,default=168.43)
+    # gmac_percent_lsv= models.DecimalField(max_digits=30 , decimal_places=15,default=0.7292)
+    objects = models.Manager()
+    optimizer_objects = manager.OptimizerManager()
     class Meta:
         db_table = 'model_data'
+        
+    def clean(self):
+        if self.intercept != 1:
+            raise ValidationError(error.MODEL_INTERCEPT_ERROR)
+        if self.median_base_price_log < 0:
+            raise ValidationError(error.MODEL_MEDIAN_BASE_PRICE_ERROR)
+        if util.is_zero_to_hundred(self.tpr_discount):
+            raise ValidationError(error.MODEL_TPR)
+        if util.is_zero_to_hundred(self.tpr_discount_lag1):
+            raise ValidationError(error.MODEL_TPR_LAG1)
+        if util.is_zero_to_hundred(self.tpr_discount_lag2):
+            raise ValidationError(error.MODEL_TPR_LAG2)
+        if util.is_zero_to_one(self.catalogue):
+            raise ValidationError(error.MODEL_CATALOGUE_ERROR)
+        if util.is_zero_to_one(self.display):
+            raise ValidationError(error.MODEL_DISPLAY_ERROR)
+        if util.is_zero_to_hundred(self.acv):
+            raise ValidationError(error.ZERO_TO_HUNDRED_ERROR.format("acv"))
+        if util.is_zero_or_positive(self.si):
+            raise ValidationError(error.MODEL_DISPLAY_ERROR)
+        if util.is_zero_or_positive(self.si_month):
+            raise ValidationError(error.MODEL_DISPLAY_ERROR)
+        
+        for field in [flag_var for flag_var in self._meta.fields if 'flag' in flag_var.name]:
+            if not util.is_zero_or_one(getattr(self,field.name)):
+                raise ValidationError("{} variable should be zero or 1".format(field.verbose_name))
+            
+        for field in [flag_var for flag_var in self._meta.fields if 'discount' in flag_var.name]:
+            if not util.is_zero_to_hundred(getattr(self,field.name)):
+                raise ValidationError(error.ZERO_TO_HUNDRED_ERROR.format(field.verbose_name))
+            
+        for field in [flag_var for flag_var in self._meta.fields if 'log_price' in flag_var.name]:
+            if not util.is_zero_or_positive(getattr(self,field.name)):
+                raise ValidationError("{} variable should be positive".format(field.verbose_name))
+                 
+        
+        # [getattr(flag_var) for flag_var in self._meta.fields]
+        
 
 class ModelCoefficient(ModelCalculationMetrics):
     model_meta = models.ForeignKey(
         'core.ModelMeta' , related_name="coefficient" , on_delete=models.CASCADE
     )
-    wmape = models.DecimalField(max_digits=20 , decimal_places=15)
-    rsq = models.DecimalField(max_digits=20 , decimal_places=15)
+    wmape = models.DecimalField(max_digits=30 , decimal_places=15)
+    rsq = models.DecimalField(max_digits=30 , decimal_places=15)
    
     
     def __str__(self):
@@ -215,15 +266,15 @@ class ModelROI(models.Model):
                                 validators=[MinValueValidator(1), MaxValueValidator(12)])
     week = models.IntegerField(verbose_name="Week",null=True,
                                validators=[MinValueValidator(1), MaxValueValidator(52)])
-    on_inv = models.DecimalField(max_digits=20 , decimal_places=15,default=0.05,null=True,
+    on_inv = models.DecimalField(max_digits=30 , decimal_places=15,default=0.05,null=True,
                                  validators=[MinValueValidator(Decimal(0.0)), MaxValueValidator(Decimal(1.0))])
-    off_inv = models.DecimalField(max_digits=20 , decimal_places=15,default=0.1993,null=True,
+    off_inv = models.DecimalField(max_digits=30 , decimal_places=15,default=0.1993,null=True,
                                   validators=[MinValueValidator(Decimal(0.0)), MaxValueValidator(Decimal(1.0))])
-    list_price = models.DecimalField(max_digits=20 , decimal_places=15,default=168.43,null=True)
+    list_price = models.DecimalField(max_digits=30 , decimal_places=15,default=168.43,null=True)
     date = models.DateField(verbose_name="Date",null=True)
-    gmac= models.DecimalField(max_digits=20 , decimal_places=15,default=0.7292,
+    gmac= models.DecimalField(max_digits=30 , decimal_places=15,default=0.7292,
                               validators=[MinValueValidator(Decimal(0.0)), MaxValueValidator(Decimal(1.0))])
-    discount_nrv = models.DecimalField(max_digits=20 , decimal_places=15,default=0.0)
+    discount_nrv = models.DecimalField(max_digits=30 , decimal_places=15,default=0.0)
     
     
     class Meta:
@@ -236,7 +287,7 @@ class CoeffMap(models.Model):
     )
     coefficient_old = models.CharField(max_length=100,verbose_name="Cefficient")
     coefficient_new =  models.CharField(max_length=100,verbose_name="Coefficient New")
-    value= models.DecimalField(max_digits=20 , decimal_places=15,default=0.0 , null=True)    
+    value= models.DecimalField(max_digits=30 , decimal_places=15,default=0.0 , null=True)    
     class Meta:
         db_table = 'coeff_map'
 
@@ -244,11 +295,11 @@ class CoeffMap(models.Model):
 
 
 # @receiver(pre_save, sender=ModelMeta)
-def add_slug_to_article_if_not_exists(sender, instance, *args, **kwargs):
+# def add_slug_to_article_if_not_exists(sender, instance, *args, **kwargs):
     
-    print(sender , "sender in")
-    print(instance , "instance in signals")
-    if instance and not instance.slug:
-        slug = "{}-{}-{}".format(instance.account_name,instance.corporate_segment,instance.product_group)
-        instance.slug = slug
-pre_save.connect(add_slug_to_article_if_not_exists, sender=ModelMeta)  
+#     print(sender , "sender in")
+#     print(instance , "instance in signals")
+#     if instance and not instance.slug:
+#         slug = "{}-{}-{}".format(instance.account_name,instance.corporate_segment,instance.product_group)
+#         instance.slug = slug
+# pre_save.connect(add_slug_to_article_if_not_exists, sender=ModelMeta)  

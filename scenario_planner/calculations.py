@@ -1,9 +1,11 @@
+from django.db.models.fields import DateField
 from core.models import ModelData, ModelMeta
 from utils import util as util
 from utils import models as model
 from .query import roi_values , data_values
 import math
 import decimal
+import copy
 
 def get_related_value(promo_data : ModelData):
     # import pdb
@@ -64,12 +66,12 @@ def promo_simulator_calculations(promo_data : ModelData):
     + (promo_data.holiday_flag_9 * get_related_value(promo_data).holiday_flag_9)
     + (promo_data.holiday_flag_10 * get_related_value(promo_data).holiday_flag_10)
     
-    print(result , "result")
+    # print(result , "result")
     # import pdb
     # pdb.set_trace()
     # model.UnitModel()
-    print(promo_data.promo_data.off_inv , "promo off")
-    print(promo_data.on_inv , "promo on")
+    # print(promo_data.promo_data.off_inv , "promo off")
+    # print(promo_data.on_inv , "promo on")
     ob = model.UnitModel(base_units=  decimal.Decimal(math.exp(result)),
                     on_inv_percent=promo_data.on_inv * 100,
                     list_price=promo_data.list_price,
@@ -148,10 +150,10 @@ def promo_simulator_calculations_test(promo_data : ModelData):
     roi_model = get_roi_by_week(promo_data)
     ob = model.UnitModel(
                     predicted_units=  decimal.Decimal(math.exp(result)),
-                    on_inv_percent=decimal.Decimal(roi_model.off_inv * 100),
+                    on_inv_percent=decimal.Decimal(roi_model.on_inv * 100),
                     list_price=decimal.Decimal(roi_model.list_price),
                     tpr_percent=decimal.Decimal(promo_data.tpr_discount),
-                    off_inv_percent = decimal.Decimal(roi_model.on_inv * 100),
+                    off_inv_percent = decimal.Decimal(roi_model.off_inv * 100),
                     gmac_percent_lsv = decimal.Decimal(roi_model.gmac * 100),
                     average_selling_price = decimal.Decimal(promo_data.wk_sold_avg_price_byppg),
                     product_group_weight_in_grams = decimal.Decimal(promo_data.weighted_weight_in_grams),
@@ -170,49 +172,52 @@ def update_week_value(promo_data:ModelMeta , querydict):
         if week_regex:
             week = int(util._regex(r'\d{1,2}',week_regex.group()).group())
             if querydict['param_depth_all']:
-                print("setting depth all")
+                # print("setting depth all")
                 promo_data.prefetched_data[week-1].tpr_discount = querydict['param_depth_all'] 
             else: 
                 promo_data.prefetched_data[week-1].tpr_discount = querydict[i]['promo_depth'] 
  
-def calculate_financial_mertrics(coeff_list , data_list ,roi_list,unit_info , flag,promo_elasticity = 0):
-    # if flag == 'simulated':
-    #     import pdb
-    #     pdb.set_trace()
-    res = []
-    total_base = model.TotalUnit()
+def calculate_financial_mertrics( data_list ,roi_list,unit_info , flag,promo_elasticity = 0):
+    '''
+    To calculate financial metrics for each week as well as total
+    '''
+  
+    weekly_units = []
+    total_units = model.TotalUnit()
     
     for i in range(0,len(data_list)):
+      
         roi = roi_list[i]
         unit = unit_info[i]
         data = data_list[i]
-        # import pdb
-        # pdb.set_trace()
+        
         ob = model.UnitModel(
+            data[data_values.index('date')],
+            week = int(data[data_values.index('week')]),
             predicted_units=decimal.Decimal(unit['Predicted_sales']),
-            on_inv_percent=roi[roi_values.index('off_inv')] * 100,
+            on_inv_percent=roi[roi_values.index('on_inv')] * 100,
             list_price = roi[roi_values.index('list_price')],
-            tpr_percent=decimal.Decimal(data[data_values.index('tpr_discount')]),
-            off_inv_percent = roi[roi_values.index('on_inv')] * 100, 
+            promo_depth=decimal.Decimal(data[data_values.index('promo_depth')]),
+            off_inv_percent = roi[roi_values.index('off_inv')] * 100, 
             gmac_percent_lsv = roi[roi_values.index('gmac')] * 100,
-            average_selling_price = data[data_values.index('wk_sold_avg_price_byppg')],
+            # average_selling_price = data[data_values.index('wk_sold_avg_price_byppg')],
             product_group_weight_in_grams = data[data_values.index('weighted_weight_in_grams')], 
             median_base_price_log = data[data_values.index('median_base_price_log')],
             incremental_unit = decimal.Decimal(unit['Incremental']),
             base_unit = decimal.Decimal(unit['Base']),
             promo_elasticity=promo_elasticity,
-            co_investment = unit.get('co_inv',0)
+            co_investment = decimal.Decimal(data[data_values.index('co_investment')])
             
         )
-        update_total(total_base , ob)
-        res.append(ob.__dict__)
+        update_total(total_units , ob)
+        weekly_units.append(ob.__dict__)
     
     return {
         flag : {
-            'total' :  total_base.__dict__,
-            'weekly' : res
+            'total' :  total_units.__dict__,
+            'weekly' : weekly_units
         }
-        # 'data' : res
+       
     }
 
 
@@ -265,16 +270,7 @@ def _get_promotion_flag(promo_from_req):
         }  
     return val[promo_from_req]
 def update_from_request(data_list , querydict):
-    # import json 
-    
-    import copy
     cloned_list = copy.deepcopy(data_list)
-    # cloned_list = data_list.copy()
-    # import pdb
-    # pdb.set_trace()
-    # cloned_list = json.loads(json.dumps(data_list))
-    
-
     for i in querydict.keys():
         week_regex = util._regex(r'week-\d{1,2}',i)
         if week_regex:
@@ -284,16 +280,19 @@ def update_from_request(data_list , querydict):
             if querydict[i]['promo_mechanics']:
                 cloned_list[week-1][data_values.index(
                     _get_promotion_flag(querydict[i]['promo_mechanics']))] = 1
-            
-            cloned_list[week-1].append({'co_investment' :querydict[i]['co_investment'] })
+            # import pdb
+            # pdb.set_trace()
+            # cloned_list[week-1].append({'co_investment' :querydict[i]['co_investment'] })
+            cloned_list[week-1][data_values.index('co_investment')] = querydict[i]['co_investment']
+            # cloned_list[week-1][data_values.index('promo_depth')] = querydict[i]['promo_depth']
             if querydict['param_depth_all']:
-                print("setting depth all")
-                cloned_list[week-1][data_values.index('tpr_discount')] = querydict[i]['promo_depth']
+                # print("setting depth all")
+                cloned_list[week-1][data_values.index('promo_depth')] = querydict[i]['promo_depth']
                 # promo_data.prefetched_data[week-1].tpr_discount = querydict['param_depth_all'] 
             else: 
                 
                 # import pdb
                 # pdb.set_trace()
-                cloned_list[week-1][data_values.index('tpr_discount')] = querydict[i]['promo_depth']
+                cloned_list[week-1][data_values.index('promo_depth')] = querydict[i]['promo_depth']
                 # promo_data.prefetched_data[week-1].tpr_discount = querydict[i]['promo_depth']
     return cloned_list

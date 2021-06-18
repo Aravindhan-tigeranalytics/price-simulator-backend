@@ -8,6 +8,7 @@ router = DefaultRouter()
 router.register('savedscenario', views.ScenarioViewSet)
 router.register('scenario-metrics', views.ScenarioPlannerMetricsViewSet)
 router.register('scenario-metrics-obj', views.ScenarioPlannerMetricsViewSetObject)
+router.register('promo-test', views.PromoSimulatorTestViewSet)
 app_name = "scenario"
 
 urlpatterns = [
@@ -19,5 +20,5 @@ urlpatterns = [
     path('getExcel/', views.ExampleViewSet.as_view({'post' : 'getData'})),
     path('optimize/',views.ModelOptimize.as_view()),
     path('promo-simulate/',views.PromoSimulatorView.as_view({'get': 'get'})),
-    path('promo-simulate-test/',views.PromoSimulatorViewTest.as_view({'get': 'get','post' : 'post'}))
+    # path('promo-simulate-test/',views.PromoSimulatorViewTest.as_view({'get': 'list','post' : 'post'}))
 ]

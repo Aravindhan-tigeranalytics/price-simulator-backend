@@ -15,4 +15,8 @@ class EmptyException(APIException):
     default_detail = 'Name cannot be empty'
     default_code = 'name_empty'
 
+class ImportDataException(APIException):
+    status_code = 400
+    default_detail = "Error while importing data"
+    default_code = 'import_error'
 
