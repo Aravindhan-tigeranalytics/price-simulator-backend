@@ -5,7 +5,7 @@ from utils import constants as const
 import json
 import pandas as pd
 from core import models as model
-
+from scenario_planner import query as cols
 
 coeff_values = [ 'model_meta__id','model_meta__account_name', 
                     'model_meta__corporate_segment', 'model_meta__product_group', 'model_meta__brand_filter',
@@ -127,7 +127,7 @@ def get_list_value_from_query(retailer,ppg):
 
 # print(model_dataframe)
 
-def get_list_from_db(retailer,ppg):
+def get_list_from_db_bk(retailer,ppg):
     '''
     convert quey data to list to match the data frame format
     
@@ -213,3 +213,118 @@ def get_list_from_db(retailer,ppg):
 
 
 
+
+
+
+def get_list_from_db(retailer,ppg):
+    coeff_map_values = [
+        'model_meta__account_name','model_meta__corporate_segment', 'model_meta__product_group','model_meta__brand_filter',
+        'model_meta__brand_format_filter', 'model_meta__strategic_cell_filter','coefficient_new','value','coefficient_old'
+    ]
+
+    roi_values = [
+        'model_meta__account_name','model_meta__corporate_segment', 'model_meta__product_group','model_meta__brand_filter',
+        'model_meta__brand_format_filter', 'model_meta__strategic_cell_filter','neilson_sku_name','date','year','week','activity_name',
+        'mechanic','discount_nrv','off_inv','on_inv','gmac','list_price'
+    ]
+
+    model_coeff_values = ['model_meta__account_name', 
+                    'model_meta__corporate_segment', 'model_meta__product_group', 'model_meta__brand_filter',
+                    'model_meta__brand_format_filter', 'model_meta__strategic_cell_filter','wmape', 'rsq',
+                    'intercept', 'median_base_price_log', 'tpr_discount', 'tpr_discount_lag1',
+                    'tpr_discount_lag2', 'catalogue', 'display', 'acv', 'si', 
+                    'si_month', 'si_quarter', 'c_1_crossretailer_discount', 'c_1_crossretailer_log_price', 'c_1_intra_discount', 
+                    'c_2_intra_discount', 'c_3_intra_discount', 'c_4_intra_discount', 'c_5_intra_discount',
+                    'c_1_intra_log_price', 'c_2_intra_log_price', 'c_3_intra_log_price', 'c_4_intra_log_price', 'c_5_intra_log_price', 'category_trend', 'trend_month', 'trend_quarter', 'trend_year', 'month_no', 'flag_promotype_motivation', 'flag_promotype_n_pls_1', 'flag_promotype_traffic', 'flag_nonpromo_1', 'flag_nonpromo_2', 'flag_nonpromo_3', 'flag_promo_1', 'flag_promo_2', 'flag_promo_3', 'holiday_flag_1', 'holiday_flag_2', 'holiday_flag_3', 'holiday_flag_4', 'holiday_flag_5', 'holiday_flag_6', 'holiday_flag_7', 'holiday_flag_8', 'holiday_flag_9', 'holiday_flag_10' 
+                    ]
+
+    model_data_values = ['model_meta__account_name', 
+                'model_meta__corporate_segment', 'model_meta__product_group', 'model_meta__brand_filter',
+                'model_meta__brand_format_filter', 'model_meta__strategic_cell_filter',
+                'year','quater','month','period','date','week',
+                'intercept', 'median_base_price_log', 'tpr_discount','promo_depth','co_investment', 'tpr_discount_lag1',
+                'tpr_discount_lag2', 'catalogue', 'display', 'acv', 'si', 
+                'si_month', 'si_quarter', 'c_1_crossretailer_discount', 'c_1_crossretailer_log_price', 'c_1_intra_discount', 
+                'c_2_intra_discount', 'c_3_intra_discount', 'c_4_intra_discount', 'c_5_intra_discount',
+                'c_1_intra_log_price', 'c_2_intra_log_price', 'c_3_intra_log_price', 'c_4_intra_log_price', 'c_5_intra_log_price', 'category_trend', 'trend_month', 'trend_quarter', 'trend_year', 'month_no', 'flag_promotype_motivation', 'flag_promotype_n_pls_1', 'flag_promotype_traffic', 'flag_nonpromo_1', 'flag_nonpromo_2', 'flag_nonpromo_3', 'flag_promo_1', 'flag_promo_2', 'flag_promo_3', 'holiday_flag_1', 'holiday_flag_2', 'holiday_flag_3', 'holiday_flag_4', 'holiday_flag_5', 'holiday_flag_6', 'holiday_flag_7', 'holiday_flag_8', 'holiday_flag_9', 'holiday_flag_10', 
+                'wk_sold_avg_price_byppg',
+                'average_weight_in_grams','weighted_weight_in_grams']
+
+    model_coefficient_cols = ['Account Name', 'Corporate Segment', 'PPG', 'Brand Filter',
+       'Brand Format Filter', 'Strategic Cell Filter',
+       'Coefficient_new', 'Value', 'Coefficient']
+
+    coeff_map = model.CoeffMap.objects.select_related('model_meta').filter(
+        model_meta__account_name = retailer,model_meta__product_group = ppg
+        ).values_list(
+           *coeff_map_values
+            )
+    
+    model_coeff = model.ModelCoefficient.objects.select_related('model_meta').filter(
+        model_meta__account_name = retailer,model_meta__product_group = ppg
+        ).values_list(
+           *model_coeff_values
+            )
+    
+    model_data = model.ModelData.objects.select_related('model_meta').filter(
+        model_meta__account_name = retailer,model_meta__product_group = ppg
+        ).values_list(
+           *model_data_values
+            )
+
+    roi = model.ModelROI.objects.select_related('model_meta').filter(
+    model_meta__account_name = retailer,model_meta__product_group = ppg
+    ).values_list(
+        *roi_values
+        ).annotate(
+            cogs=F('list_price') - (F('list_price') * F('gmac'))
+            )
+
+    coeff_dt = pd.DataFrame(list(model_coeff), columns= ['Account Name', 'Corporate Segment', 'PPG', 'Brand Filter',
+       'Brand Format Filter', 'Strategic Cell Filter', 'WMAPE', 'Rsq',
+       'Intercept', 'Median_Base_Price_log', 'TPR_Discount',
+       'TPR_Discount_lag1', 'TPR_Discount_lag2', 'Catalogue', 'Display', 'ACV',
+       'SI', 'SI_month', 'SI_quarter', 'C_1_crossretailer_discount',
+       'C_1_crossretailer_log_price', 'C_1_intra_discount',
+       'C_2_intra_discount', 'C_3_intra_discount', 'C_4_intra_discount',
+       'C_5_intra_discount', 'C_1_intra_log_price', 'C_2_intra_log_price',
+       'C_3_intra_log_price', 'C_4_intra_log_price', 'C_5_intra_log_price',
+       'Category trend', 'Trend_month', 'Trend_quarter', 'Trend_year',
+       'month_no', 'Flag_promotype_Motivation', 'Flag_promotype_N_pls_1',
+       'Flag_promotype_traffic', 'Flag_nonpromo_1', 'Flag_nonpromo_2',
+       'Flag_nonpromo_3', 'Flag_promo_1', 'Flag_promo_2', 'Flag_promo_3',
+       'Holiday_Flag1', 'Holiday_Flag2', 'Holiday_Flag3', 'Holiday_Flag4',
+       'Holiday_Flag5', 'Holiday_Flag6', 'Holiday_Flag7', 'Holiday_Flag8',
+       'Holiday_Flag9', 'Holiday_Flag10'])
+
+    data_dt = pd.DataFrame(list(model_data), columns= ['Account Name', 'Corporate Segment', 'PPG', 'Brand Filter',
+       'Brand Format Filter', 'Strategic Cell Filter', 'Year', 'Quarter',      
+       'Month', 'Period', 'Date', 'Week', 'Intercept', 'Median_Base_Price_log',
+       'TPR_Discount','Promo_Depth', 'Coinvestment', 'TPR_Discount_lag1', 'TPR_Discount_lag2', 'Catalogue',  
+       'Display', 'ACV', 'SI', 'SI_month', 'SI_quarter',
+       'C_1_crossretailer_discount', 'C_1_crossretailer_log_price',
+       'C_1_intra_discount', 'C_2_intra_discount', 'C_3_intra_discount',       
+       'C_4_intra_discount', 'C_5_intra_discount', 'C_1_intra_log_price',      
+       'C_2_intra_log_price', 'C_3_intra_log_price', 'C_4_intra_log_price',    
+       'C_5_intra_log_price', 'Category trend', 'Trend_month', 'Trend_quarter',
+       'Trend_year', 'month_no', 'Flag_promotype_Motivation',
+       'Flag_promotype_N_pls_1', 'Flag_promotype_traffic', 'Flag_nonpromo_1',  
+       'Flag_nonpromo_2', 'Flag_nonpromo_3', 'Flag_promo_1', 'Flag_promo_2',   
+       'Flag_promo_3', 'Holiday_Flag1', 'Holiday_Flag2', 'Holiday_Flag3',      
+       'Holiday_Flag4', 'Holiday_Flag5', 'Holiday_Flag6', 'Holiday_Flag7',     
+       'Holiday_Flag8', 'Holiday_Flag9', 'Holiday_Flag10',
+       'wk_sold_avg_price_byppg', 'Average Weight in grams',
+       'Weighted Weight in grams'])
+
+    roi_dt = pd.DataFrame(list(roi), columns = ['Account Name', 'Corporate Segment', 'PPG', 'Brand Filter',
+       'Brand Format Filter', 'Strategic Cell Filter', 'Nielsen SKU Name',
+       'Date', 'Year', 'Week', 'Activity name',
+       'Mechanic', 'Discount, NRV %', 'TE Off Inv', 'TE On Inv',
+       'GMAC', 'List_Price','COGS'])
+
+    coeff_map_dt = pd.DataFrame(list(coeff_map), columns = model_coefficient_cols)
+
+    return data_dt,roi_dt,coeff_dt,coeff_map_dt
+    
+
+    
