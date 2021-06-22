@@ -911,7 +911,7 @@ def optimizer_fun(baseline_data,Required_base,config):
       gap_weeks = len(range(k+1, min(52, k+constrain_params['promo_gap']+1)))
       prob+= R1_sum + gap_weeks * R2_sum >= gap_weeks * R3_sum
     #   prob.solve()
-  prob.solve(PULP_CBC_CMD(msg=True, maxSeconds=1200000,keepFiles=1, fracGap=None))
+  prob.solve(PULP_CBC_CMD(msg=True, maxSeconds=1200000, threads=90, keepFiles=1, fracGap=None))
   print('loop ends')
   print(LpStatus[prob.status])
   print(pulp.value(prob.objective))
@@ -1200,7 +1200,10 @@ coeff_mapping = coeff_mapping[(coeff_mapping['Account Name'] == 'Lenta') & (coef
 ROI_data =  pd.read_csv(path+'ROI_Data_All_retailers_flag_N_pls_1.csv')
 ROI_data = ROI_data[(ROI_data['Account Name'] == 'Lenta') & (ROI_data['PPG'] == 'Big Bars')]
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> f66684cd4fa7b79719326245b90c5dd196a2d51c
 # config_constrain : Actiavte/deactivate config constraint -True/False
 # For financial metrics, a value of the form 1.xx or 0.xx where we want the maximum metric value to be xx*100 % higher or lower than the baseline value. Similary, for the # LowerBound_value and LB percentage
 # compulsory no_promo weeks and promo weeks : empty list means no compulsory weeks
