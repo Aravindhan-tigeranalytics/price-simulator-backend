@@ -1542,5 +1542,6 @@ Optimal_data = optimal_summary_fun(baseline_data,Model_Coeff,Optimal_calendar_fi
 opt_base = get_opt_base_comparison(baseline_data,Optimal_data,Model_Coeff,config)
 # metric summary comparison between optimal and baseline calendar
 summary = get_calendar_summary(baseline_data,Optimal_data,opt_base)
-print(summary,"summary******************************************************")
+parsed = json.loads(summary.to_json(orient="records"))
+print(parsed,"result")
 print('Calc Ends')

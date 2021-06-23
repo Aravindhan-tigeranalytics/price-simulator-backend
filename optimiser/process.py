@@ -279,8 +279,8 @@ def get_list_from_db(retailer,ppg):
         ).annotate(
             cogs=F('list_price') - (F('list_price') * F('gmac'))
             )
-    pd.set_option('display.max_columns', None)  # or 1000
-    pd.set_option('display.max_rows', 100)  # or 1000
+    # pd.set_option('display.max_columns', None)  # or 1000
+    # pd.set_option('display.max_rows', 100)  # or 1000
 
     coeff_dt = pd.DataFrame(list(model_coeff), columns= ['Account Name', 'Corporate Segment', 'PPG', 'Brand Filter',
        'Brand Format Filter', 'Strategic Cell Filter', 'WMAPE', 'Rsq',
@@ -322,8 +322,6 @@ def get_list_from_db(retailer,ppg):
     data_dt['Coinvestment'] = data_dt['Coinvestment'].astype(float)
     data_dt['Flag_promotype_N_pls_1'] = data_dt['Flag_promotype_N_pls_1'].astype(float)
 
-    # roi_other_cols = data_dt[['Coinvestment', 'Flag_promotype_N_pls_1']]
-
     roi_dt = pd.DataFrame.from_records(roi, columns = ['Account Name', 'Corporate Segment', 'PPG', 'Brand Filter',
        'Brand Format Filter', 'Strategic Cell Filter', 'Nielsen SKU Name',
        'Date', 'Year', 'Week', 'Activity name',
@@ -332,8 +330,6 @@ def get_list_from_db(retailer,ppg):
 
     roi_dt['Coinvestment'] = data_dt['Coinvestment']
     roi_dt['Flag_promotype_N_pls_1'] = data_dt['Flag_promotype_N_pls_1']
-    # roi_dt = pd.concat([roi_dt, roi_other_cols],ignore_index = False)
-    print(roi_dt,"roi_dt")
 
     coeff_map_dt = pd.DataFrame(list(coeff_map), columns = model_coefficient_cols)
 
