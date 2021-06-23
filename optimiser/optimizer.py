@@ -597,12 +597,14 @@ def process(constraints = None):
   # Model_Data,ROI_data, Model_Coeff = pr.get_list_from_db(constraints['account_name'],constraints['product_group'])
   model_data_all,ROI_data,model_coeff,coeff_mapping = pr.get_list_from_db(constraints['account_name'],constraints['product_group'])
 
-  # print(model_data_all.columns,"model_data_all")
-  # print(ROI_data.columns,"ROI_data")
-  # print(model_coeff.columns,"model_coeff")
+  # print(model_data_all,"model_data_all")
+  # print(ROI_data,"ROI_data")
+  # print(model_coeff,"model_coeff")
+  # print(coeff_mapping,"coeff_mapping")
+  # exit()
 
 
-  Any_SKU_Name = ROI_data['Nielsen SKU Name'][0]
+  # Any_SKU_Name = ROI_data['Nielsen SKU Name'][0]
 # config_constrain : Actiavte/deactivate config constraint -True/False
 # For financial metrics, a value of the form 1.xx or 0.xx where we want the maximum metric value to be xx*100 % higher or lower than the baseline value. Similary, for the # LowerBound_value and LB percentage
 # compulsory no_promo weeks and promo weeks : empty list means no compulsory weeks
@@ -660,7 +662,7 @@ def process(constraints = None):
   Period_data['tpr_discount_byppg']= Period_data['Promo_Depth']+Period_data['Coinvestment']
   Model_Data.rename(columns={'tpr_discount_byppg':'tpr_discount_byppg_train'},inplace=True)
   print(Period_data['Date'],"SAte")
-  Period_data['Date']=pd.to_datetime(Period_data['Date'],errors='coerce', format='%Y-%m-%d')
+  Period_data['Date']=pd.to_datetime(Period_data['Date'], format='%Y-%m-%d')
   Final_Pred_Data=pd.merge(Period_data,Model_Data,how="left",on="Date")
   Final_Pred_Data['wk_base_price_perunit_byppg'] = np.exp(Final_Pred_Data['wk_sold_median_base_price_byppg_log'])
   Final_Pred_Data['Promo'] = np.where(Final_Pred_Data['tpr_discount_byppg'] == 0, Final_Pred_Data['wk_base_price_perunit_byppg'],
@@ -685,6 +687,7 @@ def process(constraints = None):
     Final_Pred_Data['tpr_discount_byppg_lag2']= Final_Pred_Data['tpr_discount_byppg'].shift(2).fillna(0)
   if 'flag_N_pls_1' in Model_Coeff_list_Keep:
     Final_Pred_Data['flag_N_pls_1']=np.where(Final_Pred_Data['Flag_promotype_N_pls_1']==1,1,0)
+  
   Final_Pred_Data['Baseline_Prediction']=predict_sales(Model_Coeff,Final_Pred_Data)
   Final_Pred_Data['Baseline_Sales']=Final_Pred_Data['Baseline_Prediction'] *Final_Pred_Data['Promo']
   Final_Pred_Data["Baseline_GSV"] = Final_Pred_Data['Baseline_Prediction'] * Final_Pred_Data['List_Price']
@@ -726,10 +729,11 @@ def process(constraints = None):
                     'promo_gap':3,'tot_promo_min':9,'tot_promo_max':15,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':0}}
   # financial metric preference order
   fin_pref_order = config['Fin_Pref_Order']
+  print(baseline_data,"baseline_data")
   # getting TE for all the tprs
   TE_dict,ret_inv_dict = get_te_dict(baseline_data,config)
   # Optimizer scenario creation
-  Required_base = get_required_base(baseline_data,Model_Coeff,TE_dict,ret_inv_dict)
+  Required_base = get_required_base(baseline_data,Model_Coeff,TE_dict,ret_inv_dict,config)
   Optimal_calendar_fin = pd.DataFrame()
   infeasible_solution = True
   Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
@@ -967,7 +971,7 @@ def get_te_dict(baseline_data,config):
   return TE_dict,ret_inv_dict
 
 
-def get_required_base(baseline_data,Model_Coeff,TE_dict,ret_inv_dict):
+def get_required_base(baseline_data,Model_Coeff,TE_dict,ret_inv_dict,config):
   logging.info('Get required base')
   # Optimizer scenario creation
   # getting model variables

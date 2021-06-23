@@ -911,7 +911,7 @@ def optimizer_fun(baseline_data,Required_base,config):
       gap_weeks = len(range(k+1, min(52, k+constrain_params['promo_gap']+1)))
       prob+= R1_sum + gap_weeks * R2_sum >= gap_weeks * R3_sum
     #   prob.solve()
-  prob.solve(PULP_CBC_CMD(msg=True, maxSeconds=1200000, threads=90, keepFiles=1, fracGap=None))
+  prob.solve(PULP_CBC_CMD(msg=True, maxSeconds=1200000, keepFiles=1, fracGap=None))
   print('loop ends')
   print(LpStatus[prob.status])
   print(pulp.value(prob.objective))
@@ -1188,6 +1188,9 @@ def get_calendar_summary(baseline_data,optimal_data,opt_base):
 print('Calc Starts')
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 path = os.path.join(BASE_DIR + "/data/")
+pd.set_option('display.max_columns', None)  # or 1000
+pd.set_option('display.max_rows', None)  # or 1000
+
 model_data_all = pd.read_excel(path+'Simulator_Optimiser_combined_v2.xlsx',sheet_name='MODEL_DATA')
 model_data_all = model_data_all[(model_data_all['Account Name'] == 'Lenta') & (model_data_all['PPG'] == 'Big Bars')]
 
@@ -1200,10 +1203,12 @@ coeff_mapping = coeff_mapping[(coeff_mapping['Account Name'] == 'Lenta') & (coef
 ROI_data =  pd.read_csv(path+'ROI_Data_All_retailers_flag_N_pls_1.csv')
 ROI_data = ROI_data[(ROI_data['Account Name'] == 'Lenta') & (ROI_data['PPG'] == 'Big Bars')]
 
-<<<<<<< HEAD
+# print(model_data_all,"model_data_all")
+# print(model_coeff,"model_coeff")
+# print(coeff_mapping,"coeff_mapping")
+# print(ROI_data,"ROI_data")
+# exit()
 
-=======
->>>>>>> f66684cd4fa7b79719326245b90c5dd196a2d51c
 # config_constrain : Actiavte/deactivate config constraint -True/False
 # For financial metrics, a value of the form 1.xx or 0.xx where we want the maximum metric value to be xx*100 % higher or lower than the baseline value. Similary, for the # LowerBound_value and LB percentage
 # compulsory no_promo weeks and promo weeks : empty list means no compulsory weeks
@@ -1262,6 +1267,8 @@ Period_data['tpr_discount_byppg']= Period_data['Promo_Depth']+Period_data['Coinv
 Model_Data.rename(columns={'tpr_discount_byppg':'tpr_discount_byppg_train'},inplace=True)
 print(Period_data['Date'],"SAte")
 Period_data['Date']=pd.to_datetime(Period_data['Date'],errors='coerce', format='%Y-%m-%d')
+# print(Period_data['Date'],"Period_data")
+# print(Model_Data['Date'],"Model_Data")
 Final_Pred_Data=pd.merge(Period_data,Model_Data,how="left",on="Date")
 Final_Pred_Data['wk_base_price_perunit_byppg'] = np.exp(Final_Pred_Data['wk_sold_median_base_price_byppg_log'])
 Final_Pred_Data['Promo'] = np.where(Final_Pred_Data['tpr_discount_byppg'] == 0, Final_Pred_Data['wk_base_price_perunit_byppg'],
@@ -1286,6 +1293,7 @@ if 'tpr_discount_byppg_lag2' in Model_Coeff_list_Keep:
   Final_Pred_Data['tpr_discount_byppg_lag2']= Final_Pred_Data['tpr_discount_byppg'].shift(2).fillna(0)
 if 'flag_N_pls_1' in Model_Coeff_list_Keep:
   Final_Pred_Data['flag_N_pls_1']=np.where(Final_Pred_Data['Flag_promotype_N_pls_1']==1,1,0)
+
 Final_Pred_Data['Baseline_Prediction']=predict_sales(Model_Coeff,Final_Pred_Data)
 Final_Pred_Data['Baseline_Sales']=Final_Pred_Data['Baseline_Prediction'] *Final_Pred_Data['Promo']
 Final_Pred_Data["Baseline_GSV"] = Final_Pred_Data['Baseline_Prediction'] * Final_Pred_Data['List_Price']
@@ -1328,8 +1336,9 @@ config = {"Reatiler":"Lenta","PPG":'Big Bars','Segment':"Choco","MARS_TPRS":[10,
 # financial metric preference order
 fin_pref_order = config['Fin_Pref_Order']
 # getting TE for all the tprs
+print(baseline_data,"baseline_data")
 TE_dict,ret_inv_dict = get_te_dict(baseline_data,config)
-# Optimizer scenario creation
+
 Required_base = get_required_base(baseline_data,Model_Coeff,TE_dict,ret_inv_dict)
 Optimal_calendar_fin = pd.DataFrame()
 infeasible_solution = True
