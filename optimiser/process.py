@@ -397,7 +397,6 @@ def get_list_from_db(retailer,ppg):
     roi_dt['Month'] = data_dt['Month']
     roi_dt['Quarter'] = data_dt['Quarter']
     roi_dt['Period'] = data_dt['Period']
-    # print(roi_dt[['Date','Discount, NRV %','TE Off Inv','TE On Inv','GMAC','COGS','List_Price','Mechanic', 'Coinvestment','Flag_promotype_N_pls_1']],"roi_dt")
-    # exit()
+
     return data_dt,roi_dt,coeff_dt,coeff_map_dt
     

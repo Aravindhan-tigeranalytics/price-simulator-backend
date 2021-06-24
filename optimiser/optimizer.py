@@ -659,14 +659,16 @@ def process(constraints = None):
   model_data_all,ROI_data,model_coeff,coeff_mapping = pr.get_list_from_db(constraints['account_name'],constraints['product_group'])
 
   # print(model_data_all,"model_data_all")
-  # print(ROI_data,"ROI_data")
+  # print(ROI_data.columns)
+  # print(ROI_data.dtypes)
+  # print(ROI_data)
   # print(model_coeff,"model_coeff")
   # print(coeff_mapping,"coeff_mapping")
-  # exit()
+
   # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   # path = os.path.join(BASE_DIR + "/data/")
   # ROI_data =  pd.read_csv(path+'ROI_Data_All_retailers_flag_N_pls_1.csv')
-  # ROI_data = ROI_data[(ROI_data['Account Name'] == 'Lenta') & (ROI_data['PPG'] == 'Big Bars')]
+  # ROI_data = ROI_data[(ROI_data['Account Name'] == 'Tander') & (ROI_data['PPG'] == 'A.Korkunov 192g')]
 
   # print(ROI_data)
 
@@ -679,8 +681,8 @@ def process(constraints = None):
 # MARS_TPRS : additional tprs to include in the optimization
 # Fin_Pref_Order : The order of relaxing financial metric when we get a infeasible solution
 
-  config = {"Reatiler":"Lenta","PPG":'Big Bars','Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
-          "Objective_metric":"Trade_Expense","Objective":"Minimize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
+  config = {"Reatiler": constraints['account_name'],"PPG":constraints['product_group'],'Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
+          "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
           "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
                               ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
                     'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
@@ -787,8 +789,8 @@ def process(constraints = None):
   baseline_info['min_promo_gap']=promo_wave_summary['Promo_gap'].min()
   baseline_info['max_promo_gap']=promo_wave_summary['Promo_gap'].max()
   # baseline_info
-  config = {"Reatiler":"Lenta","PPG":'Big Bars','Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
-          "Objective_metric":"Trade_Expense","Objective":"Minimize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
+  config = {"Reatiler": constraints['account_name'],"PPG":constraints['product_group'],'Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
+          "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
           "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
                               ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
                     'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},

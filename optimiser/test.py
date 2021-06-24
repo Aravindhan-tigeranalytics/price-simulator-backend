@@ -1186,6 +1186,63 @@ def get_calendar_summary(baseline_data,optimal_data,opt_base):
   summary_metric['Delta']=summary_metric['Change']/summary_metric['Base_Scenario']
   return summary_metric
 
+def get_promo_wave_values(tpr_discount):
+  no_of_promo = 0
+  max_promo = 0
+  min_promo = 0
+  duration_of_waves  =[]
+  waves = []
+  min_consecutive_promo = 53
+  max_consecutive_promo = 0
+  gap = []
+  promo_gap = []
+  max_length_gap = 0
+  min_length_gap = 53
+  tot_promo_min = 0
+  tot_promo_max = 0
+  val = tpr_discount
+  for i in range(0,len(val)):
+    if val[i] :
+        waves.append(val[i])
+        if i+1 == len(val):
+            duration_of_waves.append(waves)
+            if len(waves) > max_consecutive_promo:
+                max_consecutive_promo = len(waves)
+            if len(waves) < min_consecutive_promo:
+                min_consecutive_promo = len(waves)
+        no_of_promo = no_of_promo + 1
+    else:
+        gap.append(val[i])
+        if i+1 == len(val):
+            promo_gap.append(gap)
+            if len(gap) < min_length_gap:
+                min_length_gap = len(gap)
+        
+    if not val[i] and val[0 if (i-1) < 0 else i-1]:
+        duration_of_waves.append(waves)
+        if len(waves) > max_consecutive_promo:
+            max_consecutive_promo = len(waves)
+        if len(waves) < min_consecutive_promo:
+                min_consecutive_promo = len(waves)
+        waves = []
+    elif val[i] and not val[0 if (i-1) < 0 else i-1]:
+        promo_gap.append(gap)
+        if len(gap) < min_length_gap:
+            min_length_gap = len(gap)
+        gap = []
+        
+    if max_promo > val[i]:
+        max_promo = val[i]
+    if min_promo < val[i]:
+        min_promo = val[i]
+  tot_promo_max = no_of_promo + 3
+  tot_promo_min = no_of_promo - 3
+  print(max_consecutive_promo , "maximum consecutive  promo")
+  print(min_consecutive_promo , "minimum consecutive promo")
+  print(min_length_gap , "promo gap")
+  print(tot_promo_min , "total promo min")
+  print(tot_promo_max , "total promo max")
+  return min_consecutive_promo,max_consecutive_promo,min_length_gap,tot_promo_min,tot_promo_max
 
 print('Calc Starts')
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -1193,23 +1250,28 @@ path = os.path.join(BASE_DIR + "/data/")
 pd.set_option('display.max_columns', None)  # or 1000
 pd.set_option('display.max_rows', None)  # or 1000
 
+# retailer, ppg filter
+# slct_retailer = 'Tander'
+# slct_ppg = 'A.Korkunov 192g'
+slct_retailer = 'Lenta'
+slct_ppg = 'Big Bars'
+
 model_data_all = pd.read_excel(path+'Simulator_Optimiser_combined_v2.xlsx',sheet_name='MODEL_DATA')
-model_data_all = model_data_all[(model_data_all['Account Name'] == 'Lenta') & (model_data_all['PPG'] == 'Big Bars')]
+model_data_all = model_data_all[(model_data_all['Account Name'] == slct_retailer) & (model_data_all['PPG'] == slct_ppg)]
 
 model_coeff = pd.read_excel(path+'Simulator_Optimiser_combined_v2.xlsx',sheet_name='MODEL_COEFFICIENT')
-model_coeff = model_coeff[(model_coeff['Account Name'] == 'Lenta') & (model_coeff['PPG'] == 'Big Bars')]
+model_coeff = model_coeff[(model_coeff['Account Name'] == slct_retailer) & (model_coeff['PPG'] == slct_ppg)]
 
 coeff_mapping = pd.read_excel(path+'Simulator_Optimiser_combined_v2.xlsx',sheet_name='COEFF_MAPPING')
-coeff_mapping = coeff_mapping[(coeff_mapping['Account Name'] == 'Lenta') & (coeff_mapping['PPG'] == 'Big Bars')]
+coeff_mapping = coeff_mapping[(coeff_mapping['Account Name'] == slct_retailer) & (coeff_mapping['PPG'] == slct_ppg)]
 
 ROI_data =  pd.read_csv(path+'ROI_Data_All_retailers_flag_N_pls_1.csv')
-ROI_data = ROI_data[(ROI_data['Account Name'] == 'Lenta') & (ROI_data['PPG'] == 'Big Bars')]
+ROI_data = ROI_data[(ROI_data['Account Name'] == slct_retailer) & (ROI_data['PPG'] == slct_ppg)]
 
-# print(model_data_all,"model_data_all")
+print(model_data_all,"model_data_all")
 # print(model_coeff,"model_coeff")
 # print(coeff_mapping,"coeff_mapping")
 # print(ROI_data[['Date','Discount, NRV %','TE Off Inv','TE On Inv','GMAC','COGS','List_Price','Mechanic', 'Coinvestment','Flag_promotype_N_pls_1']],"roi_dt")
-# exit()
 
 # config_constrain : Actiavte/deactivate config constraint -True/False
 # For financial metrics, a value of the form 1.xx or 0.xx where we want the maximum metric value to be xx*100 % higher or lower than the baseline value. Similary, for the # LowerBound_value and LB percentage
@@ -1217,19 +1279,18 @@ ROI_data = ROI_data[(ROI_data['Account Name'] == 'Lenta') & (ROI_data['PPG'] == 
 # Co_investment : Investment from the retailers
 # MARS_TPRS : additional tprs to include in the optimization
 # Fin_Pref_Order : The order of relaxing financial metric when we get a infeasible solution
+temp_model_Data = model_data_all.reset_index()
+print(temp_model_Data)
+min_consecutive_promo,max_consecutive_promo,min_promo_length_gap,tot_promo_min,tot_promo_max = get_promo_wave_values(temp_model_Data['TPR_Discount'])
 
-config = {"Reatiler":"Lenta","PPG":'Big Bars','Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
-         "Objective_metric":"Trade_Expense","Objective":"Minimize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
+config = {"Reatiler": slct_retailer,"PPG": slct_ppg,'Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
+         "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
         "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
                             ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
                    'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
          "constrain_params": {'MAC':1.1,'RP':1.05,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
-                              'min_consecutive_promo':3,'max_consecutive_promo':5,
-                   'promo_gap':3,'tot_promo_min':9,'tot_promo_max':15,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':10}}
-# retailer, ppg filter
-slct_retailer = config['Reatiler']
-slct_ppg = config['PPG']
-
+                              'min_consecutive_promo':min_consecutive_promo,'max_consecutive_promo':max_consecutive_promo,
+                   'promo_gap':min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':10}}
 
 # getting coefficient name mapping and values for selected retailer, ppg
 coeff_mapping_temp = coeff_mapping.loc[(coeff_mapping['Account Name']==slct_retailer) & (coeff_mapping['PPG']==slct_ppg)]
@@ -1327,14 +1388,14 @@ promo_wave_summary['Promo_gap']= promo_wave_summary['start_week']-promo_wave_sum
 baseline_info['min_promo_gap']=promo_wave_summary['Promo_gap'].min()
 baseline_info['max_promo_gap']=promo_wave_summary['Promo_gap'].max()
 # baseline_info
-config = {"Reatiler":"Lenta","PPG":'Big Bars','Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
-         "Objective_metric":"Trade_Expense","Objective":"Minimize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
+config = {"Reatiler": slct_retailer,"PPG": slct_ppg,'Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
+         "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
         "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
                             ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
                    'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
          "constrain_params": {'MAC':1.1,'RP':1.05,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
-                              'min_consecutive_promo':3,'max_consecutive_promo':5,
-                   'promo_gap':3,'tot_promo_min':9,'tot_promo_max':15,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':0}}
+                              'min_consecutive_promo':min_consecutive_promo,'max_consecutive_promo':max_consecutive_promo,
+                   'promo_gap':min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':0}}
 # financial metric preference order
 fin_pref_order = config['Fin_Pref_Order']
 # getting TE for all the tprs
