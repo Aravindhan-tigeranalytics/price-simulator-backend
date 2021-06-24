@@ -1268,7 +1268,8 @@ coeff_mapping = coeff_mapping[(coeff_mapping['Account Name'] == slct_retailer) &
 ROI_data =  pd.read_csv(path+'ROI_Data_All_retailers_flag_N_pls_1.csv')
 ROI_data = ROI_data[(ROI_data['Account Name'] == slct_retailer) & (ROI_data['PPG'] == slct_ppg)]
 
-print(model_data_all,"model_data_all")
+# print(model_data_all,"model_data_all")
+# exit()
 # print(model_coeff,"model_coeff")
 # print(coeff_mapping,"coeff_mapping")
 # print(ROI_data[['Date','Discount, NRV %','TE Off Inv','TE On Inv','GMAC','COGS','List_Price','Mechanic', 'Coinvestment','Flag_promotype_N_pls_1']],"roi_dt")

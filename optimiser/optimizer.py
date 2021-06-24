@@ -658,20 +658,25 @@ def process(constraints = None):
   # Model_Data,ROI_data, Model_Coeff = pr.get_list_from_db(constraints['account_name'],constraints['product_group'])
   model_data_all,ROI_data,model_coeff,coeff_mapping = pr.get_list_from_db(constraints['account_name'],constraints['product_group'])
 
-  # print(model_data_all,"model_data_all")
-  # print(ROI_data.columns)
-  # print(ROI_data.dtypes)
-  # print(ROI_data)
-  # print(model_coeff,"model_coeff")
-  # print(coeff_mapping,"coeff_mapping")
-
+  # Load from excel
   # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   # path = os.path.join(BASE_DIR + "/data/")
+
+  # model_data_all = pd.read_excel(path+'Simulator_Optimiser_combined_v2.xlsx',sheet_name='MODEL_DATA')
+  # model_data_all = model_data_all[(model_data_all['Account Name'] == constraints['account_name']) & (model_data_all['PPG'] == constraints['product_group'])]
+
+  # model_coeff = pd.read_excel(path+'Simulator_Optimiser_combined_v2.xlsx',sheet_name='MODEL_COEFFICIENT')
+  # model_coeff = model_coeff[(model_coeff['Account Name'] == constraints['account_name']) & (model_coeff['PPG'] == constraints['product_group'])]
+
+  # coeff_mapping = pd.read_excel(path+'Simulator_Optimiser_combined_v2.xlsx',sheet_name='COEFF_MAPPING')
+  # coeff_mapping = coeff_mapping[(coeff_mapping['Account Name'] == constraints['account_name']) & (coeff_mapping['PPG'] == constraints['product_group'])]
+
   # ROI_data =  pd.read_csv(path+'ROI_Data_All_retailers_flag_N_pls_1.csv')
-  # ROI_data = ROI_data[(ROI_data['Account Name'] == 'Tander') & (ROI_data['PPG'] == 'A.Korkunov 192g')]
+  # ROI_data = ROI_data[(ROI_data['Account Name'] == constraints['account_name']) & (ROI_data['PPG'] == constraints['product_group'])]
 
   # print(ROI_data)
-
+  # temp_model_Data = model_data_all.reset_index()
+  # min_consecutive_promo,max_consecutive_promo,min_promo_length_gap,tot_promo_min,tot_promo_max = get_promo_wave_values(temp_model_Data['TPR_Discount'])
   min_consecutive_promo,max_consecutive_promo,min_promo_length_gap,tot_promo_min,tot_promo_max = get_promo_wave_values(model_data_all['TPR_Discount'])
 
 # config_constrain : Actiavte/deactivate config constraint -True/False
@@ -682,7 +687,7 @@ def process(constraints = None):
 # Fin_Pref_Order : The order of relaxing financial metric when we get a infeasible solution
 
   config = {"Reatiler": constraints['account_name'],"PPG":constraints['product_group'],'Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
-          "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
+          "Objective_metric":"Trade_Expense","Objective":"Minimize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
           "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
                               ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
                     'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
@@ -790,7 +795,7 @@ def process(constraints = None):
   baseline_info['max_promo_gap']=promo_wave_summary['Promo_gap'].max()
   # baseline_info
   config = {"Reatiler": constraints['account_name'],"PPG":constraints['product_group'],'Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
-          "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
+          "Objective_metric":"Trade_Expense","Objective":"Minimize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
           "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
                               ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
                     'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},

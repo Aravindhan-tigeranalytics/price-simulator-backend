@@ -242,13 +242,13 @@ def get_list_from_db(retailer,ppg):
                 'model_meta__corporate_segment', 'model_meta__product_group', 'model_meta__brand_filter',
                 'model_meta__brand_format_filter', 'model_meta__strategic_cell_filter',
                 'year','quater','month','period','date','week',
-                'intercept', 'median_base_price_log', 'tpr_discount','promo_depth','co_investment', 'tpr_discount_lag1',
+                'intercept', 'median_base_price_log', 'tpr_discount', 'tpr_discount_lag1',
                 'tpr_discount_lag2', 'catalogue', 'display', 'acv', 'si', 
                 'si_month', 'si_quarter', 'c_1_crossretailer_discount', 'c_1_crossretailer_log_price', 'c_1_intra_discount', 
                 'c_2_intra_discount', 'c_3_intra_discount', 'c_4_intra_discount', 'c_5_intra_discount',
                 'c_1_intra_log_price', 'c_2_intra_log_price', 'c_3_intra_log_price', 'c_4_intra_log_price', 'c_5_intra_log_price', 'category_trend', 'trend_month', 'trend_quarter', 'trend_year', 'month_no', 'flag_promotype_motivation', 'flag_promotype_n_pls_1', 'flag_promotype_traffic', 'flag_nonpromo_1', 'flag_nonpromo_2', 'flag_nonpromo_3', 'flag_promo_1', 'flag_promo_2', 'flag_promo_3', 'holiday_flag_1', 'holiday_flag_2', 'holiday_flag_3', 'holiday_flag_4', 'holiday_flag_5', 'holiday_flag_6', 'holiday_flag_7', 'holiday_flag_8', 'holiday_flag_9', 'holiday_flag_10', 
                 'wk_sold_avg_price_byppg',
-                'average_weight_in_grams','weighted_weight_in_grams','optimiser_flag']
+                'average_weight_in_grams','weighted_weight_in_grams','promo_depth','co_investment','optimiser_flag']
 
     model_coefficient_cols = ['Account Name', 'Corporate Segment', 'PPG', 'Brand Filter',
        'Brand Format Filter', 'Strategic Cell Filter',
@@ -302,7 +302,7 @@ def get_list_from_db(retailer,ppg):
     data_dt = pd.DataFrame(list(model_data), columns= ['Account Name', 'Corporate Segment', 'PPG', 'Brand Filter',
        'Brand Format Filter', 'Strategic Cell Filter', 'Year', 'Quarter',      
        'Month', 'Period', 'Date', 'Week', 'Intercept', 'Median_Base_Price_log',
-       'TPR_Discount','Promo_Depth', 'Coinvestment', 'TPR_Discount_lag1', 'TPR_Discount_lag2', 'Catalogue',  
+       'TPR_Discount','TPR_Discount_lag1', 'TPR_Discount_lag2', 'Catalogue',  
        'Display', 'ACV', 'SI', 'SI_month', 'SI_quarter',
        'C_1_crossretailer_discount', 'C_1_crossretailer_log_price',
        'C_1_intra_discount', 'C_2_intra_discount', 'C_3_intra_discount',       
@@ -316,7 +316,7 @@ def get_list_from_db(retailer,ppg):
        'Holiday_Flag4', 'Holiday_Flag5', 'Holiday_Flag6', 'Holiday_Flag7',     
        'Holiday_Flag8', 'Holiday_Flag9', 'Holiday_Flag10',
        'wk_sold_avg_price_byppg', 'Average Weight in grams',
-       'Weighted Weight in grams','Optimiser_flag'])
+       'Weighted Weight in grams','Promo_Depth', 'Coinvestment','Optimiser_flag'])
 
     data_dt['Date']= pd.to_datetime(data_dt['Date'])
     data_dt['Coinvestment'] = data_dt['Coinvestment'].astype(float)
