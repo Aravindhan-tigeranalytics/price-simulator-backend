@@ -279,8 +279,8 @@ def get_list_from_db(retailer,ppg):
         ).annotate(
             cogs=F('list_price') - (F('list_price') * F('gmac'))
             )
-    # pd.set_option('display.max_columns', None)  # or 1000
-    # pd.set_option('display.max_rows', 100)  # or 1000
+    pd.set_option('display.max_columns', None)  # or 1000
+    pd.set_option('display.max_rows', 100)  # or 1000
 
     coeff_dt = pd.DataFrame(list(model_coeff), columns= ['Account Name', 'Corporate Segment', 'PPG', 'Brand Filter',
        'Brand Format Filter', 'Strategic Cell Filter', 'WMAPE', 'Rsq',
@@ -384,11 +384,20 @@ def get_list_from_db(retailer,ppg):
     for i in coeff_mapping_to_float: 
         coeff_map_dt[i] = coeff_map_dt[i].astype(float)
 
-
+    # e = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,15.0,15.0,15.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,15.0,15.0,15.0,15.0,15.0, 0.0, 0.0, 0.0,15.0,15.0,15.0,15.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    # promo_depth=pd.DataFrame(e, columns=['Promo_Depth'])
+    # roi_dt['Promo_Depth'] = promo_depth['Promo_Depth']
     # ROI data datatype coversion
     # roi_dt_to_int = ['Year','Week','Coinvestment','Flag_promotype_N_pls_1']
     # for i in roi_dt_to_int: 
     #     roi_dt[i] = roi_dt[i].astype(int)
 
+    roi_dt['Promo_Depth'] = data_dt['Promo_Depth']
+    roi_dt['Promo_Depth'] = roi_dt['Promo_Depth'].astype(float)
+    roi_dt['Month'] = data_dt['Month']
+    roi_dt['Quarter'] = data_dt['Quarter']
+    roi_dt['Period'] = data_dt['Period']
+    # print(roi_dt[['Date','Discount, NRV %','TE Off Inv','TE On Inv','GMAC','COGS','List_Price','Mechanic', 'Coinvestment','Flag_promotype_N_pls_1']],"roi_dt")
+    # exit()
     return data_dt,roi_dt,coeff_dt,coeff_map_dt
     

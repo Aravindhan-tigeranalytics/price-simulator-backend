@@ -663,6 +663,13 @@ def process(constraints = None):
   # print(model_coeff,"model_coeff")
   # print(coeff_mapping,"coeff_mapping")
   # exit()
+  # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+  # path = os.path.join(BASE_DIR + "/data/")
+  # ROI_data =  pd.read_csv(path+'ROI_Data_All_retailers_flag_N_pls_1.csv')
+  # ROI_data = ROI_data[(ROI_data['Account Name'] == 'Lenta') & (ROI_data['PPG'] == 'Big Bars')]
+
+  # print(ROI_data)
+
   min_consecutive_promo,max_consecutive_promo,min_promo_length_gap,tot_promo_min,tot_promo_max = get_promo_wave_values(model_data_all['TPR_Discount'])
 
 # config_constrain : Actiavte/deactivate config constraint -True/False
@@ -673,7 +680,7 @@ def process(constraints = None):
 # Fin_Pref_Order : The order of relaxing financial metric when we get a infeasible solution
 
   config = {"Reatiler":"Lenta","PPG":'Big Bars','Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
-          "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
+          "Objective_metric":"Trade_Expense","Objective":"Minimize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
           "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
                               ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
                     'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
@@ -781,7 +788,7 @@ def process(constraints = None):
   baseline_info['max_promo_gap']=promo_wave_summary['Promo_gap'].max()
   # baseline_info
   config = {"Reatiler":"Lenta","PPG":'Big Bars','Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
-          "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
+          "Objective_metric":"Trade_Expense","Objective":"Minimize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
           "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
                               ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
                     'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
@@ -1584,6 +1591,7 @@ def get_opt_base_comparison(baseline_data,optimal_data,Model_Coeff,config):
 
 def get_calendar_summary(baseline_data,optimal_data,opt_base):
   logging.info('Get calendar summary data')
+  print(opt_base,"opt_base")
   base_scenario=baseline_data.copy()
   Optimal_scenario=optimal_data.copy()
   # Optimal_scenario=pd.read_csv(path+"Training_data_"+str(prd)+"_Optimal.csv")
@@ -1634,6 +1642,7 @@ def get_calendar_summary(baseline_data,optimal_data,opt_base):
   summary_metric=summary_base.merge(summary_opt,on='Metric',how='left')
   # summary_metric['Change']=np.round(summary_metric['Recommended_Scenario']-summary_metric['Base_Scenario'],4)
   # summary_metric['Delta']=np.round(summary_metric['Change']/summary_metric['Base_Scenario'],4)
+
   summary_metric['Change']=summary_metric['Recommended_Scenario']-summary_metric['Base_Scenario']
   summary_metric['Delta']=summary_metric['Change']/summary_metric['Base_Scenario']
   return summary_metric
