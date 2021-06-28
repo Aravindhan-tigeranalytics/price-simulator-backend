@@ -1,28 +1,67 @@
-import os
-import numpy as np
+from pulp import *
 import pandas as pd
-import re
+from itertools import combinations
+import numpy as np
 import time
 import datetime
 import math
 import itertools
+import re
+import os
 # import openpyxl
 from itertools import chain
 from joblib import Parallel, delayed
 import statistics 
-from pulp import *
-import pandas as pd
-from itertools import combinations
-from utils import constants as CONST
-
-from optimiser import process as pr
-from utils import units_calculation as cal
-from optimiser import process as process_calc
 import logging.config
 
-logging.config.dictConfig(CONST.LOGGING_CONFIG)
+logging.config.dictConfig({
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'console': {
+            'format': '%(name)-12s %(levelname)-8s %(message)s'
+        },
+        'file': {
+            'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
+        }
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'console'
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'formatter': 'file',
+            'filename': 'debug.log'
+        }
+    },
+    'loggers': {
+        '': {
+            'level': 'DEBUG',
+            'handlers': ['console', 'file']
+        },
+        'django.request': {
+            'level': 'DEBUG',
+            'handlers': ['console', 'file']
+        }
+    }
+})
 logger = logging.getLogger(__name__)
 
+######## Unit Predicition########
+def predict_sales(coeffs,data):
+    print('predict_sales')
+    predict = 0
+    for i in coeffs['names']:
+        if(i=="Intercept"):
+            predict = predict + coeffs[coeffs['names']==i]["model_coefficients"].values
+        else:
+            predict = predict+ data[i]* coeffs[coeffs['names']==i]["model_coefficients"].values
+    data['pred_vol'] = predict
+    data['Predicted_Volume'] = np.exp(data['pred_vol'])
+    return(data['Predicted_Volume'])  
 
 class my_dictionary(dict): 
   
@@ -34,87 +73,9 @@ class my_dictionary(dict):
     def add(self, key, value): 
         self[key] = value 
 
-def _update_params(config , request_value):
-    '''
-    update the optimizer parameter from request
-    '''
-    MINIMIZE_PARAMS = ['Trade_Expense']
-    # {'account_name': 'Tander', 'corporate_segment': 'LOOSE', 'product_group': 'A.Korkunov 192g',
-    #  'strategic_cell': 'cell', 'objective_function': 'MAC', 'max_promotion': 23, 'min_promotion': 16, 
-    #  'config_mac': True, 'config_rp': True, 'config_trade_expense': False, 
-    #  'config_units': False, 'config_mac_perc': False, 'config_min_length': True, 
-    #  'config_max_length': True, 'config_promo_gap': True, 'param_mac': 1.0, 'param_rp': 1.0, 
-    #  'param_trade_expense': 1.0, 'param_units': 1.0, 'param_mac_perc': 1.0, 'param_min_length': 2, 
-    #  'param_max_length': 5, 'param_promo_gap': 4}
-    
-    
-    # config = {"Reatiler":"Magnit","PPG":'A.Korkunov_192g','Segment':"Choco","MARS_TPRS":[],"Co_investment":0,
-    #       "Objective_metric":"MAC","Objective":"Maximize",
-    #       "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
-    #                           ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
-    #                 'promo_gap':True},
-    #       "constrain_params": {'MAC':1,'RP':1,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,
-    # 'MAC_Perc':1,'RP_Perc':1,
-    #                             'min_consecutive_promo':6,'max_consecutive_promo':6,
-    #                 'promo_gap':2,'tot_promo_min':10,'tot_promo_max':26,'compul_no_promo_weeks':[],'compul_promo_weeks' :[]}}
-  
- 
-    config['Reatiler'] = request_value['account_name']
-    config['PPG'] = request_value['product_group']
-    config['MARS_TPRS'] =  [int(i) if i else 0 for i in request_value['mars_tpr'].split(",")] if request_value['mars_tpr'] else []
-    config['Co_investment'] = request_value['co_investment']
-    config['Objective_metric'] = request_value['objective_function']
-    config['Objective'] = 'Minimize' if(request_value['objective_function'] in MINIMIZE_PARAMS) else 'Maximize'
-    config['Segment'] = request_value['corporate_segment']
-   
-    config['constrain_params']['MAC'] = request_value['param_mac']
-    config['constrain_params']['RP'] = request_value['param_rp']
-    config['constrain_params']['Trade_Expense'] = request_value['param_trade_expense']
-    config['constrain_params']['Units'] = request_value['param_units']
-    config['constrain_params']['NSV'] = request_value['param_nsv']
-    config['constrain_params']['GSV'] = request_value['param_gsv']
-    config['constrain_params']['Sales'] = request_value['param_sales']
-    config['constrain_params']['MAC_Perc'] = request_value['param_mac_perc']
-    config['constrain_params']['RP_Perc'] = request_value['param_rp_perc']
-    config['constrain_params']['min_consecutive_promo'] = request_value['param_min_consecutive_promo']
-    config['constrain_params']['max_consecutive_promo'] = request_value['param_max_consecutive_promo']
-    config['constrain_params']['promo_gap'] = request_value['param_promo_gap']
-    config['constrain_params']['tot_promo_min'] = request_value['param_total_promo_min']
-    config['constrain_params']['tot_promo_max'] = request_value['param_total_promo_max']
-    config['constrain_params']['compul_no_promo_weeks'] = [int(i) if i else 0 for i in request_value['param_compulsory_no_promo_weeks'].split(",")] if request_value['param_compulsory_no_promo_weeks'] else []
-    config['constrain_params']['compul_promo_weeks'] = [int(i) if i else 0 for i in request_value['param_compulsory_promo_weeks'].split(",")] if request_value['param_compulsory_promo_weeks'] else []
-    
-    config['config_constrain']['MAC'] = config['config_constrain']['MAC'] + (request_value['config_mac']/100)
-    config['config_constrain']['RP'] =  config['config_constrain']['RP'] + (request_value['config_rp']/100)
-    config['config_constrain']['Trade_Expense'] = config['config_constrain']['Trade_Expense'] +  (request_value['config_trade_expense']/100)
-    config['config_constrain']['Units'] = config['config_constrain']['Units'] + (request_value['config_units']/100)
-    config['config_constrain']['NSV'] = config['config_constrain']['NSV'] + (request_value['config_nsv']/100)
-    config['config_constrain']['GSV'] = config['config_constrain']['GSV'] + (request_value['config_gsv']/100)
-    config['config_constrain']['Sales'] = config['config_constrain']['Sales'] + (request_value['config_sales']/100)
-    config['config_constrain']['MAC_Perc'] = config['config_constrain']['MAC_Perc'] + (request_value['config_mac_perc']/100)
-    config['config_constrain']['RP_Perc'] = config['config_constrain']['RP_Perc'] + (request_value['config_rp_perc']/100)
-    config['config_constrain']['min_consecutive_promo'] = request_value['config_min_consecutive_promo']
-    config['config_constrain']['max_consecutive_promo'] = request_value['config_max_consecutive_promo']
-    config['config_constrain']['promo_gap'] = request_value['config_promo_gap']
-
-      # pass
-
-def predict_sales(coeffs,data):
-    logging.info('Calculate Predict Sales')
-    predict = 0
-    for i in coeffs['names']:
-        if(i=="Intercept"):
-            predict = predict + coeffs[coeffs['names']==i]["model_coefficients"].values
-        else:
-            predict = predict+ data[i]* coeffs[coeffs['names']==i]["model_coefficients"].values
-    data['pred_vol'] = predict
-    data['Predicted_Volume'] = np.exp(data['pred_vol'])
-    return(data['Predicted_Volume'])
-
-
 ##### Promo wave/slot calculation#######  
 def promo_wave_cal(tpr_data):
-  logging.info('Promo Wave/Slot Calculation')
+  print('promo_wave_cal')
   tpr_data['Promo_wave']=0
   c=1
   i=0
@@ -134,35 +95,36 @@ def promo_wave_cal(tpr_data):
       i=i+1
   return tpr_data['Promo_wave']    
 
-# def _predict(pred_df, model_coef, var_col="model_coefficient_name", coef_col="model_coefficient_value", intercept_name="(Intercept)"):
-#     """Predict Sales.
 
-#     Parameters
-#     ----------
-#     pred_df : pd.DataFrame
-#         Dataframe consisting of IDVs
-#     model_coef : pd.DataFrame
-#         Dataframe consisting of model coefficient and its value
-#     var_col : str
-#         Column containing model variable
-#     coef_col : str
-#         Column containing model variables and their coefficient estimate
-#     intercept_name : str
-#         Name of intercept variable
+def _predict(pred_df, model_coef, var_col="model_coefficient_name", coef_col="model_coefficient_value", intercept_name="(Intercept)"):
+    """Predict Sales.
 
-#     Returns
-#     -------
-#     ndarray
-#     """
-#     logging.info('Calculate Predict')
-#     idv_cols = [col for col in model_coef[var_col] if col != intercept_name]
-#     idv_coef = model_coef.loc[model_coef[var_col].isin(idv_cols), coef_col]
-#     idv_df = pred_df.loc[:, idv_cols]
+    Parameters
+    ----------
+    pred_df : pd.DataFrame
+        Dataframe consisting of IDVs
+    model_coef : pd.DataFrame
+        Dataframe consisting of model coefficient and its value
+    var_col : str
+        Column containing model variable
+    coef_col : str
+        Column containing model variables and their coefficient estimate
+    intercept_name : str
+        Name of intercept variable
 
-#     intercept = model_coef.loc[~model_coef[var_col].isin(idv_cols), coef_col].to_list()[0]
-#     prediction = idv_df.values.dot(idv_coef.values) + intercept
+    Returns
+    -------
+    ndarray
+    """
+    print('_predict')
+    idv_cols = [col for col in model_coef[var_col] if col != intercept_name]
+    idv_coef = model_coef.loc[model_coef[var_col].isin(idv_cols), coef_col]
+    idv_df = pred_df.loc[:, idv_cols]
+
+    intercept = model_coef.loc[~model_coef[var_col].isin(idv_cols), coef_col].to_list()[0]
+    prediction = idv_df.values.dot(idv_coef.values) + intercept
     
-#     return prediction
+    return prediction
 
 
 def set_baseline_value(model_df, model_coef, var_col="model_coefficient_name", coef_col="model_coefficient_value", intercept_name="(Intercept)", baseline_value=None):
@@ -194,7 +156,7 @@ def set_baseline_value(model_df, model_coef, var_col="model_coefficient_name", c
     -------
     pd.DataFrame
     """
-    logging.info('Set Baseline Value')
+    print('set_baseline_value')
     # Get baseline value
     if baseline_value is None:
         baseline_value = {"wk_sold_median_base_price_byppg_log": ["Rolling Max", 26],
@@ -245,8 +207,7 @@ def set_baseline_value(model_df, model_coef, var_col="model_coefficient_name", c
             baseline_df[i] = tmp_df["Final_baseprice"].reset_index(drop=True)
         else:
             # Do nothing
-            # print()
-            pass
+            print()
             
     # Parameters not specified in  Baseline condition
     other_params = [i for i in baseline_df.columns if (i not in baseline_value["Parameters"].to_list()) and (i !=intercept_name)]
@@ -279,24 +240,23 @@ def get_var_contribution_wt_baseline_defined(df, model_coef, wk_sold_price, var_
     -------
     tuple of pd.DataFrame
     """
-    logging.info('Get variable contribution with baseline defined')
-
+    print('get_var_contribution_wt_baseline_defined')
     # Predict Sales
     ppg_cols = ["PPG_Cat", "PPG_MFG", "PPG_Item_No", "PPG_Description"]
     model_df = df.drop(columns=ppg_cols).copy()
-    model_df["Predicted_sales"] = np.exp(cal._predict(model_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name))
+    model_df["Predicted_sales"] = np.exp(_predict(model_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name))
     
     # Predict Baseline Sales
     tmp_model_df = model_df.copy()    
     base_var, baseline_df = set_baseline_value(tmp_model_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name, baseline_value=baseline_value)
-    baseline_df["Predicted_baseline_sales"] = np.exp(cal._predict(baseline_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name))
+    baseline_df["Predicted_baseline_sales"] = np.exp(_predict(baseline_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name))
     model_df["Predicted_baseline_sales"] = baseline_df["Predicted_baseline_sales"]
     model_df["incremental_predicted"] = model_df["Predicted_sales"] - model_df["Predicted_baseline_sales"]
     
     # Calculate raw contribution
     model_df[intercept_name] = 1
     baseline_df[intercept_name] = 1
-    pred_xb = cal._predict(model_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name)
+    pred_xb = _predict(model_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name)
     rc_sum = 0
     abs_sum = 0
         
@@ -325,8 +285,8 @@ def get_var_contribution_wt_baseline_defined(df, model_coef, wk_sold_price, var_
     price_dist_df[numeric_cols] = price_dist_df[numeric_cols].mul(wk_sold_price.values, axis=0)
     
     # Get variable contribution variants
-    dt_unit_dist_df, qtr_unit_dist_df, yr_unit_dist_df = cal.get_var_contribution_variants(unit_dist_df, "model_coefficient_name", value_col_name="units")
-    dt_price_dist_df, qtr_price_dist_df, yr_price_dist_df = cal.get_var_contribution_variants(price_dist_df, "model_coefficient_name", value_col_name="price")
+    dt_unit_dist_df, qtr_unit_dist_df, yr_unit_dist_df = get_var_contribution_variants(unit_dist_df, "model_coefficient_name", value_col_name="units")
+    dt_price_dist_df, qtr_price_dist_df, yr_price_dist_df = get_var_contribution_variants(price_dist_df, "model_coefficient_name", value_col_name="price")
     overall_dt_dist_df = dt_unit_dist_df.merge(dt_price_dist_df, how="left", on=["Date", "model_coefficient_name"])
     overall_qtr_dist_df = qtr_unit_dist_df.merge(qtr_price_dist_df, how="left", on=["Quarter", "model_coefficient_name"])
     overall_yr_dist_df = yr_unit_dist_df.merge(yr_price_dist_df, how="left", on=["Year", "model_coefficient_name"])
@@ -370,7 +330,7 @@ def get_var_contribution_wo_baseline_defined(df, model_coef, wk_sold_price,  all
     ppg_cols = ["PPG_Cat", "PPG_MFG", "PPG_Item_No", "PPG_Description"]
     ppg = df["PPG_Item_No"].to_list()[0]
     model_df = df.drop(columns=ppg_cols).copy()
-    model_df["Predicted_sales"] = np.exp(cal._predict(model_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name))
+    model_df["Predicted_sales"] = np.exp(_predict(model_df, model_coef, var_col=var_col, coef_col=coef_col, intercept_name=intercept_name))
 
     # Get base and impact variables
     if base_var is None:
@@ -443,8 +403,8 @@ def get_var_contribution_wo_baseline_defined(df, model_coef, wk_sold_price,  all
     price_dist_df[numeric_cols] = price_dist_df[numeric_cols].mul(wk_sold_price.values, axis=0)
     
     # Get variable contribution variants
-    dt_unit_dist_df, qtr_unit_dist_df, yr_unit_dist_df = cal.get_var_contribution_variants(unit_dist_df, "model_coefficient_name", value_col_name="units")
-    dt_price_dist_df, qtr_price_dist_df, yr_price_dist_df = cal.get_var_contribution_variants(price_dist_df, "model_coefficient_name", value_col_name="price")
+    dt_unit_dist_df, qtr_unit_dist_df, yr_unit_dist_df = get_var_contribution_variants(unit_dist_df, "model_coefficient_name", value_col_name="units")
+    dt_price_dist_df, qtr_price_dist_df, yr_price_dist_df = get_var_contribution_variants(price_dist_df, "model_coefficient_name", value_col_name="price")
     overall_dt_dist_df = dt_unit_dist_df.merge(dt_price_dist_df, how="left", on=["Date", "model_coefficient_name"])
     overall_qtr_dist_df = qtr_unit_dist_df.merge(qtr_price_dist_df, how="left", on=["Quarter", "model_coefficient_name"])
     overall_yr_dist_df = yr_unit_dist_df.merge(yr_price_dist_df, how="left", on=["Year", "model_coefficient_name"])
@@ -457,58 +417,59 @@ def get_var_contribution_wo_baseline_defined(df, model_coef, wk_sold_price,  all
     return overall_dt_dist_df, overall_qtr_dist_df, overall_yr_dist_df
 
 
-# def get_var_contribution_variants(dist_df, var_col_name, value_col_name):
-#     """Get variable contribution by different variants.
+def get_var_contribution_variants(dist_df, var_col_name, value_col_name):
+    print('get_var_contribution_variants')
+    """Get variable contribution by different variants.
 
-#     Parameters
-#     ----------
-#     dist_df : pd.DataFrame
-#         Dataframe consisting of IDVs
-#     var_col_name : str
-#         Column name for melted IDV columns
-#     value_col_name : str
-#         Column name for IDV values
+    Parameters
+    ----------
+    dist_df : pd.DataFrame
+        Dataframe consisting of IDVs
+    var_col_name : str
+        Column name for melted IDV columns
+    value_col_name : str
+        Column name for IDV values
 
-#     Returns
-#     -------
-#     tuple of pd.DataFrame
-#     """
-#     pct_dist_df = dist_df.copy()
-#     numeric_cols = pct_dist_df.select_dtypes(include="number").columns.to_list()
-#     pct_dist_df[numeric_cols] = pct_dist_df[numeric_cols].div(pct_dist_df["Predicted_sales"], axis=0)
-#     dist_df_1 = pd.merge(dist_df.melt(id_vars=["Date"], var_name=var_col_name, value_name=value_col_name),
-#                          pct_dist_df.melt(id_vars=["Date"], var_name=var_col_name, value_name="pct_" + value_col_name),
-#                          how="left", on=["Date", var_col_name])
+    Returns
+    -------
+    tuple of pd.DataFrame
+    """
+    pct_dist_df = dist_df.copy()
+    numeric_cols = pct_dist_df.select_dtypes(include="number").columns.to_list()
+    pct_dist_df[numeric_cols] = pct_dist_df[numeric_cols].div(pct_dist_df["Predicted_sales"], axis=0)
+    dist_df_1 = pd.merge(dist_df.melt(id_vars=["Date"], var_name=var_col_name, value_name=value_col_name),
+                         pct_dist_df.melt(id_vars=["Date"], var_name=var_col_name, value_name="pct_" + value_col_name),
+                         how="left", on=["Date", var_col_name])
     
-#     # Quarterly Aggegration
-#     qtr_dist_df = dist_df.copy()
-#     qtr_dist_df["Quarter"] = qtr_dist_df["Date"].dt.year.astype(str) + "-" + "Q" + qtr_dist_df["Date"].dt.quarter.astype(str)
-#     qtr_dist_df = qtr_dist_df.drop(columns=["Date"])
-#     qtr_dist_df = qtr_dist_df.groupby(by=["Quarter"], as_index=False).agg(np.sum)
+    # Quarterly Aggegration
+    qtr_dist_df = dist_df.copy()
+    qtr_dist_df["Quarter"] = qtr_dist_df["Date"].dt.year.astype(str) + "-" + "Q" + qtr_dist_df["Date"].dt.quarter.astype(str)
+    qtr_dist_df = qtr_dist_df.drop(columns=["Date"])
+    qtr_dist_df = qtr_dist_df.groupby(by=["Quarter"], as_index=False).agg(np.sum)
 
-#     pct_qtr_dist_df = qtr_dist_df.copy()
-#     pct_qtr_dist_df[numeric_cols] = pct_qtr_dist_df[numeric_cols].div(pct_qtr_dist_df["Predicted_sales"], axis=0)
-#     dist_df_2 = pd.merge(qtr_dist_df.melt(id_vars=["Quarter"], var_name=var_col_name, value_name=value_col_name),
-#                          pct_qtr_dist_df.melt(id_vars=["Quarter"], var_name=var_col_name, value_name="pct_" + value_col_name),
-#                          how="left", on=["Quarter", var_col_name])
+    pct_qtr_dist_df = qtr_dist_df.copy()
+    pct_qtr_dist_df[numeric_cols] = pct_qtr_dist_df[numeric_cols].div(pct_qtr_dist_df["Predicted_sales"], axis=0)
+    dist_df_2 = pd.merge(qtr_dist_df.melt(id_vars=["Quarter"], var_name=var_col_name, value_name=value_col_name),
+                         pct_qtr_dist_df.melt(id_vars=["Quarter"], var_name=var_col_name, value_name="pct_" + value_col_name),
+                         how="left", on=["Quarter", var_col_name])
     
-#     # Yearly Aggegration 
-#     yr_dist_df = dist_df.copy()
-#     yr_dist_df["Year"] = yr_dist_df["Date"].dt.year.astype(str)
-#     yr_dist_df = yr_dist_df.drop(columns=["Date"])
-#     yr_dist_df = yr_dist_df.groupby(by=["Year"], as_index=False).agg(np.sum)
+    # Yearly Aggegration 
+    yr_dist_df = dist_df.copy()
+    yr_dist_df["Year"] = yr_dist_df["Date"].dt.year.astype(str)
+    yr_dist_df = yr_dist_df.drop(columns=["Date"])
+    yr_dist_df = yr_dist_df.groupby(by=["Year"], as_index=False).agg(np.sum)
     
-#     pct_yr_dist_df = yr_dist_df.copy()
-#     pct_yr_dist_df[numeric_cols] = pct_yr_dist_df[numeric_cols].div(pct_yr_dist_df["Predicted_sales"], axis=0)
-#     dist_df_3 = pd.merge(yr_dist_df.melt(id_vars=["Year"], var_name=var_col_name, value_name=value_col_name),
-#                          pct_yr_dist_df.melt(id_vars=["Year"], var_name=var_col_name, value_name="pct_" + value_col_name),
-#                          how="left", on=["Year", var_col_name])
+    pct_yr_dist_df = yr_dist_df.copy()
+    pct_yr_dist_df[numeric_cols] = pct_yr_dist_df[numeric_cols].div(pct_yr_dist_df["Predicted_sales"], axis=0)
+    dist_df_3 = pd.merge(yr_dist_df.melt(id_vars=["Year"], var_name=var_col_name, value_name=value_col_name),
+                         pct_yr_dist_df.melt(id_vars=["Year"], var_name=var_col_name, value_name="pct_" + value_col_name),
+                         how="left", on=["Year", var_col_name])
     
-#     return dist_df_1, dist_df_2, dist_df_3
+    return dist_df_1, dist_df_2, dist_df_3
 
 #Base variable change as required
 def base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef):
-  logging.info('Base variable change as required')
+  print('base_var_cont')
   m=1
   dt_dist = pd.DataFrame()
   quar_dist = pd.DataFrame()
@@ -539,44 +500,44 @@ def base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef):
   dt_dist = pd.pivot_table(dt_dist[['Date','model_coefficient_name','units','Iteration']],index = ["Date","Iteration"],columns = "model_coefficient_name")
   dt_dist = pd.DataFrame(dt_dist).reset_index()
   dt_dist.columns = dt_dist.columns.droplevel(0) 
-  # print(dt_dist.columns)
+  print(dt_dist.columns)
   a = ["Date","Iteration"]+list(dt_dist.columns[2:])
   dt_dist.columns = a
 
   year_dist = pd.pivot_table(year_dist[['Year','model_coefficient_name','units','Iteration']],index = ["model_coefficient_name","Iteration"],columns = "Year")
   year_dist = pd.DataFrame(year_dist).reset_index()
   year_dist.columns = year_dist.columns.droplevel(0) 
-  # print(year_dist.columns)
+  print(year_dist.columns)
   a = ["model_coefficient_name","Iteration"]+list(year_dist.columns[2:])
   year_dist.columns = a
 
   year_dist1 = pd.pivot_table(year_dist1[['Year','model_coefficient_name','units%','Iteration']],index = ["model_coefficient_name","Iteration"],columns = "Year")
   year_dist1 = pd.DataFrame(year_dist1).reset_index()
   year_dist1.columns = year_dist1.columns.droplevel(0) 
-  # print(year_dist1.columns)
+  print(year_dist1.columns)
   a = ["model_coefficient_name","Iteration"]+list(year_dist1.columns[2:])
   year_dist1.columns = a
 
   aa = dt_dist.columns
-  # print(aa)
+  print(aa)
 
   ###Competitor Discounts
   Comp = [i for i in aa if "PromotedDiscount" in i]
   dt_dist['Comp'] = dt_dist[Comp].sum(axis = 1)
   ###Give tpr related Variables
   Incremental = ['tpr_discount_byppg_contribution_impact']+[i for i in aa if "Catalogue" in i]+[i for i in aa if "Display" in i]+[i for i in aa if "flag_N_pls_1" in i]
-  # print('Incremental :',Incremental)
+  print('Incremental :',Incremental)
   dt_dist['Incremental'] = dt_dist[Incremental].sum(axis = 1)
   ###Give the remaining Base columns
   
-  #   baseprice_cols = ['wk_sold_median_base_price_byppg_log']+[i for i in model_cols if "RegularPrice" in i]
-  #   holiday =[i for i in model_cols if "day" and "flag" in i ]
-  #   SI_cols = [i for i in model_cols if "SI" in i ]
-  #   trend_cols = [i for i in model_cols if "trend" in i ]
-  #   base_list = baseprice_cols+SI_cols+trend_cols+[i for i in model_cols if "ACV_Selling" in i ]+holiday+[i for i in model_cols if "death_rate" in i]
+    #   baseprice_cols = ['wk_sold_median_base_price_byppg_log']+[i for i in model_cols if "RegularPrice" in i]
+    #   holiday =[i for i in model_cols if "day" and "flag" in i ]
+    #   SI_cols = [i for i in model_cols if "SI" in i ]
+    #   trend_cols = [i for i in model_cols if "trend" in i ]
+    #   base_list = baseprice_cols+SI_cols+trend_cols+[i for i in model_cols if "ACV_Selling" in i ]+holiday+[i for i in model_cols if "death_rate" in i]
   base_others = baseline_var_othr["Variable"].to_list()
   base = [ 'Intercept_contribution_base']+[i+'_contribution_base' for i in base_var]+[i+'_contribution_impact' for i in base_others]
-  # print("base :",base)
+  print("base :",base)
   dt_dist['Base'] = dt_dist[base].sum(axis = 1)
 
   model_df = model_df1.copy()
@@ -589,432 +550,6 @@ def base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef):
 
   dt_dist['Lift'] = dt_dist['Incremental']/(dt_dist['Base'])
   return dt_dist
-
-def get_promo_wave_values(tpr_discount):
-  no_of_promo = 0
-  max_promo = 0
-  min_promo = 0
-  duration_of_waves  =[]
-  waves = []
-  min_consecutive_promo = 53
-  max_consecutive_promo = 0
-  gap = []
-  promo_gap = []
-  max_length_gap = 0
-  min_length_gap = 53
-  tot_promo_min = 0
-  tot_promo_max = 0
-
-  val = tpr_discount
-  for i in range(0,len(val)):
-      # import pdb
-      # pdb.set_trace()
-      
-      if val[i] :
-          waves.append(val[i])
-          if i+1 == len(val):
-              duration_of_waves.append(waves)
-              if len(waves) > max_consecutive_promo:
-                  max_consecutive_promo = len(waves)
-              if len(waves) < min_consecutive_promo:
-                  min_consecutive_promo = len(waves)
-          no_of_promo = no_of_promo + 1
-      else:
-          gap.append(val[i])
-          if i+1 == len(val):
-              promo_gap.append(gap)
-              if len(gap) < min_length_gap:
-                  min_length_gap = len(gap)
-          
-      if not val[i] and val[0 if (i-1) < 0 else i-1]:
-          duration_of_waves.append(waves)
-          if len(waves) > max_consecutive_promo:
-              max_consecutive_promo = len(waves)
-          if len(waves) < min_consecutive_promo:
-                  min_consecutive_promo = len(waves)
-          waves = []
-      elif val[i] and not val[0 if (i-1) < 0 else i-1]:
-          promo_gap.append(gap)
-          if len(gap) < min_length_gap:
-              min_length_gap = len(gap)
-          gap = []
-          
-      if max_promo > val[i]:
-          max_promo = val[i]
-      if min_promo < val[i]:
-          min_promo = val[i]
-  tot_promo_max = no_of_promo + 3
-  tot_promo_min = no_of_promo - 3
-  print(max_consecutive_promo , "maximum consecutive  promo")
-  print(min_consecutive_promo , "minimum consecutive promo")
-  print(min_length_gap , "promo gap")
-  print(tot_promo_min , "total promo min")
-  print(tot_promo_max , "total promo max")
-  return min_consecutive_promo,max_consecutive_promo,min_length_gap,tot_promo_min,tot_promo_max
-
-def process(constraints = None):
-  logging.info('Main Funtion Begin')
-
-  # Model_Data,ROI_data, Model_Coeff = pr.get_list_from_db(constraints['account_name'],constraints['product_group'])
-  model_data_all,ROI_data,model_coeff,coeff_mapping = pr.get_list_from_db(constraints['account_name'],constraints['product_group'])
-
-  # Load from excel
-  # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-  # path = os.path.join(BASE_DIR + "/data/")
-
-  # model_data_all = pd.read_excel(path+'Simulator_Optimiser_combined_v2.xlsx',sheet_name='MODEL_DATA')
-  # model_data_all = model_data_all[(model_data_all['Account Name'] == constraints['account_name']) & (model_data_all['PPG'] == constraints['product_group'])]
-
-  # model_coeff = pd.read_excel(path+'Simulator_Optimiser_combined_v2.xlsx',sheet_name='MODEL_COEFFICIENT')
-  # model_coeff = model_coeff[(model_coeff['Account Name'] == constraints['account_name']) & (model_coeff['PPG'] == constraints['product_group'])]
-
-  # coeff_mapping = pd.read_excel(path+'Simulator_Optimiser_combined_v2.xlsx',sheet_name='COEFF_MAPPING')
-  # coeff_mapping = coeff_mapping[(coeff_mapping['Account Name'] == constraints['account_name']) & (coeff_mapping['PPG'] == constraints['product_group'])]
-
-  # ROI_data =  pd.read_csv(path+'ROI_Data_All_retailers_flag_N_pls_1.csv')
-  # ROI_data = ROI_data[(ROI_data['Account Name'] == constraints['account_name']) & (ROI_data['PPG'] == constraints['product_group'])]
-
-  # print(ROI_data)
-  # temp_model_Data = model_data_all.reset_index()
-  # min_consecutive_promo,max_consecutive_promo,min_promo_length_gap,tot_promo_min,tot_promo_max = get_promo_wave_values(temp_model_Data['TPR_Discount'])
-  min_consecutive_promo,max_consecutive_promo,min_promo_length_gap,tot_promo_min,tot_promo_max = get_promo_wave_values(model_data_all['TPR_Discount'])
-
-# config_constrain : Actiavte/deactivate config constraint -True/False
-# For financial metrics, a value of the form 1.xx or 0.xx where we want the maximum metric value to be xx*100 % higher or lower than the baseline value. Similary, for the # LowerBound_value and LB percentage
-# compulsory no_promo weeks and promo weeks : empty list means no compulsory weeks
-# Co_investment : Investment from the retailers
-# MARS_TPRS : additional tprs to include in the optimization
-# Fin_Pref_Order : The order of relaxing financial metric when we get a infeasible solution
-
-  config = {"Reatiler": constraints['account_name'],"PPG":constraints['product_group'],'Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
-          "Objective_metric":"Trade_Expense","Objective":"Minimize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
-          "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
-                              ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
-                    'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
-          "constrain_params": {'MAC':1.1,'RP':1.05,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
-                                'min_consecutive_promo': min_consecutive_promo,'max_consecutive_promo': max_consecutive_promo,
-                    'promo_gap': min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':10}}
-  
-  # retailer, ppg filter
-  slct_retailer = constraints['account_name']
-  slct_ppg = constraints['product_group']
-
-
-  # getting coefficient name mapping and values for selected retailer, ppg
-  coeff_mapping_temp = coeff_mapping.loc[(coeff_mapping['Account Name']==slct_retailer) & (coeff_mapping['PPG']==slct_ppg)]
-  col_dict = dict(zip(coeff_mapping_temp['Coefficient_new'], coeff_mapping_temp['Coefficient']))
-  col_dict_2 = dict(zip(coeff_mapping_temp['Coefficient'], coeff_mapping_temp['Coefficient_new']))
-  col_dict_2.pop('Intercept')
-  col_dict.pop('Intercept')
-  print(col_dict)
-  # getting idvs present for the retailer, ppg
-  idvs = coeff_mapping_temp['Coefficient_new'].to_list()
-  idvs.remove('Intercept')
-  # getting model data for retailer, ppg and renaming columns
-  Model_Data = model_data_all.loc[(model_data_all['Account Name']==slct_retailer) & (model_data_all['PPG']==slct_ppg) 
-                                & (model_data_all['Optimiser_flag']==1)].reset_index(drop=True)
-  Model_Data = Model_Data[['Date'] + idvs]
-  Model_Data.rename(columns=col_dict,inplace=True)
-  # getting model coefficients values with original names and format 
-  Model_Coeff = coeff_mapping_temp[['Coefficient','Value','PPG','Account Name','Coefficient_new']]
-  Model_Coeff.rename(columns={'Value':'model_coefficients',
-                                    'Coefficient':'names'},inplace=True)
-  Model_Coeff
-  flag_vars = Model_Coeff.loc[Model_Coeff['Coefficient_new'].str.contains('promo') |
-                            Model_Coeff['Coefficient_new'].str.contains('death')]['names'].to_list()
-  Model_Coeff
-  print(Model_Data.shape)
-  promo_list_PPG = ROI_data[(ROI_data['Account Name'] == slct_retailer) & (ROI_data['PPG'] == slct_ppg)].reset_index(drop=True)
-  print(promo_list_PPG.shape)
-  Period_data=promo_list_PPG[['Date','Discount, NRV %','TE Off Inv','TE On Inv','GMAC','COGS','List_Price','Mechanic', 'Coinvestment','Flag_promotype_N_pls_1']]
-  Model_Coeff_list_Keep=list(Model_Coeff['names'])
-  Model_Coeff_list_Keep.remove('Intercept')
-  Period_data["Promotion_Cost"] = Period_data['List_Price'] * Period_data['Discount, NRV %'] * (1 - Period_data['TE On Inv'])
-  Period_data["TE"] = Period_data["List_Price"] * (Period_data["Discount, NRV %"] + Period_data["TE On Inv"] + Period_data["TE Off Inv"] - 
-                                                            Period_data["Discount, NRV %"] * Period_data["TE Off Inv"] - Period_data["TE Off Inv"] * Period_data["TE On Inv"] - 
-                                                            Period_data["TE On Inv"] * Period_data["Discount, NRV %"] + Period_data["TE Off Inv"] * Period_data["TE On Inv"] * Period_data["Discount, NRV %"])
-  Period_data['Promo_Depth']= Period_data['Discount, NRV %']*100
-  Period_data['tpr_discount_byppg']= Period_data['Promo_Depth']+Period_data['Coinvestment']
-  Model_Data.rename(columns={'tpr_discount_byppg':'tpr_discount_byppg_train'},inplace=True)
-  print(Period_data['Date'],"SAte")
-  Period_data['Date']=pd.to_datetime(Period_data['Date'], format='%Y-%m-%d')
-  Final_Pred_Data=pd.merge(Period_data,Model_Data,how="left",on="Date")
-  Final_Pred_Data['wk_base_price_perunit_byppg'] = np.exp(Final_Pred_Data['wk_sold_median_base_price_byppg_log'])
-  Final_Pred_Data['Promo'] = np.where(Final_Pred_Data['tpr_discount_byppg'] == 0, Final_Pred_Data['wk_base_price_perunit_byppg'],
-                                      Final_Pred_Data['wk_base_price_perunit_byppg'] * (1-(Final_Pred_Data['tpr_discount_byppg']/100)))
-  Final_Pred_Data['wk_sold_avg_price_byppg'] = Final_Pred_Data['Promo']
-  # changing the promo related variable if there is any change
-  if 'Catalogue_Dist' in Model_Coeff_list_Keep:
-    Catalogue_temp=Final_Pred_Data[Final_Pred_Data['tpr_discount_byppg']>0]['Catalogue_Dist'].max()
-  if 'Catalogue' in Model_Coeff_list_Keep:
-    Catalogue_temp=Final_Pred_Data[Final_Pred_Data['tpr_discount_byppg']>0]['Catalogue'].max()
-  if 'Display' in Model_Coeff_list_Keep:
-    Display_temp=Final_Pred_Data[Final_Pred_Data['tpr_discount_byppg']>0]['Display'].max()
-  if 'Catalogue_Dist' in Model_Coeff_list_Keep:
-    Final_Pred_Data['Catalogue_Dist']=np.where(Final_Pred_Data['tpr_discount_byppg']==0,0,Catalogue_temp)
-  if 'Catalogue' in Model_Coeff_list_Keep:
-    Final_Pred_Data['Catalogue']=np.where(Final_Pred_Data['tpr_discount_byppg']==0,0,Catalogue_temp)
-  if 'Display' in Model_Coeff_list_Keep:
-    Final_Pred_Data['Catalogue']=np.where(Final_Pred_Data['Display']==0,0,Display_temp)
-  if 'tpr_discount_byppg_lag1' in Model_Coeff_list_Keep:
-    Final_Pred_Data['tpr_discount_byppg_lag1']= Final_Pred_Data['tpr_discount_byppg'].shift(1).fillna(0)
-  if 'tpr_discount_byppg_lag2' in Model_Coeff_list_Keep:
-    Final_Pred_Data['tpr_discount_byppg_lag2']= Final_Pred_Data['tpr_discount_byppg'].shift(2).fillna(0)
-  if 'flag_N_pls_1' in Model_Coeff_list_Keep:
-    Final_Pred_Data['flag_N_pls_1']=np.where(Final_Pred_Data['Flag_promotype_N_pls_1']==1,1,0)
-  
-  Final_Pred_Data['Baseline_Prediction']=predict_sales(Model_Coeff,Final_Pred_Data)
-  Final_Pred_Data['Baseline_Sales']=Final_Pred_Data['Baseline_Prediction'] *Final_Pred_Data['Promo']
-  Final_Pred_Data["Baseline_GSV"] = Final_Pred_Data['Baseline_Prediction'] * Final_Pred_Data['List_Price']
-  Final_Pred_Data["Baseline_Trade_Expense"] = Final_Pred_Data['Baseline_Prediction'] * Final_Pred_Data['TE']
-  Final_Pred_Data["Baseline_NSV"] = Final_Pred_Data['Baseline_GSV'] - Final_Pred_Data["Baseline_Trade_Expense"]
-  Final_Pred_Data["Baseline_MAC"] = Final_Pred_Data["Baseline_NSV"]-Final_Pred_Data['Baseline_Prediction'] * Final_Pred_Data['COGS']
-  Final_Pred_Data["Baseline_RP"] = Final_Pred_Data['Baseline_Sales']-Final_Pred_Data["Baseline_NSV"]
-  print(Final_Pred_Data[['Baseline_Prediction','Baseline_Sales',"Baseline_GSV","Baseline_Trade_Expense","Baseline_NSV","Baseline_MAC","Baseline_RP"]].sum().apply(lambda x: '%.3f' % x))
-  baseline_df =Final_Pred_Data[['Baseline_Prediction','Baseline_Sales',"Baseline_GSV","Baseline_Trade_Expense","Baseline_NSV","Baseline_MAC","Baseline_RP"]].sum().astype(int)
-  baseline_df['Baseline_MAC']
-
-  baseline_info ={}
-  # baseline calendar metrics calculation
-  # min and max consecutive weeks, promo gap, number of baseline promotions
-  baseline_data = Final_Pred_Data.copy()
-  promo_data = baseline_data[['Date','tpr_discount_byppg']]
-  promo_data['Week_no']=promo_data.index+1
-  promo_data['Promo_wave'] = promo_wave_cal(promo_data)
-  promo_data['Promo_flag'] = np.where(promo_data['tpr_discount_byppg']==0,0,1)
-  baseline_info['total_promotions']=promo_data['Promo_flag'].sum()
-  promo_data = promo_data.loc[promo_data['tpr_discount_byppg']!=0].reset_index(drop=True)
-  promo_wave_summary = promo_data.groupby(['Promo_wave']).agg( Tot_promo = ("Promo_flag",sum),
-                                                              start_week = ('Week_no',min),
-                                                              end_week = ("Week_no",max)).reset_index()
-  baseline_info['min_consecutive_promo']=promo_wave_summary['Tot_promo'].min()
-  baseline_info['max_consecutive_promo']=promo_wave_summary['Tot_promo'].max()
-  promo_wave_summary['Prev_end_week']=promo_wave_summary['end_week'].shift(1)#.fillna(0)
-  promo_wave_summary['Promo_gap']= promo_wave_summary['start_week']-promo_wave_summary['Prev_end_week']-1
-  baseline_info['min_promo_gap']=promo_wave_summary['Promo_gap'].min()
-  baseline_info['max_promo_gap']=promo_wave_summary['Promo_gap'].max()
-  # baseline_info
-  config = {"Reatiler": constraints['account_name'],"PPG":constraints['product_group'],'Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
-          "Objective_metric":"Trade_Expense","Objective":"Minimize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
-          "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
-                              ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
-                    'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
-          "constrain_params": {'MAC':1.1,'RP':1.05,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
-                                'min_consecutive_promo':min_consecutive_promo,'max_consecutive_promo':max_consecutive_promo,
-                    'promo_gap':min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':0}}
-  # financial metric preference order
-  fin_pref_order = config['Fin_Pref_Order']
-  print(baseline_data,"baseline_data")
-  # getting TE for all the tprs
-  TE_dict,ret_inv_dict = get_te_dict(baseline_data,config)
-  # Optimizer scenario creation
-  Required_base = get_required_base(baseline_data,Model_Coeff,TE_dict,ret_inv_dict,config)
-  Optimal_calendar_fin = pd.DataFrame()
-  infeasible_solution = True
-  Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
-  if((Optimal_calendar.shape[0]==52) or (Optimal_calendar['Solution'].unique()=='Optimal')):
-    Optimal_calendar_fin =Optimal_calendar.copy()
-    infeasible_solution = False
-  # step1 : decreasing the metrics with lower/upper limit higher/lower than baseline
-  if(infeasible_solution):
-    print("Infeasible solution : decreasing the metrics limit greater than baseline")
-    fin_metrics = ['Units','NSV','GSV','Sales','Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC']
-    config_constrain = config['config_constrain']
-    Act_fin_metrics = []
-    # getting the financial metric with lower/upper limit higher/lower than baseline
-    # we will be checking only two iterations in this step
-    for i in fin_metrics:
-      if i=='Trade_Expense':
-        if ((config_constrain[i]) and (config['constrain_params'][i]<1) ):
-          Act_fin_metrics.append(i)
-      else:
-        if ((config_constrain[i]) and (config['constrain_params'][i]>1) ):
-          Act_fin_metrics.append(i)
-    iteration =True
-    delta_dict ={}
-    iter_no =0
-    print("before iteration")
-    while iteration:
-      iter_no +=1
-      for rel in Act_fin_metrics:
-        print(rel)
-        if(rel=='Trade_Expense'):
-          if (config['constrain_params'][rel]<1 and iter_no==1):
-            delta_dict[rel] = (1-config['constrain_params'][rel])/2
-          if ((config['constrain_params'][rel])<1):
-            config['constrain_params'][rel]=config['constrain_params'][rel]+delta_dict[rel]
-          else:
-            config['constrain_params'][rel]=config['constrain_params'][rel]+delta
-        else:
-          if (config['constrain_params'][rel]>1 and iter_no==1):
-            delta_dict[rel] = (config['constrain_params'][rel]-1)/2
-          if ((config['constrain_params'][rel])>1):
-            config['constrain_params'][rel]=config['constrain_params'][rel]-delta_dict[rel]
-      print(config['constrain_params'],"1361")
-      Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
-      print(Optimal_calendar,"Optimal_calendar")
-      if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
-        print(config['constrain_params'],"config['constrain_params']")
-        Optimal_calendar_fin = Optimal_calendar.copy()
-        iteration = False
-        infeasible_solution = False
-      if iter_no==2:
-        iteration = False
-  print("check here")
-  print(infeasible_solution,"infeasible_solution")
-  # if solution is infeasible after step 1 , we will relax each finacial metric one by one and check which metric is causing the infeasible solution
-  if(infeasible_solution):
-    print("Infeasible solution - relaxing financial metrics")
-    # selecting the secondory finacial metric based on the financial preferance order from the user input
-    Sec_fin_metrics = fin_pref_order[:-3]
-    # selecting the primary finacial metric based on the financial preferance order from the user input
-    Prim_fin_metrics = fin_pref_order[-3:]
-    # calendar metrics
-    calendar_metrics = ['compul_no_promo_weeks','compul_promo_weeks','promo_gap','max_consecutive_promo','min_consecutive_promo','tot_promo_min',
-                      'tot_promo_max']
-
-    config_constrain = config['config_constrain']
-    Act_Prim_fin_metrics = []
-    # getting the active secondary and primary financial metrics(config with True)
-    for i in Prim_fin_metrics:
-      if config_constrain[i]:
-        Act_Prim_fin_metrics.append(i)
-    Act_Sec_fin_metrics =[]
-    for i in Sec_fin_metrics:
-      if config_constrain[i]:
-        Act_Sec_fin_metrics.append(i)
-    # creating the combinations of primary and secondary financial metrics
-    Sec_combination = sum([list(map(list, combinations(Act_Sec_fin_metrics, i))) for i in range(len(Act_Sec_fin_metrics) + 1)], [])
-    Sec_combination = [i for i in Sec_combination if len(i)>0]
-    Prim_combination = sum([list(map(list, combinations(Act_Prim_fin_metrics, i))) for i in range(len(Act_Prim_fin_metrics) + 1)], [])
-    Prim_combination = [i for i in Prim_combination if len(i)>0]
-    iteration =True
-    while iteration:
-      relaxed_sec_metrics_opt=[]
-      relaxed_sec_metrics = []
-      relaxed_prim_metrics_opt=[]
-      relaxed_prim_metrics = []
-      # first we will start by relaxing secondary financial variables
-      for i in range(len(Sec_combination)):
-        print(Sec_combination[i])
-        metrics = Sec_combination[i]
-        for metric in metrics:
-          config['config_constrain'][metric]=False
-        print(config['config_constrain'])
-        Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
-        if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
-          # break the loop if we get a feasible solution
-          relaxed_sec_metrics_opt = Sec_combination[i]
-          for metric in metrics:
-            config['config_constrain'][metric]=True
-          print("breaking while loop")
-          iteration = False
-          break
-        if i==(len(Sec_combination)-1):
-          print(i)
-          relaxed_sec_metrics = Sec_combination[i]
-          print("Relaxing :",relaxed_sec_metrics)
-        else:
-          for metric in metrics:
-            config['config_constrain'][metric]=True
-      # if we dont get any feasible solution by relaxing all the secondary metrics, we relax primary metrics one by one
-      if iteration==False:
-        continue
-      for i in range(len(Prim_combination)):
-        print(Prim_combination[i])
-        metrics = Prim_combination[i]
-        for metric in metrics:
-          config['config_constrain'][metric]=False
-        print(config['config_constrain'])
-        Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
-        if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
-          # break the loop if we get a feasible solution
-          relaxed_prim_metrics_opt = Prim_combination[i]
-          for metric in metrics:
-            config['config_constrain'][metric]=True
-          iteration = False
-          break
-        if i==(len(Prim_combination)-1):
-          print(i)
-          relaxed_prim_metrics = Prim_combination[i]
-          for metric in metrics:
-            config['config_constrain'][metric]=True
-          iteration = False
-          break
-        else:
-          for metric in metrics:
-            config['config_constrain'][metric]=True
-    relaxed_metrics = []
-    if len(relaxed_sec_metrics_opt)>0:
-      relaxed_metrics = relaxed_sec_metrics_opt
-    elif len(relaxed_prim_metrics_opt)>0:
-      relaxed_metrics = relaxed_prim_metrics_opt
-    relaxed_metrics
-    delta = 0.01
-    opt_soln = False
-    metric_list = fin_pref_order.copy()
-    metric_list.reverse()
-    # decresing/increasing the lower/limit of metric to get a feasible solution
-    # if there is more than one metric, first we relax the metric with highest preference and decativate all other metrics. Once we get the solution with first metric, we relax the second metric
-    if len(relaxed_metrics)>0:
-      iter_metrics = [i for i in metric_list if i in relaxed_metrics]
-      n_metrics = len(iter_metrics)
-      rel_no=0
-      for rel in iter_metrics:
-        rel_no+=1
-        iteration = True
-        othr_metrics = iter_metrics[rel_no:]
-        for metric in othr_metrics:
-          config['config_constrain'][metric]=False
-        print(othr_metrics)
-        print(config['config_constrain'])
-        iter_no =0
-        while iteration:
-          iter_no+=1
-          if(rel=='Trade_Expense'):
-            config['constrain_params'][rel]=config['constrain_params'][rel]+delta
-          else:
-            config['constrain_params'][rel]=config['constrain_params'][rel]-delta
-          print(config['constrain_params'])
-          Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
-          if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
-            opt_soln = True
-            Optimal_calendar_fin = Optimal_calendar.copy()
-            for metric in othr_metrics:
-              config['config_constrain'][metric]=True
-            iteration = False
-          if(iter_no==15):
-            iteration = False
-        for metric in othr_metrics:
-          config['config_constrain'][metric]=True
-      if opt_soln:
-        dta=delta/4
-        k=0
-        # we will be checking extra 3 ietration to check feasible solution between last limit and and the feasible limit
-        while k<3:
-          for rel in relaxed_metrics:
-            if(rel=='Trade_Expense'):
-              config['constrain_params'][rel]=config['constrain_params'][rel]-dta
-            else:
-              config['constrain_params'][rel]=config['constrain_params'][rel]+dta
-          Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
-          if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
-            print(config['constrain_params'])
-            Optimal_calendar_fin = Optimal_calendar.copy()
-          k+=1
-  print("before ")
-  if Optimal_calendar_fin.shape[0]==0:
-    Optimal_calendar_fin['TPR']=baseline_data['tpr_discount_byppg']
-  # getting data with optimal calendar
-  Optimal_data = optimal_summary_fun(baseline_data,Model_Coeff,Optimal_calendar_fin,TE_dict,ret_inv_dict)
-  # getting comparison between baseline and optimal calendar
-  opt_base = get_opt_base_comparison(baseline_data,Optimal_data,Model_Coeff,config)
-  # metric summary comparison between optimal and baseline calendar
-  summary = get_calendar_summary(baseline_data,Optimal_data,opt_base)
-  parsed = json.loads(summary.to_json(orient="records"))
-  logging.info('Main Funtion Ends')
-  return parsed
-
 
 
 def get_te_dict(baseline_data,config):
@@ -1045,8 +580,7 @@ def get_te_dict(baseline_data,config):
       print(TE,Promotion_Cost)
   return TE_dict,ret_inv_dict
 
-
-def get_required_base(baseline_data,Model_Coeff,TE_dict,ret_inv_dict,config):
+def get_required_base(baseline_data,Model_Coeff,TE_dict,ret_inv_dict):
   logging.info('Get required base')
   # Optimizer scenario creation
   # getting model variables
@@ -1112,7 +646,6 @@ def get_required_base(baseline_data,Model_Coeff,TE_dict,ret_inv_dict,config):
   # creating unique ids for optimization
   Required_base['WK_ID'] = 'WK_' + Required_base['WK_ID'].astype(str)+'_'+Required_base['Iteration'].astype(str)
   return(Required_base)
-
 
 def optimizer_fun(baseline_data,Required_base,config):
   logging.info('Optimizer function')
@@ -1352,6 +885,7 @@ def optimizer_fun(baseline_data,Required_base,config):
     for k in range(0,52-constrain_params['max_consecutive_promo']):  
         prob+=lpSum([WK_vars[Required_base['WK_ID'][i+j*52]] for i in range(k,k+constrain_params['max_consecutive_promo']+1) for j in range(1,promo_loop)])<=constrain_params['max_consecutive_promo']
   
+  print("888")
   # Constrain for min promo wave length
   if(config_constrain['min_consecutive_promo']):
     for k in range(0,50):
@@ -1377,7 +911,7 @@ def optimizer_fun(baseline_data,Required_base,config):
       gap_weeks = len(range(k+1, min(52, k+constrain_params['promo_gap']+1)))
       prob+= R1_sum + gap_weeks * R2_sum >= gap_weeks * R3_sum
     #   prob.solve()
-  prob.solve(PULP_CBC_CMD(msg=True, maxSeconds=1200000,keepFiles=1, fracGap=None))
+  prob.solve(PULP_CBC_CMD(msg=True, maxSeconds=1200000, keepFiles=1, fracGap=None))
   print('loop ends')
   print(LpStatus[prob.status])
   print(pulp.value(prob.objective))
@@ -1403,9 +937,8 @@ def optimizer_fun(baseline_data,Required_base,config):
   df['Solution']=LpStatus[prob.status]
   print("df return from optimizser")
   return(df)
+
   # prob.solve(PULP_CBC_CMD(msg=True, maxSeconds=1200000, threads=90, keepFiles=1, fracGap=None))
-
-
 
 def optimal_summary_fun(baseline_data,Model_Coeff,optimal_calendar,TE_dict,ret_inv_dict):
   logging.info('Optimal Summary Function')
@@ -1450,7 +983,6 @@ def optimal_summary_fun(baseline_data,Model_Coeff,optimal_calendar,TE_dict,ret_i
   new_data["RP"] = new_data['Sales']-new_data["NSV"]
   print(new_data[['Sales',"GSV","Trade_Expense","NSV","MAC","RP","Units"]].sum().apply(lambda x: '%.3f' % x))
   return(new_data)
-
 
 def get_opt_base_comparison(baseline_data,optimal_data,Model_Coeff,config):
   logging.info('Get optimal base comparison')
@@ -1595,20 +1127,20 @@ def get_opt_base_comparison(baseline_data,optimal_data,Model_Coeff,config):
   # opt_base['Baseline_Promo']=np.round(opt_base['Baseline_Promo'],4)
   return opt_base
 
-
 def get_calendar_summary(baseline_data,optimal_data,opt_base):
-  logging.info('Get calendar summary data')
+  print('get_calendar_summary')
   print(opt_base,"opt_base")
+  # Function for creating an overall summary
+  prd=0
   base_scenario=baseline_data.copy()
   Optimal_scenario=optimal_data.copy()
-  # Optimal_scenario=pd.read_csv(path+"Training_data_"+str(prd)+"_Optimal.csv")
+  # Optimal_scenario=pd.read_csv(path+"Model_Results/Training_data_"+str(prd)+"_Optimal.csv")
   base_scenario.rename(columns={'Baseline_Prediction':'Units','Baseline_Sales':'Sales',
                                 'Baseline_GSV':'GSV','Baseline_Trade_Expense':'Trade_Expense',
                                 'Baseline_NSV':'NSV','Baseline_MAC':'MAC',
                                 'Baseline_RP':'RP'},inplace=True)
   base_scenario['AvgSellingPrice']=base_scenario['wk_sold_avg_price_byppg']
   Optimal_scenario['AvgSellingPrice']=Optimal_scenario['wk_sold_avg_price_byppg']
-  prd=0
   base_scenario['Product']= "Product"+str(prd)
   Optimal_scenario['Product']= "Product"+str(prd)
 
@@ -1625,8 +1157,8 @@ def get_calendar_summary(baseline_data,optimal_data,opt_base):
   summary_opt['ROI'] = opt_base['Optimum_Uplift_GMAC_LSV'].sum()/opt_base['Optimum_Total_Uplift_Cost'].sum()
 
   #Metric Summary
-  #summary_base=pd.read_csv((path+  f"Summary_Metric_{prd}.csv"))
-  #summary_opt=pd.read_csv((path+  f"Summary_Metric_{prd}_Optimal.csv"))
+  #summary_base=pd.read_csv((path+  f"Model_Results/Summary_Metric_{prd}.csv"))
+  #summary_opt=pd.read_csv((path+  f"Model_Results/Summary_Metric_{prd}_Optimal.csv"))
   summary_opt[['Sales', 'Units', "Trade_Expense",'GSV', 'NSV', 'MAC', 'RP']]=summary_opt[['Sales', 'Units', "Trade_Expense",'GSV', 'NSV', 'MAC', 'RP']].astype(int)
   summary_opt["RP_Perc"]=summary_opt['RP']/summary_opt['Sales']
   summary_opt['Mac_Perc'] = summary_opt['MAC']/summary_opt['NSV']
@@ -1649,10 +1181,431 @@ def get_calendar_summary(baseline_data,optimal_data,opt_base):
   summary_metric=summary_base.merge(summary_opt,on='Metric',how='left')
   # summary_metric['Change']=np.round(summary_metric['Recommended_Scenario']-summary_metric['Base_Scenario'],4)
   # summary_metric['Delta']=np.round(summary_metric['Change']/summary_metric['Base_Scenario'],4)
-
+  
   summary_metric['Change']=summary_metric['Recommended_Scenario']-summary_metric['Base_Scenario']
   summary_metric['Delta']=summary_metric['Change']/summary_metric['Base_Scenario']
   return summary_metric
 
+def get_promo_wave_values(tpr_discount):
+  no_of_promo = 0
+  max_promo = 0
+  min_promo = 0
+  duration_of_waves  =[]
+  waves = []
+  min_consecutive_promo = 53
+  max_consecutive_promo = 0
+  gap = []
+  promo_gap = []
+  max_length_gap = 0
+  min_length_gap = 53
+  tot_promo_min = 0
+  tot_promo_max = 0
+  val = tpr_discount
+  for i in range(0,len(val)):
+    if val[i] :
+        waves.append(val[i])
+        if i+1 == len(val):
+            duration_of_waves.append(waves)
+            if len(waves) > max_consecutive_promo:
+                max_consecutive_promo = len(waves)
+            if len(waves) < min_consecutive_promo:
+                min_consecutive_promo = len(waves)
+        no_of_promo = no_of_promo + 1
+    else:
+        gap.append(val[i])
+        if i+1 == len(val):
+            promo_gap.append(gap)
+            if len(gap) < min_length_gap:
+                min_length_gap = len(gap)
+        
+    if not val[i] and val[0 if (i-1) < 0 else i-1]:
+        duration_of_waves.append(waves)
+        if len(waves) > max_consecutive_promo:
+            max_consecutive_promo = len(waves)
+        if len(waves) < min_consecutive_promo:
+                min_consecutive_promo = len(waves)
+        waves = []
+    elif val[i] and not val[0 if (i-1) < 0 else i-1]:
+        promo_gap.append(gap)
+        if len(gap) < min_length_gap:
+            min_length_gap = len(gap)
+        gap = []
+        
+    if max_promo > val[i]:
+        max_promo = val[i]
+    if min_promo < val[i]:
+        min_promo = val[i]
+  tot_promo_max = no_of_promo + 3
+  tot_promo_min = no_of_promo - 3
+  print(max_consecutive_promo , "maximum consecutive  promo")
+  print(min_consecutive_promo , "minimum consecutive promo")
+  print(min_length_gap , "promo gap")
+  print(tot_promo_min , "total promo min")
+  print(tot_promo_max , "total promo max")
+  return min_consecutive_promo,max_consecutive_promo,min_length_gap,tot_promo_min,tot_promo_max
 
+print('Calc Starts')
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+path = os.path.join(BASE_DIR + "/data/")
+pd.set_option('display.max_columns', None)  # or 1000
+pd.set_option('display.max_rows', None)  # or 1000
 
+# retailer, ppg filter
+# slct_retailer = 'Tander'
+# slct_ppg = 'A.Korkunov 192g'
+slct_retailer = 'Lenta'
+slct_ppg = 'Big Bars'
+
+model_data_all = pd.read_excel(path+'Simulator_Optimiser_combined_v2.xlsx',sheet_name='MODEL_DATA')
+model_data_all = model_data_all[(model_data_all['Account Name'] == slct_retailer) & (model_data_all['PPG'] == slct_ppg)]
+
+model_coeff = pd.read_excel(path+'Simulator_Optimiser_combined_v2.xlsx',sheet_name='MODEL_COEFFICIENT')
+model_coeff = model_coeff[(model_coeff['Account Name'] == slct_retailer) & (model_coeff['PPG'] == slct_ppg)]
+
+coeff_mapping = pd.read_excel(path+'Simulator_Optimiser_combined_v2.xlsx',sheet_name='COEFF_MAPPING')
+coeff_mapping = coeff_mapping[(coeff_mapping['Account Name'] == slct_retailer) & (coeff_mapping['PPG'] == slct_ppg)]
+
+ROI_data =  pd.read_csv(path+'ROI_Data_All_retailers_flag_N_pls_1.csv')
+ROI_data = ROI_data[(ROI_data['Account Name'] == slct_retailer) & (ROI_data['PPG'] == slct_ppg)]
+
+# print(model_data_all,"model_data_all")
+# exit()
+# print(model_coeff,"model_coeff")
+# print(coeff_mapping,"coeff_mapping")
+# print(ROI_data[['Date','Discount, NRV %','TE Off Inv','TE On Inv','GMAC','COGS','List_Price','Mechanic', 'Coinvestment','Flag_promotype_N_pls_1']],"roi_dt")
+
+# config_constrain : Actiavte/deactivate config constraint -True/False
+# For financial metrics, a value of the form 1.xx or 0.xx where we want the maximum metric value to be xx*100 % higher or lower than the baseline value. Similary, for the # LowerBound_value and LB percentage
+# compulsory no_promo weeks and promo weeks : empty list means no compulsory weeks
+# Co_investment : Investment from the retailers
+# MARS_TPRS : additional tprs to include in the optimization
+# Fin_Pref_Order : The order of relaxing financial metric when we get a infeasible solution
+temp_model_Data = model_data_all.reset_index()
+print(temp_model_Data)
+min_consecutive_promo,max_consecutive_promo,min_promo_length_gap,tot_promo_min,tot_promo_max = get_promo_wave_values(temp_model_Data['TPR_Discount'])
+
+config = {"Reatiler": slct_retailer,"PPG": slct_ppg,'Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
+         "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
+        "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
+                            ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
+                   'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
+         "constrain_params": {'MAC':1.1,'RP':1.05,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
+                              'min_consecutive_promo':min_consecutive_promo,'max_consecutive_promo':max_consecutive_promo,
+                   'promo_gap':min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':10}}
+
+# getting coefficient name mapping and values for selected retailer, ppg
+coeff_mapping_temp = coeff_mapping.loc[(coeff_mapping['Account Name']==slct_retailer) & (coeff_mapping['PPG']==slct_ppg)]
+col_dict = dict(zip(coeff_mapping_temp['Coefficient_new'], coeff_mapping_temp['Coefficient']))
+col_dict_2 = dict(zip(coeff_mapping_temp['Coefficient'], coeff_mapping_temp['Coefficient_new']))
+col_dict_2.pop('Intercept')
+col_dict.pop('Intercept')
+print(col_dict)
+# getting idvs present for the retailer, ppg
+idvs = coeff_mapping_temp['Coefficient_new'].to_list()
+idvs.remove('Intercept')
+# getting model data for retailer, ppg and renaming columns
+Model_Data = model_data_all.loc[(model_data_all['Account Name']==slct_retailer) & (model_data_all['PPG']==slct_ppg) 
+                               & (model_data_all['Optimiser_flag']==1)].reset_index(drop=True)
+Model_Data = Model_Data[['Date'] + idvs]
+Model_Data.rename(columns=col_dict,inplace=True)
+# getting model coefficients values with original names and format 
+Model_Coeff = coeff_mapping_temp[['Coefficient','Value','PPG','Account Name','Coefficient_new']]
+Model_Coeff.rename(columns={'Value':'model_coefficients',
+                                  'Coefficient':'names'},inplace=True)
+Model_Coeff
+flag_vars = Model_Coeff.loc[Model_Coeff['Coefficient_new'].str.contains('promo') |
+                           Model_Coeff['Coefficient_new'].str.contains('death')]['names'].to_list()
+Model_Coeff
+print(Model_Data.shape)
+promo_list_PPG = ROI_data[(ROI_data['Account Name'] == slct_retailer) & (ROI_data['PPG'] == slct_ppg)].reset_index(drop=True)
+print(promo_list_PPG.shape)
+Period_data=promo_list_PPG[['Date','Discount, NRV %','TE Off Inv','TE On Inv','GMAC','COGS','List_Price','Mechanic', 'Coinvestment','Flag_promotype_N_pls_1']]
+Model_Coeff_list_Keep=list(Model_Coeff['names'])
+Model_Coeff_list_Keep.remove('Intercept')
+Period_data["Promotion_Cost"] = Period_data['List_Price'] * Period_data['Discount, NRV %'] * (1 - Period_data['TE On Inv'])
+Period_data["TE"] = Period_data["List_Price"] * (Period_data["Discount, NRV %"] + Period_data["TE On Inv"] + Period_data["TE Off Inv"] - 
+                                                          Period_data["Discount, NRV %"] * Period_data["TE Off Inv"] - Period_data["TE Off Inv"] * Period_data["TE On Inv"] - 
+                                                          Period_data["TE On Inv"] * Period_data["Discount, NRV %"] + Period_data["TE Off Inv"] * Period_data["TE On Inv"] * Period_data["Discount, NRV %"])
+Period_data['Promo_Depth']= Period_data['Discount, NRV %']*100
+Period_data['tpr_discount_byppg']= Period_data['Promo_Depth']+Period_data['Coinvestment']
+Model_Data.rename(columns={'tpr_discount_byppg':'tpr_discount_byppg_train'},inplace=True)
+print(Period_data['Date'],"SAte")
+Period_data['Date']=pd.to_datetime(Period_data['Date'],errors='coerce', format='%Y-%m-%d')
+# print(Period_data['Date'],"Period_data")
+# print(Model_Data['Date'],"Model_Data")
+Final_Pred_Data=pd.merge(Period_data,Model_Data,how="left",on="Date")
+Final_Pred_Data['wk_base_price_perunit_byppg'] = np.exp(Final_Pred_Data['wk_sold_median_base_price_byppg_log'])
+Final_Pred_Data['Promo'] = np.where(Final_Pred_Data['tpr_discount_byppg'] == 0, Final_Pred_Data['wk_base_price_perunit_byppg'],
+                                     Final_Pred_Data['wk_base_price_perunit_byppg'] * (1-(Final_Pred_Data['tpr_discount_byppg']/100)))
+Final_Pred_Data['wk_sold_avg_price_byppg'] = Final_Pred_Data['Promo']
+# changing the promo related variable if there is any change
+if 'Catalogue_Dist' in Model_Coeff_list_Keep:
+  Catalogue_temp=Final_Pred_Data[Final_Pred_Data['tpr_discount_byppg']>0]['Catalogue_Dist'].max()
+if 'Catalogue' in Model_Coeff_list_Keep:
+  Catalogue_temp=Final_Pred_Data[Final_Pred_Data['tpr_discount_byppg']>0]['Catalogue'].max()
+if 'Display' in Model_Coeff_list_Keep:
+  Display_temp=Final_Pred_Data[Final_Pred_Data['tpr_discount_byppg']>0]['Display'].max()
+if 'Catalogue_Dist' in Model_Coeff_list_Keep:
+  Final_Pred_Data['Catalogue_Dist']=np.where(Final_Pred_Data['tpr_discount_byppg']==0,0,Catalogue_temp)
+if 'Catalogue' in Model_Coeff_list_Keep:
+  Final_Pred_Data['Catalogue']=np.where(Final_Pred_Data['tpr_discount_byppg']==0,0,Catalogue_temp)
+if 'Display' in Model_Coeff_list_Keep:
+  Final_Pred_Data['Catalogue']=np.where(Final_Pred_Data['Display']==0,0,Display_temp)
+if 'tpr_discount_byppg_lag1' in Model_Coeff_list_Keep:
+  Final_Pred_Data['tpr_discount_byppg_lag1']= Final_Pred_Data['tpr_discount_byppg'].shift(1).fillna(0)
+if 'tpr_discount_byppg_lag2' in Model_Coeff_list_Keep:
+  Final_Pred_Data['tpr_discount_byppg_lag2']= Final_Pred_Data['tpr_discount_byppg'].shift(2).fillna(0)
+if 'flag_N_pls_1' in Model_Coeff_list_Keep:
+  Final_Pred_Data['flag_N_pls_1']=np.where(Final_Pred_Data['Flag_promotype_N_pls_1']==1,1,0)
+
+Final_Pred_Data['Baseline_Prediction']=predict_sales(Model_Coeff,Final_Pred_Data)
+Final_Pred_Data['Baseline_Sales']=Final_Pred_Data['Baseline_Prediction'] *Final_Pred_Data['Promo']
+Final_Pred_Data["Baseline_GSV"] = Final_Pred_Data['Baseline_Prediction'] * Final_Pred_Data['List_Price']
+Final_Pred_Data["Baseline_Trade_Expense"] = Final_Pred_Data['Baseline_Prediction'] * Final_Pred_Data['TE']
+Final_Pred_Data["Baseline_NSV"] = Final_Pred_Data['Baseline_GSV'] - Final_Pred_Data["Baseline_Trade_Expense"]
+Final_Pred_Data["Baseline_MAC"] = Final_Pred_Data["Baseline_NSV"]-Final_Pred_Data['Baseline_Prediction'] * Final_Pred_Data['COGS']
+Final_Pred_Data["Baseline_RP"] = Final_Pred_Data['Baseline_Sales']-Final_Pred_Data["Baseline_NSV"]
+print(Final_Pred_Data[['Baseline_Prediction','Baseline_Sales',"Baseline_GSV","Baseline_Trade_Expense","Baseline_NSV","Baseline_MAC","Baseline_RP"]].sum().apply(lambda x: '%.3f' % x))
+baseline_df =Final_Pred_Data[['Baseline_Prediction','Baseline_Sales',"Baseline_GSV","Baseline_Trade_Expense","Baseline_NSV","Baseline_MAC","Baseline_RP"]].sum().astype(int)
+baseline_df['Baseline_MAC']
+
+baseline_info ={}
+# baseline calendar metrics calculation
+# min and max consecutive weeks, promo gap, number of baseline promotions
+baseline_data = Final_Pred_Data.copy()
+promo_data = baseline_data[['Date','tpr_discount_byppg']]
+promo_data['Week_no']=promo_data.index+1
+promo_data['Promo_wave'] = promo_wave_cal(promo_data)
+promo_data['Promo_flag'] = np.where(promo_data['tpr_discount_byppg']==0,0,1)
+baseline_info['total_promotions']=promo_data['Promo_flag'].sum()
+promo_data = promo_data.loc[promo_data['tpr_discount_byppg']!=0].reset_index(drop=True)
+promo_wave_summary = promo_data.groupby(['Promo_wave']).agg( Tot_promo = ("Promo_flag",sum),
+                                                             start_week = ('Week_no',min),
+                                                             end_week = ("Week_no",max)).reset_index()
+baseline_info['min_consecutive_promo']=promo_wave_summary['Tot_promo'].min()
+baseline_info['max_consecutive_promo']=promo_wave_summary['Tot_promo'].max()
+promo_wave_summary['Prev_end_week']=promo_wave_summary['end_week'].shift(1)#.fillna(0)
+promo_wave_summary['Promo_gap']= promo_wave_summary['start_week']-promo_wave_summary['Prev_end_week']-1
+baseline_info['min_promo_gap']=promo_wave_summary['Promo_gap'].min()
+baseline_info['max_promo_gap']=promo_wave_summary['Promo_gap'].max()
+# baseline_info
+config = {"Reatiler": slct_retailer,"PPG": slct_ppg,'Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
+         "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
+        "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
+                            ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
+                   'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
+         "constrain_params": {'MAC':1.1,'RP':1.05,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
+                              'min_consecutive_promo':min_consecutive_promo,'max_consecutive_promo':max_consecutive_promo,
+                   'promo_gap':min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':0}}
+# financial metric preference order
+fin_pref_order = config['Fin_Pref_Order']
+# getting TE for all the tprs
+print(baseline_data,"baseline_data")
+TE_dict,ret_inv_dict = get_te_dict(baseline_data,config)
+
+Required_base = get_required_base(baseline_data,Model_Coeff,TE_dict,ret_inv_dict)
+Optimal_calendar_fin = pd.DataFrame()
+infeasible_solution = True
+Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
+if((Optimal_calendar.shape[0]==52) or (Optimal_calendar['Solution'].unique()=='Optimal')):
+  Optimal_calendar_fin =Optimal_calendar.copy()
+  infeasible_solution = False
+# step1 : decreasing the metrics with lower/upper limit higher/lower than baseline
+if(infeasible_solution):
+  print("Infeasible solution : decreasing the metrics limit greater than baseline")
+  fin_metrics = ['Units','NSV','GSV','Sales','Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC']
+  config_constrain = config['config_constrain']
+  Act_fin_metrics = []
+  # getting the financial metric with lower/upper limit higher/lower than baseline
+  # we will be checking only two iterations in this step
+  for i in fin_metrics:
+    if i=='Trade_Expense':
+      if ((config_constrain[i]) and (config['constrain_params'][i]<1) ):
+        Act_fin_metrics.append(i)
+    else:
+      if ((config_constrain[i]) and (config['constrain_params'][i]>1) ):
+        Act_fin_metrics.append(i)
+  iteration =True
+  delta_dict ={}
+  iter_no =0
+  print("before iteration")
+  while iteration:
+    iter_no +=1
+    for rel in Act_fin_metrics:
+      print(rel)
+      if(rel=='Trade_Expense'):
+        if (config['constrain_params'][rel]<1 and iter_no==1):
+          delta_dict[rel] = (1-config['constrain_params'][rel])/2
+        if ((config['constrain_params'][rel])<1):
+          config['constrain_params'][rel]=config['constrain_params'][rel]+delta_dict[rel]
+        else:
+          config['constrain_params'][rel]=config['constrain_params'][rel]+delta
+      else:
+        if (config['constrain_params'][rel]>1 and iter_no==1):
+          delta_dict[rel] = (config['constrain_params'][rel]-1)/2
+        if ((config['constrain_params'][rel])>1):
+          config['constrain_params'][rel]=config['constrain_params'][rel]-delta_dict[rel]
+    print(config['constrain_params'],"1361")
+    Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
+    print(Optimal_calendar,"Optimal_calendar")
+    if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
+      print(config['constrain_params'],"config['constrain_params']")
+      Optimal_calendar_fin = Optimal_calendar.copy()
+      iteration = False
+      infeasible_solution = False
+    if iter_no==2:
+      iteration = False
+print("check here")
+print(infeasible_solution,"infeasible_solution")
+# if solution is infeasible after step 1 , we will relax each finacial metric one by one and check which metric is causing the infeasible solution
+if(infeasible_solution):
+  print("Infeasible solution - relaxing financial metrics")
+  # selecting the secondory finacial metric based on the financial preferance order from the user input
+  Sec_fin_metrics = fin_pref_order[:-3]
+  # selecting the primary finacial metric based on the financial preferance order from the user input
+  Prim_fin_metrics = fin_pref_order[-3:]
+  # calendar metrics
+  calendar_metrics = ['compul_no_promo_weeks','compul_promo_weeks','promo_gap','max_consecutive_promo','min_consecutive_promo','tot_promo_min',
+                     'tot_promo_max']
+
+  config_constrain = config['config_constrain']
+  Act_Prim_fin_metrics = []
+  # getting the active secondary and primary financial metrics(config with True)
+  for i in Prim_fin_metrics:
+    if config_constrain[i]:
+      Act_Prim_fin_metrics.append(i)
+  Act_Sec_fin_metrics =[]
+  for i in Sec_fin_metrics:
+    if config_constrain[i]:
+      Act_Sec_fin_metrics.append(i)
+  # creating the combinations of primary and secondary financial metrics
+  Sec_combination = sum([list(map(list, combinations(Act_Sec_fin_metrics, i))) for i in range(len(Act_Sec_fin_metrics) + 1)], [])
+  Sec_combination = [i for i in Sec_combination if len(i)>0]
+  Prim_combination = sum([list(map(list, combinations(Act_Prim_fin_metrics, i))) for i in range(len(Act_Prim_fin_metrics) + 1)], [])
+  Prim_combination = [i for i in Prim_combination if len(i)>0]
+  iteration =True
+  while iteration:
+    relaxed_sec_metrics_opt=[]
+    relaxed_sec_metrics = []
+    relaxed_prim_metrics_opt=[]
+    relaxed_prim_metrics = []
+    # first we will start by relaxing secondary financial variables
+    for i in range(len(Sec_combination)):
+      print(Sec_combination[i])
+      metrics = Sec_combination[i]
+      for metric in metrics:
+        config['config_constrain'][metric]=False
+      print(config['config_constrain'])
+      Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
+      if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
+        # break the loop if we get a feasible solution
+        relaxed_sec_metrics_opt = Sec_combination[i]
+        for metric in metrics:
+          config['config_constrain'][metric]=True
+        print("breaking while loop")
+        iteration = False
+        break
+      if i==(len(Sec_combination)-1):
+        print(i)
+        relaxed_sec_metrics = Sec_combination[i]
+        print("Relaxing :",relaxed_sec_metrics)
+      else:
+        for metric in metrics:
+          config['config_constrain'][metric]=True
+    # if we dont get any feasible solution by relaxing all the secondary metrics, we relax primary metrics one by one
+    if iteration==False:
+      continue
+    for i in range(len(Prim_combination)):
+      print(Prim_combination[i])
+      metrics = Prim_combination[i]
+      for metric in metrics:
+        config['config_constrain'][metric]=False
+      print(config['config_constrain'])
+      Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
+      if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
+        # break the loop if we get a feasible solution
+        relaxed_prim_metrics_opt = Prim_combination[i]
+        for metric in metrics:
+          config['config_constrain'][metric]=True
+        iteration = False
+        break
+      if i==(len(Prim_combination)-1):
+        print(i)
+        relaxed_prim_metrics = Prim_combination[i]
+        for metric in metrics:
+          config['config_constrain'][metric]=True
+        iteration = False
+        break
+      else:
+        for metric in metrics:
+          config['config_constrain'][metric]=True
+  relaxed_metrics = []
+  if len(relaxed_sec_metrics_opt)>0:
+    relaxed_metrics = relaxed_sec_metrics_opt
+  elif len(relaxed_prim_metrics_opt)>0:
+    relaxed_metrics = relaxed_prim_metrics_opt
+  relaxed_metrics
+  delta = 0.01
+  opt_soln = False
+  metric_list = fin_pref_order.copy()
+  metric_list.reverse()
+  # decresing/increasing the lower/limit of metric to get a feasible solution
+  # if there is more than one metric, first we relax the metric with highest preference and decativate all other metrics. Once we get the solution with first metric, we relax the second metric
+  if len(relaxed_metrics)>0:
+    iter_metrics = [i for i in metric_list if i in relaxed_metrics]
+    n_metrics = len(iter_metrics)
+    rel_no=0
+    for rel in iter_metrics:
+      rel_no+=1
+      iteration = True
+      othr_metrics = iter_metrics[rel_no:]
+      for metric in othr_metrics:
+        config['config_constrain'][metric]=False
+      print(othr_metrics)
+      print(config['config_constrain'])
+      iter_no =0
+      while iteration:
+        iter_no+=1
+        if(rel=='Trade_Expense'):
+           config['constrain_params'][rel]=config['constrain_params'][rel]+delta
+        else:
+           config['constrain_params'][rel]=config['constrain_params'][rel]-delta
+        print(config['constrain_params'])
+        Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
+        if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
+          opt_soln = True
+          Optimal_calendar_fin = Optimal_calendar.copy()
+          for metric in othr_metrics:
+            config['config_constrain'][metric]=True
+          iteration = False
+        if(iter_no==15):
+          iteration = False
+      for metric in othr_metrics:
+        config['config_constrain'][metric]=True
+    if opt_soln:
+      dta=delta/4
+      k=0
+      # we will be checking extra 3 ietration to check feasible solution between last limit and and the feasible limit
+      while k<3:
+        for rel in relaxed_metrics:
+          if(rel=='Trade_Expense'):
+            config['constrain_params'][rel]=config['constrain_params'][rel]-dta
+          else:
+            config['constrain_params'][rel]=config['constrain_params'][rel]+dta
+        Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
+        if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
+          print(config['constrain_params'])
+          Optimal_calendar_fin = Optimal_calendar.copy()
+        k+=1
+print("before ")
+if Optimal_calendar_fin.shape[0]==0:
+  Optimal_calendar_fin['TPR']=baseline_data['tpr_discount_byppg']
+# getting data with optimal calendar
+Optimal_data = optimal_summary_fun(baseline_data,Model_Coeff,Optimal_calendar_fin,TE_dict,ret_inv_dict)
+# getting comparison between baseline and optimal calendar
+opt_base = get_opt_base_comparison(baseline_data,Optimal_data,Model_Coeff,config)
+# metric summary comparison between optimal and baseline calendar
+summary = get_calendar_summary(baseline_data,Optimal_data,opt_base)
+parsed = json.loads(summary.to_json(orient="records"))
+print(parsed,"result")
+print('Calc Ends')
