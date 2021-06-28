@@ -1,16 +1,18 @@
 # from xlwt import Workbook
+from os import stat
 from django.core.exceptions import ObjectDoesNotExist
 from utils import util
 from rest_framework import fields, viewsets, mixins
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer
 from rest_framework import status
 from django.db.models.query import Prefetch
 from django.shortcuts import get_object_or_404
+from core import models as model
 from core.models import ModelMeta, ModelROI, Scenario , ScenarioPlannerMetrics,ModelData,ModelCoefficient
 from scenario_planner import serializers as sc
 from rest_framework import serializers
@@ -30,8 +32,233 @@ from django.http import HttpResponse
 import xlsxwriter
 import json
 import io
+import itertools
+import decimal
+import math
 
 
+def savePromo():
+    return  {'account_name': 'Lenta', 'corporate_segment': 'BOXES', 'strategic_cell': 'cell', 'brand': 'brand', 'brand_format': 'format', 
+'product_group': 'A.Korkunov 192g', 'promo_elasticity': 0, 'param_depth_all': 0, 
+'week-1': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 
+'week-2': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 
+'week-3': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 
+'week-4': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 
+'week-5': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 
+'week-6': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 
+'week-7': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 
+'week-8': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 
+'week-9': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 
+'week-10': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-11': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-12': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-13': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-14': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-15': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-16': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-17': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-18': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-19': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-20': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-21': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-22': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-23': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-24': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-25': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-26': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-27': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-28': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-29': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-30': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-31': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-32': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-33': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-34': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-35': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-36': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-37': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-38': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-39': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-40': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-41': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-42': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-43': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-44': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-45': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-46': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-47': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-48': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-49': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-50': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}, 'week-51': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0},
+'week-52': {'promo_depth': 0, 'promo_mechanics': None, 'co_investment': 0}}
+
+
+class MapPricingPromo(APIView):
+    serializer_class = sc.MapPricingPromoSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    # def get(self, request, format=None):
+    #     content = optimizer.process()
+    #     return Response(content)
+    
+    def create_promo(self,request):
+        # import pdb
+        # pdb.set_trace()
+        value =  ast.literal_eval(request.data['promo_details'].strip())
+        ps = model.PricingSave.objects.get(id=int(request.data['pricing_id']))
+        pr_save = model.PromoSave(
+            account_name = ps.account_name,
+            corporate_segment = ps.corporate_segment,
+            product_group = ps.product_group,
+            saved_scenario = ps.saved_scenario,
+            saved_pricing = ps,
+            promo_elasticity = value['promo_elasticity']
+            
+        )
+        # value = savePromo()
+        # scenario = model.SavedScenario(
+        #     scenario_type = 'promo',
+        #     name =  'promo1',
+        #     comments = 'promo1',
+        #     user = request.user
+            
+        # )   
+        # scenario.save()
+        # pr_save = model.PromoSave(
+        #         account_name = value['account_name'],
+        #         corporate_segment = value['corporate_segment'],
+        #         product_group =value['product_group'],
+        #         promo_elasticity = value['promo_elasticity'],
+        #         saved_scenario = scenario
+        #     )
+        pr_save.save()
+        bulk_pricing_week = []
+        for i in value.keys():
+            week_regex = util._regex(r'week-\d{1,2}',i)
+            if week_regex:
+                week = int(util._regex(r'\d{1,2}',week_regex.group()).group())
+                # print(week , "week")
+                # print(value[i] , "week value")
+                pw = model.PromoWeek(
+                   
+                    week = week,
+                    year = 2021,
+                    promo_depth = value[i]['promo_depth'],
+                     co_investment = value[i]['co_investment'],
+                      promo_mechanic =value[i]['promo_mechanics'],
+                       pricing_save = pr_save,
+                )
+                bulk_pricing_week.append(pw)
+        model.PromoWeek.objects.bulk_create(bulk_pricing_week)        
+
+    
+    def post(self, request, format=None):
+        self.create_promo(request)
+        # import pdb
+        # pdb.set_trace()
+        
+            
+        return Response({}, status=status.HTTP_201_CREATED)
+    
+
+class SaveScenarioViewSet(viewsets.ModelViewSet):
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    queryset = model.SavedScenario.objects.all()
+    serializer_class = sc.SaveScenarioSerializer
+    serializer_classes = {
+        'promo' : sc.SaveScenarioSerializer
+    }
+    def dispatch(self, request, *args, **kwargs):
+        print(request , "request from dispatch")
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        print(self.request , "request from get query set")
+        return super().get_queryset()
+    def get_serializer_class(self):
+        print(self.request , "request from serializer")
+        return super().get_serializer_class()
+    
+    def list(self, request, *args, **kwargs):
+        print(request , "request from list")
+        
+        return super().list(request, *args, **kwargs)
+    def create_promo(self,request):
+        value = savePromo()
+        scenario = model.SavedScenario(
+            scenario_type = 'promo',
+            name =  'promo1',
+            comments = 'promo1',
+            user = request.user
+            
+        )   
+        scenario.save()
+        pr_save = model.PromoSave(
+                account_name = value['account_name'],
+                corporate_segment = value['corporate_segment'],
+                product_group =value['product_group'],
+                promo_elasticity = value['promo_elasticity'],
+                saved_scenario = scenario
+            )
+        pr_save.save()
+        bulk_pricing_week = []
+        for i in value.keys():
+            week_regex = util._regex(r'week-\d{1,2}',i)
+            if week_regex:
+                week = int(util._regex(r'\d{1,2}',week_regex.group()).group())
+                # print(week , "week")
+                # print(value[i] , "week value")
+                pw = model.PromoWeek(
+                   
+                    week = week,
+                    year = 2021,
+                    promo_depth = value[i]['promo_depth'],
+                     co_investment = value[i]['co_investment'],
+                      promo_mechanic =value[i]['promo_mechanics'],
+                       pricing_save = pr_save,
+                )
+                bulk_pricing_week.append(pw)
+        model.PromoWeek.objects.bulk_create(bulk_pricing_week)        
+    
+    
+    def create(self, request, *args, **kwargs):
+        # import pdb
+        # pdb.set_trace()
+        if 'scenario_type' in request.data:
+            if request.data['scenario_type'] == 'promo':
+                self.create_promo(request)
+                return Response({}, 200)
+        request.data['name']
+        request.data['comments']
+        request_dump = json.loads(request.data['savedump'])
+        price_change =  request_dump['formArray']
+        product = request_dump['productFilter']
+        retailer = request_dump['retailerFilter']
+        p_r_list = list(itertools.product([i.replace('Magnit','Tander') for i in retailer],product)) # change backend data in pricing scenario
+        model_meta_set = set(model.ModelMeta.objects.values_list('account_name','product_group'))
+        model_meta_list = []
+        for i in model_meta_set:
+            r = util.remove_duplicate_spaces(i[0]),util.remove_duplicate_spaces(i[1])
+            model_meta_list.append(r)
+        available = []
+        for i in p_r_list:
+            if (util.remove_duplicate_spaces(i[0]),util.remove_duplicate_spaces(i[1])) in model_meta_list:
+                available.append(i)
+        # import pdb
+        # pdb.set_trace()
+        scenario = model.SavedScenario(
+            scenario_type = 'pricing',
+            name =  request.data['name'],
+            comments = request.data['comments'],
+            user = self.request.user
+            
+        )   
+        scenario.save()
+        bulk_pricing_week = []
+        for i in available:
+            pr_save = model.PricingSave(
+                account_name = i[0],
+                corporate_segment = i[0],
+                product_group = i[1],
+                saved_scenario = scenario
+            )
+            pr_save.save()
+            
+            sc = ScenarioPlannerMetrics.objects.filter(retailer = i[0].replace('Tander','Magnit') , product_group = i[1])
+            price = [d for d in price_change if d['product_group'] == i[1]][0]
+            # print(price.lpi_increase , "price information")
+            # import pdb
+            # pdb.set_trace()
+            
+            for sce in sc:
+                cogs = sce.list_price * decimal.Decimal(1- abs(1*(sce.gmac_percent_lsv/100)))
+                pw = model.PricingWeek(
+                   
+                    week = sce.week,
+                    year = sce.year,
+                    lp_increase = sce.list_price * decimal.Decimal(1 + int(price['lpi_increase'])/100),
+                    rsp_increase = sce.retailer_median_base_price_w_o_vat * decimal.Decimal(1 + int(price['rsp_increase'])/100),
+                    cogs_increase = cogs * decimal.Decimal(1 + int(price['cogs_increase'])/100),
+                    pricing_save = pr_save,
+                )
+                bulk_pricing_week.append(pw)
+        model.PricingWeek.objects.bulk_create(bulk_pricing_week)        
+        
+        # import pdb
+        # pdb.set_trace()
+        # scenario = model.SavedScenario(
+        #     scenario_type = 'pricing',
+        #     name =  request.data['name'],
+        #     comments = request.data['comments'],
+        #     user = self.request.user
+            
+        # )   
+        # scenario.save()
+        
+        
+        return Response({},status=200)
+    
 class ScenarioViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin,
 mixins.UpdateModelMixin,mixins.DestroyModelMixin , mixins.RetrieveModelMixin):
     authentication_classes = (TokenAuthentication,)
@@ -98,15 +325,67 @@ class ScenarioPlannerMetricsViewSetObject(viewsets.GenericViewSet, mixins.ListMo
     serializer_class = sc.ScenarioPlannerMetricsSerializerObject
     
 class LoadScenario(viewsets.ReadOnlyModelViewSet,mixin.CalculationMixin):
-    queryset = Scenario.objects.filter(scenario_type = 'promo')
-    serializer_class = sc.PromoScenarioSavedList
+    # queryset = Scenario.objects.filter(scenario_type = 'promo')
+    queryset = model.SavedScenario.objects.all()
+    # serializer_class = sc.PromoScenarioSavedList
+    serializer_class = sc.ScenarioSavedList
     lookup_field = "id"
     
-    def retrieve(self, request, *args, **kwargs):
+    
+    def retrieve_pricing_promo(self, request, *args, **kwargs):
+        
+        # import pdb
+        # pdb.set_trace()
+        # get_serializer = sc.ModelMetaGetSerializer()
+        pricing_save_id = request.parser_context['kwargs']['_id']  # pricing save id
+        pricing_week = model.PricingWeek.objects.select_related('pricing_save').filter(pricing_save__id = pricing_save_id )
+        # import pdb
+        # pdb.set_trace()
+        # self.calculate_finacial_metrics_from_pricing(pricing_week)
+        return Response(self.calculate_finacial_metrics_from_pricing(pricing_week), status = 200)
+    def retrieve_bkp(self, request, *args, **kwargs):
         self.get_object()
+        
+        weeks = model.PromoWeek.objects.select_related('pricing_save','pricing_save__saved_scenario').filter(
+         pricing_save__saved_scenario = self.get_object()
+        )
+        self.calculate_finacial_metrics(weeks)
+        
         value_dict = ast.literal_eval(self.get_object().savedump)
         return Response( self.calculate_finacial_metrics(value_dict),
                         status=status.HTTP_201_CREATED)
+        
+    def retrieve(self, request, *args, **kwargs):
+        obj = self.get_object()
+        # import pdb
+        # pdb.set_trace()
+        if obj.scenario_type == 'pricing':
+            pricing_save = model.PricingSave.objects.filter(saved_scenario = obj)
+            # import pdb
+            # pdb.set_trace()
+            serializer = sc.PricingSaveSerializer(pricing_save,many=True)
+            return Response(serializer.data , status=200)
+    
+        weeks = model.PromoWeek.objects.select_related('pricing_save','pricing_save__saved_scenario').filter(
+            pricing_save__saved_scenario = obj
+        )
+       
+        # for i in weeks:
+        #     print(i)
+        # print( weeks[0].pricing_save.account_name , 'accname')
+        # print( weeks[0].pricing_save.product_group , 'product group')
+        # print( weeks[0].pricing_save.promo_elasticity , 'promo_elasticity')
+            
+        
+        
+        # value_dict = ast.literal_eval(self.get_object().savedump)
+        return Response( self.calculate_finacial_metrics(weeks),
+                        
+                    status=status.HTTP_201_CREATED)
+        # return Response( {},
+                        
+        #             status=status.HTTP_201_CREATED)
+
         
     # @action(methods=['get'], detail=True)
     # def detail(self, *args, **kwargs):
@@ -276,7 +555,7 @@ class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
         get_serializer = sc.ModelMetaGetSerializer(request.data)
         value_dict = loads(dumps((get_serializer.to_internal_value(request.data))))
         try:
-            response = self.calculate_finacial_metrics(value_dict)
+            response = self.calculate_finacial_metrics_from_request(value_dict)
             return Response(response ,
                         status=status.HTTP_201_CREATED)
         except ObjectDoesNotExist as e:
@@ -285,6 +564,35 @@ class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
             return Response({'error' : "Something went wrong!"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
         
+class LoadScenarioTest(viewsets.GenericViewSet,mixin.CalculationMixin):
+    
+    queryset = model.SavedScenario.objects.all()
+    serializer_class = sc.ScenarioSavedList
+    lookup_field = "id"
+    def get(self, request, format=None):
+    
+        serializer = sc.SavedScenario()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def get_serializer_class(self):
+        return sc.SavedScenario
+
+    def get_queryset(self):
+        return super().get_queryset()
+
+    def post(self, request, format=None):
+        get_serializer = sc.ModelMetaGetSerializer(request.data)
+        value_dict = loads(dumps((get_serializer.to_internal_value(request.data))))
+        try:
+            response = self.calculate_finacial_metrics_from_request(value_dict)
+            return Response(response ,
+                        status=status.HTTP_201_CREATED)
+        except ObjectDoesNotExist as e:
+            return Response({'error' : str(e)},status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error' : "Something went wrong!"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            
         
         
     

@@ -75,6 +75,7 @@ class ScenarioPlannerMetrics(models.Model):
     brand_format_filter = models.CharField(max_length=100,verbose_name="Brand Format Filter",default=None)
     strategic_cell_filter = models.CharField(max_length=100,verbose_name="Strategic Cell Filter",default=None)
     year = models.IntegerField(verbose_name="Year")
+    week = models.IntegerField(verbose_name="week" , default=1 , null=True)
     date = models.DateField(verbose_name="Date")
     base_price_elasticity = models.DecimalField(verbose_name="Base Price Elasticity",max_digits=8 , decimal_places=3)
     cross_elasticity = models.DecimalField(verbose_name="Cross Elasticity",max_digits=8 , decimal_places=3)
@@ -292,14 +293,80 @@ class CoeffMap(models.Model):
         db_table = 'coeff_map'
 
 
+class SavedScenario(models.Model):
+    SCENARIO_CHOICES = (
+    ("pricing", "pricing"),
+    ("promo", "promo"),
 
-
-# @receiver(pre_save, sender=ModelMeta)
-# def add_slug_to_article_if_not_exists(sender, instance, *args, **kwargs):
+)
+    scenario_type = models.CharField(
+        max_length=20,
+        choices=SCENARIO_CHOICES,
+        default='pricing'
+    )
+    name = models.CharField(max_length=255)
+    comments = models.CharField(max_length=500, default='')
     
-#     print(sender , "sender in")
-#     print(instance , "instance in signals")
-#     if instance and not instance.slug:
-#         slug = "{}-{}-{}".format(instance.account_name,instance.corporate_segment,instance.product_group)
-#         instance.slug = slug
-# pre_save.connect(add_slug_to_article_if_not_exists, sender=ModelMeta)  
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+
+    )
+
+class MetaSave(models.Model):
+    account_name = models.CharField(max_length=100,verbose_name="Account Name")
+    corporate_segment =  models.CharField(max_length=100,verbose_name="Corporate Segment")
+    product_group = models.CharField(max_length=100,verbose_name="Product Group")
+    
+    class Meta:
+        abstract = True
+
+class PricingSave(MetaSave):
+    saved_scenario = models.ForeignKey(
+        'core.SavedScenario' , related_name="pricing_saved" , on_delete=models.CASCADE
+    )
+    class Meta:
+        db_table = 'pricing_save'
+        
+class PromoSave(MetaSave):
+    saved_scenario = models.ForeignKey(
+        'core.SavedScenario' , related_name="promo_saved" , on_delete=models.CASCADE
+    )
+    saved_pricing = models.ForeignKey(
+        'core.PricingSave' , related_name="pricing_promo_saved" , on_delete=models.CASCADE , blank=True, null=True
+    )
+    promo_elasticity = models.DecimalField(max_digits=30 , decimal_places=15,null=True)
+    class Meta:
+        db_table = 'promo_save'
+
+
+    
+class PricingWeek(models.Model):
+    pricing_save = models.ForeignKey(
+        'core.PricingSave' , related_name="pricing_week" , on_delete=models.CASCADE
+    )
+    year = models.IntegerField(verbose_name="Year")
+    week = models.IntegerField(verbose_name="week" , default=1 , null=True)
+    lp_increase = models.DecimalField(verbose_name="Increased LP",max_digits=8 , decimal_places=3)
+    rsp_increase = models.DecimalField(verbose_name="Increased RSP",max_digits=8 , decimal_places=3)
+    cogs_increase = models.DecimalField(verbose_name="Increased COGS",max_digits=8 , decimal_places=3)
+    base_price_elasticity = models.DecimalField(verbose_name="Modified base price elasticity",max_digits=8 , decimal_places=3 , default=-2.03)
+    
+    class Meta:
+        db_table = 'pricing_week_save'
+        
+class PromoWeek(models.Model):
+    pricing_save = models.ForeignKey(
+        'core.PromoSave' , related_name="promo_week" , on_delete=models.CASCADE
+    )
+    year = models.IntegerField(verbose_name="Year")
+    week = models.IntegerField(verbose_name="week" , default=1 , null=True)
+    promo_depth = models.DecimalField(verbose_name="Promo Depth", max_digits=30 ,null=True, decimal_places=15,default=0.0,
+                                       validators=[MinValueValidator(Decimal(0.0)), MaxValueValidator(Decimal(100.0))])
+
+    co_investment = models.DecimalField(verbose_name="Co investment", max_digits=30 ,null=True, decimal_places=15,default=0.0,
+                                       validators=[MinValueValidator(Decimal(0.0)), MaxValueValidator(Decimal(100.0))])
+    promo_mechanic = models.CharField(max_length=100,verbose_name="Promo Mechanic",null=True)
+    class Meta:
+        db_table = 'promo_week_save'
+        ordering = ('week',)

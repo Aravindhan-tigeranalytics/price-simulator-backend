@@ -470,6 +470,7 @@ def read_roi_data(file):
     # print(col_ , "final col_")
 
 def read_excel(loc):
+    
     # ScenarioPlannerMetrics.objects.all().delete()
     headers = ['Category' , 'Product Group' , 'Retailer' ,'Brand Filter','Brand Format Filter',
     'Strategic Cell Filter','Year' , 'Date','Base Price Elasticity','Cross Elasticity',
@@ -494,38 +495,81 @@ def read_excel(loc):
         if col_taken:
             row_ = row
             break
+    # import pdb
+    # pdb.set_trace()
     obj = {}
     ob=[]
+    week = []
+    # import pdb
+    # pdb.set_trace()
+    weeks = {}
+    weeks_date = {}
     for row in range(row_+1 , rows+1):
         obj = {}
+        week =1
         # metric = ScenarioPlannerMetrics()
         for c in range(0,len(col_)):
+            
             cell_obj = shet.cell(row = row, column = col_[c])
+            # print(row , "r0w" , col_[c] , "col c" , headers[c] , ":headers[c]" ,cell_obj.value , "cell_obj.value" )
             _genObj(obj,cell_obj.value,headers[c])
-        ob.append(ScenarioPlannerMetricModel(obj))
-    print(len(ob) , "OBJECY LIST")
-    _update_date(ob)
+        scm = ScenarioPlannerMetricModel(obj)
+        ob.append(scm)
+        slug = scm.category + scm.product_group + scm.retailer
+        if slug == 'GumORBIT OTCMagnit':
+            print(scm.date , ":DATE:" , str(scm.date))
+       
+        # if slug in weeks:
+        #     weeks[slug]['count'] = weeks[slug]['count'] + 1
+        # else:
+        #     weeks[slug] = {
+        #         'count' : 1
+        #     }
+        if slug in weeks_date:
+            weeks_date[slug]['count'] = weeks_date[slug]['count'] + 1
+            weeks_date[slug][str(scm.date)] = weeks_date[slug]['count']
+        else:
+            weeks_date[slug] = {
+                'count' : 1 
+            }
+            weeks_date[slug][str(scm.date)] = weeks_date[slug]['count']
+            # {
+            #     scm.date.strftime("%d/%m/%Y")  : weeks_date[slug]['count']
+            # }
+    # print(weeks , "weeks ")
+    print(weeks_date , "weeks_date")
+  
+    _update_date(ob,weeks_date)
+    book.close()
+    return
       
-def _update_date(obj):
+def _update_date(obj,weeks_date):
+    print('updating..')
 
-    li = util.grouping(obj , max(obj,key=lambda x:x.date).date + timedelta(days=7))
-    for o in li:
+    # li = util.grouping(obj , max(obj,key=lambda x:x.date).date + timedelta(days=7))
+    # import pdb
+    # pdb.set_trace()
+    for o in obj:
         metric = model.ScenarioPlannerMetrics()
-        _updateMetricFromObject(metric , o)
+        _updateMetricFromObject(metric , o , weeks_date)
         metric.save()
    
     
-def _updateMetricFromObject(metric:model.ScenarioPlannerMetrics , obj : ScenarioPlannerMetricModel):
+def _updateMetricFromObject(metric:model.ScenarioPlannerMetrics , obj : ScenarioPlannerMetricModel,weeks_date):
     # print(obj.year , "object year")
      
     metric.category = obj.category
     metric.product_group = obj.product_group
     metric.retailer = obj.retailer
+    slug = obj.category + obj.product_group + obj.retailer
     metric.brand_filter = obj.brand_filter
     metric.brand_format_filter = obj.brand_format_filter
     metric.strategic_cell_filter = obj.brand_format_filter
     metric.year = obj.year
     metric.date = obj.date
+    # import pdb
+    # pdb.set_trace()
+    metric.week = weeks_date[slug][str(obj.date)]
     metric.base_price_elasticity = obj.base_price_elasticity
     metric.cross_elasticity = obj.cross_elasticity
     metric.net_elasticity = obj.net_elasticity
@@ -538,6 +582,51 @@ def _updateMetricFromObject(metric:model.ScenarioPlannerMetrics , obj : Scenario
     metric.tpr_percent = obj.tpr_percent 
     metric.gmac_percent_lsv = obj.gmac_percent_lsv
     metric.product_group_weight = obj.product_group_weight
+
+def _genObj(obj,value,header):
+    # print(value , "Value " , type(value) , " TYPE VALUE")
+     
+    if(header == 'Category'):
+        obj["category"]= value.strip()
+    elif(header == 'Product Group'):
+        obj["product_group"]= value.strip()
+    elif(header == 'Retailer'):
+        obj["retailer"]= value.strip()
+    elif(header == 'Brand Filter'):
+        obj["brand_filter"]= value.strip()
+    elif(header == 'Brand Format Filter'):
+        obj["brand_format_filter"]= value.strip()
+    elif(header == 'Strategic Cell Filter'):
+        obj["strategic_cell_filter"]= value.strip()
+    elif(header == 'Year'):
+        obj["year"]= value
+    elif(header == 'Date'):
+        obj["date"] =value
+    elif(header == 'Base Price Elasticity'):
+        obj["base_price_elasticity"]= round(float(value),3)
+    elif(header == 'Cross Elasticity'):
+        obj["cross_elasticity"]= round(float(value),3)
+    elif(header == 'Net Elasticity'):
+        obj["net_elasticity"]= round(float(value),3)
+    elif(header == 'Base Units'):
+        obj["base_units"]= round(float(value),3)
+    elif(header == 'List Price'):
+        obj["list_price"]= round(float(value),3)
+    elif(header == 'Retailer Median Base Price'):
+        obj["retailer_median_base_price"]= round(float(value),3)
+    elif(header == 'Retailer Median Base Price  w\o VAT'):
+        obj["retailer_median_base_price_w_o_vat"]= round(float(value),3)
+    elif(header == 'On Inv. %'):
+        obj["on_inv_percent"]= round(float(value) * 100,3) 
+    elif(header == 'Off Inv. %'):
+        obj["off_inv_percent"]= round(float(value) * 100,3) 
+    elif(header == 'TPR %'):
+        obj["tpr_percent"]= round(float(value) * 100,3) 
+    elif(header == 'GMAC%, LSV'):
+        obj["gmac_percent_lsv"]= round(float(value) * 100,3)
+    elif(header == 'Product Group Weight (grams)'):
+        obj["product_group_weight"]= round(float(value),3)
+    
 
 def _updateMetric(metric:model.ScenarioPlannerMetrics , value,header):
     if(header == 'Category'):
@@ -624,50 +713,6 @@ def _updateMetricDup(metric:model.ScenarioPlannerMetrics , value,header):
     elif(header == 'Product Group Weight (grams)'):
         metric.product_group_weight = round(float(value),3)
 
-def _genObj(obj,value,header):
-    # print(value , "Value " , type(value) , " TYPE VALUE")
-     
-    if(header == 'Category'):
-        obj["category"]= value.strip()
-    elif(header == 'Product Group'):
-        obj["product_group"]= value.strip()
-    elif(header == 'Retailer'):
-        obj["retailer"]= value.strip()
-    elif(header == 'Brand Filter'):
-        obj["brand_filter"]= value.strip()
-    elif(header == 'Brand Format Filter'):
-        obj["brand_format_filter"]= value.strip()
-    elif(header == 'Strategic Cell Filter'):
-        obj["strategic_cell_filter"]= value.strip()
-    elif(header == 'Year'):
-        obj["year"]= value
-    elif(header == 'Date'):
-        obj["date"] =value
-    elif(header == 'Base Price Elasticity'):
-        obj["base_price_elasticity"]= round(float(value),3)
-    elif(header == 'Cross Elasticity'):
-        obj["cross_elasticity"]= round(float(value),3)
-    elif(header == 'Net Elasticity'):
-        obj["net_elasticity"]= round(float(value),3)
-    elif(header == 'Base Units'):
-        obj["base_units"]= round(float(value),3)
-    elif(header == 'List Price'):
-        obj["list_price"]= round(float(value),3)
-    elif(header == 'Retailer Median Base Price'):
-        obj["retailer_median_base_price"]= round(float(value),3)
-    elif(header == 'Retailer Median Base Price  w\o VAT'):
-        obj["retailer_median_base_price_w_o_vat"]= round(float(value),3)
-    elif(header == 'On Inv. %'):
-        obj["on_inv_percent"]= round(float(value) * 100,3) 
-    elif(header == 'Off Inv. %'):
-        obj["off_inv_percent"]= round(float(value) * 100,3) 
-    elif(header == 'TPR %'):
-        obj["tpr_percent"]= round(float(value) * 100,3) 
-    elif(header == 'GMAC%, LSV'):
-        obj["gmac_percent_lsv"]= round(float(value) * 100,3)
-    elif(header == 'Product Group Weight (grams)'):
-        obj["product_group_weight"]= round(float(value),3)
-        
         
 def lift(file1,file2):
     retailer = 'Tander'

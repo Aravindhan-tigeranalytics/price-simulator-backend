@@ -38,17 +38,19 @@ def get_list_value_from_query(coeff_model:model.ModelCoefficient,
     '''
     returns list form of ORM query
     '''
+    # import pdb
+    # pdb.set_trace()
     coefficient = coeff_model.objects.select_related('model_meta').filter(
-                    model_meta__account_name = retailer,
-                    model_meta__product_group = ppg
+                    model_meta__account_name__iexact = retailer,
+                    model_meta__product_group__iexact = ppg
                 ).values_list(*coeff_values)
     data = data_model.objects.select_related('model_meta').filter(
-                    model_meta__account_name = retailer,
-                    model_meta__product_group = ppg
+                    model_meta__account_name__iexact = retailer,
+                    model_meta__product_group__iexact = ppg
                 ).values_list(*data_values).order_by('week')
     roi = roi_model.objects.select_related('model_meta').filter(
-                    model_meta__account_name = retailer,
-                    model_meta__product_group = ppg
+                    model_meta__account_name__iexact = retailer,
+                    model_meta__product_group__iexact = ppg
                 ).values_list(*roi_values).order_by('week')
     coeff_list = [list(i) for i in coefficient]
     data_list = [list(i) for i in data]

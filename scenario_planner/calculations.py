@@ -1,5 +1,8 @@
+from typing import List
 from django.db.models.fields import DateField
-from core.models import ModelData, ModelMeta
+from django.db.models.query import QuerySet
+# from core.models import db_model.ModelData, db_model.ModelMeta
+from core import models as db_model
 from utils import util as util
 from utils import models as model
 from .query import roi_values , data_values
@@ -7,16 +10,16 @@ import math
 import decimal
 import copy
 
-def get_related_value(promo_data : ModelData):
+def get_related_value(promo_data : db_model.ModelData):
     # import pdb
     # pdb.set_trace()
     # print("get related value")
     # return promo_data.model_meta.coefficient.get()
     
     return promo_data.model_meta.prefetched_coeff[0]
-def get_roi_by_week(promo_data : ModelData):
+def get_roi_by_week(promo_data : db_model.ModelData):
     return promo_data.model_meta.prefetched_roi[promo_data.week-1]
-def promo_simulator_calculations(promo_data : ModelData):
+def promo_simulator_calculations(promo_data : db_model.ModelData):
     
     result = get_related_value(promo_data).intercept
     + (promo_data.median_base_price_log * get_related_value(promo_data).median_base_price_log)
@@ -87,7 +90,7 @@ def promo_simulator_calculations(promo_data : ModelData):
     
     return ob.__dict__
 
-def promo_simulator_calculations_test(promo_data : ModelData):
+def promo_simulator_calculations_test(promo_data : db_model.ModelData):
    
     intercept = get_related_value(promo_data).intercept
     median = (promo_data.median_base_price_log * get_related_value(promo_data).median_base_price_log)
@@ -165,7 +168,7 @@ def promo_simulator_calculations_test(promo_data : ModelData):
     
     return ob.__dict__
   
-def update_week_value(promo_data:ModelMeta , querydict):
+def update_week_value(promo_data:db_model.ModelMeta , querydict):
   
     for i in querydict.keys():
         week_regex = util._regex(r'week-\d{1,2}',i)
@@ -207,6 +210,50 @@ def calculate_financial_mertrics( data_list ,roi_list,unit_info , flag,promo_ela
             base_unit = decimal.Decimal(unit['Base']),
             promo_elasticity=promo_elasticity,
             co_investment = decimal.Decimal(data[data_values.index('co_investment')])
+            
+        )
+        update_total(total_units , ob)
+        weekly_units.append(ob.__dict__)
+    
+    return {
+        flag : {
+            'total' :  total_units.__dict__,
+            'weekly' : weekly_units
+        }
+       
+    }
+
+def calculate_financial_mertrics_from_pricing( data_list ,roi_list,unit_info , flag,pricing_week:List[db_model.PricingWeek]):
+    '''
+    To calculate financial metrics for each week as well as total
+    '''
+  
+    weekly_units = []
+    total_units = model.TotalUnit()
+    
+    for i in range(0,len(data_list)):
+      
+        roi = roi_list[i]
+        unit = unit_info[i]
+        data = data_list[i]
+        
+        ob = model.UnitModelPrice(
+            data[data_values.index('date')],
+            week = int(data[data_values.index('week')]),
+            predicted_units=decimal.Decimal(unit['Predicted_sales']),
+            on_inv_percent=roi[roi_values.index('on_inv')] * 100,
+            list_price = pricing_week[i].lp_increase,
+            promo_depth=decimal.Decimal(data[data_values.index('promo_depth')]),
+            off_inv_percent = roi[roi_values.index('off_inv')] * 100, 
+            gmac_percent_lsv = roi[roi_values.index('gmac')] * 100,
+            # average_selling_price = data[data_values.index('wk_sold_avg_price_byppg')],
+            product_group_weight_in_grams = data[data_values.index('weighted_weight_in_grams')], 
+            median_base_price_log = math.log(pricing_week[i].rsp_increase),
+            incremental_unit = decimal.Decimal(unit['Incremental']),
+            base_unit = decimal.Decimal(unit['Base']),
+            promo_elasticity=0,
+            co_investment = decimal.Decimal(data[data_values.index('co_investment')]),
+            mars_cogs_per_unit = pricing_week[i].cogs_increase
             
         )
         update_total(total_units , ob)
@@ -269,6 +316,7 @@ def _get_promotion_flag(promo_from_req):
         "Flag_promotype_traffic": "flag_promotype_traffic", 
         }  
     return val[promo_from_req]
+
 def update_from_request(data_list , querydict):
     cloned_list = copy.deepcopy(data_list)
     for i in querydict.keys():
@@ -290,9 +338,24 @@ def update_from_request(data_list , querydict):
                 cloned_list[week-1][data_values.index('promo_depth')] = querydict[i]['promo_depth']
                 # promo_data.prefetched_data[week-1].tpr_discount = querydict['param_depth_all'] 
             else: 
-                
-                # import pdb
-                # pdb.set_trace()
                 cloned_list[week-1][data_values.index('promo_depth')] = querydict[i]['promo_depth']
-                # promo_data.prefetched_data[week-1].tpr_discount = querydict[i]['promo_depth']
+    return cloned_list
+
+def update_from_saved_data(data_list , promo_week : QuerySet[db_model.PromoWeek]):
+    cloned_list = copy.deepcopy(data_list)
+    # import pdb
+    # pdb.set_trace()
+    if promo_week:
+        for week in promo_week:
+            index = week.week - 1
+            cloned_list[index][data_values.index('co_investment')] = week.co_investment
+            if week.promo_mechanic:
+                cloned_list[index][data_values.index(
+                        _get_promotion_flag(week.promo_mechanic))] = 1
+            cloned_list[index][data_values.index('promo_depth')] = week.promo_depth
+    return cloned_list
+
+
+def update_from_pricing(data_list):
+    cloned_list = copy.deepcopy(data_list)
     return cloned_list
