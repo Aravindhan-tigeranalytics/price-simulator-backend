@@ -34,9 +34,9 @@ class ModelMetaAdmin(admin.ModelAdmin):
                 csv_file = request.FILES["csv_file"]
                 # roi_file = request.FILES["roi_file"]
                 # excel.read_promo_coeff(csv_file)
-                # excel.read_roi_data(csv_file)   
+                excel.read_roi_data(csv_file)   
                 # excel.lift(csv_file , roi_file)
-                excel.lift_test()
+                # excel.lift_test()
                 # excel.read_coeff_map(csv_file)
                 # @util.validate_import_data
                 # excel.read_promo_data(csv_file)
@@ -126,6 +126,20 @@ class CoeffMapAdmin(admin.ModelAdmin):
     list_display = [field.name for field in models.CoeffMap._meta.fields]
     list_filter = ('model_meta__account_name','model_meta__product_group')
 
+class SavedScenarioAdmin(admin.ModelAdmin):
+    list_display = [field.name for field in models.SavedScenario._meta.fields]
+    
+class PricingSaveAdmin(admin.ModelAdmin):
+    list_display = [field.name for field in models.PricingSave._meta.fields]
+    
+class PromoSaveAdmin(admin.ModelAdmin):
+    list_display = [field.name for field in models.PromoSave._meta.fields]
+    
+class PricingWeekAdmin(admin.ModelAdmin):
+    list_display = [field.name for field in models.PricingWeek._meta.fields]
+
+class PromoWeekAdmin(admin.ModelAdmin):
+    list_display = [field.name for field in models.PromoWeek._meta.fields]
 
 admin.site.register(models.User)
 admin.site.register(models.ScenarioPlannerMetrics,ScenarioPlannerMetricsAdmin)
@@ -135,6 +149,12 @@ admin.site.register(models.ModelCoefficient,ModelCoefficientAdmin)
 admin.site.register(models.ModelData,ModelDataAdmin)
 admin.site.register(models.ModelROI,ModelROIAdmin)
 admin.site.register(models.CoeffMap,CoeffMapAdmin)
+
+admin.site.register(models.SavedScenario,SavedScenarioAdmin)
+admin.site.register(models.PricingSave,PricingSaveAdmin)
+admin.site.register(models.PromoSave,PromoSaveAdmin)
+admin.site.register(models.PricingWeek,PricingWeekAdmin)
+admin.site.register(models.PromoWeek,PromoWeekAdmin)
 
 # admin.site.register(models.Scenario,ScenarioAdmin)
 
