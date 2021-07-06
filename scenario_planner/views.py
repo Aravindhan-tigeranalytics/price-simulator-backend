@@ -1,5 +1,6 @@
 # from xlwt import Workbook
 from os import stat
+import re
 from django.core.exceptions import ObjectDoesNotExist
 from utils import util
 from rest_framework import fields, viewsets, mixins
@@ -575,6 +576,18 @@ class PromoSimulatorUploadView(viewsets.GenericViewSet,mixin.CalculationMixin):
     
     def get_queryset(self):
         return super().get_queryset()
+
+    def get_promo_mechanics(self,value):
+        if value == "Motivation":
+            return "Flag_promotype_Motivation"
+        elif value == "N Pls 1":
+            return "Flag_promotype_N_pls_1"
+        elif value == "Traffic":
+            return "Flag_promotype_traffic"
+        elif value == "Promo depth":
+            return "Flag_promotype_traffic"
+        else:
+            return None
     
     def post(self, request, format=None):
         get_serializer = sc.ModelMetaExcelUpload(request.data)
@@ -585,6 +598,8 @@ class PromoSimulatorUploadView(viewsets.GenericViewSet,mixin.CalculationMixin):
         # Get the first line in file as a header line
         columns = next(data)[0:]
         excel_input_df = pd.DataFrame(data,columns=columns)
+        if excel_input_df.shape[0] != 52:
+            return Response({'error' : "Please upload a excel with all 52 week values"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         excel_input_df['Promo elasticity'] = excel_input_df['Promo elasticity'].astype(int)
         excel_input_df['Promo depth'] = excel_input_df['Promo depth'].astype(float)
         excel_input_df['Co investment'] = excel_input_df['Co investment'].astype(float)
@@ -601,7 +616,7 @@ class PromoSimulatorUploadView(viewsets.GenericViewSet,mixin.CalculationMixin):
         for i in range(0,52):
             simulator_input["week-"+str(i+1)] = {
                 'promo_depth': excel_input_df['Promo depth'][i], 
-                'promo_mechanics': excel_input_df['Promo mechanics'][i], 
+                'promo_mechanics': self.get_promo_mechanics(excel_input_df['Promo mechanics'][i]), 
                 'co_investment': excel_input_df['Co investment'][i]
             }
         try:
