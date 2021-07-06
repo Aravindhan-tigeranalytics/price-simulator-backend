@@ -35,7 +35,8 @@ import io
 import itertools
 import decimal
 import math
-
+import openpyxl
+import pandas as pd
 
 def savePromo():
     return  {'account_name': 'Lenta', 'corporate_segment': 'BOXES', 'strategic_cell': 'cell', 'brand': 'brand', 'brand_format': 'format', 
@@ -562,6 +563,56 @@ class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
             return Response({'error' : str(e)},status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error' : "Something went wrong!"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PromoSimulatorUploadView(viewsets.GenericViewSet,mixin.CalculationMixin):
+    def get(self, request, format=None):
+        serializer = sc.ModelMetaExcelUpload()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    def get_serializer_class(self):
+        return sc.ModelMetaExcelUpload
+    
+    def get_queryset(self):
+        return super().get_queryset()
+    
+    def post(self, request, format=None):
+        get_serializer = sc.ModelMetaExcelUpload(request.data)
+        csv_file = request.FILES["simulator_input"]
+        book = openpyxl.load_workbook(csv_file,data_only=True)
+        sheet = book['simulator-input']
+        data = sheet.values
+        # Get the first line in file as a header line
+        columns = next(data)[0:]
+        excel_input_df = pd.DataFrame(data,columns=columns)
+        excel_input_df['Promo elasticity'] = excel_input_df['Promo elasticity'].astype(int)
+        excel_input_df['Promo depth'] = excel_input_df['Promo depth'].astype(float)
+        excel_input_df['Co investment'] = excel_input_df['Co investment'].astype(float)
+        simulator_input = {
+            'account_name': excel_input_df['Account name'][0],
+            'corporate_segment': excel_input_df['Corporate segment'][0],
+            'strategic_cell': excel_input_df['Strategic cell'][0],
+            'brand': excel_input_df['Brand'][0],
+            'brand_format': excel_input_df['Brand format'][0],
+            'product_group': excel_input_df['Product group'][0],
+            'promo_elasticity': excel_input_df['Promo elasticity'][0],
+            'param_depth_all': 0,
+        }
+        for i in range(0,52):
+            simulator_input["week-"+str(i+1)] = {
+                'promo_depth': excel_input_df['Promo depth'][i], 
+                'promo_mechanics': excel_input_df['Promo mechanics'][i], 
+                'co_investment': excel_input_df['Co investment'][i]
+            }
+        try:
+            response = self.calculate_finacial_metrics_from_request(simulator_input)
+            return Response(response ,
+                        status=status.HTTP_201_CREATED)
+        except ObjectDoesNotExist as e:
+            return Response({'error' : str(e)},status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error' : "Something went wrong!"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
             
         
 class LoadScenarioTest(viewsets.GenericViewSet,mixin.CalculationMixin):

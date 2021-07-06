@@ -23,6 +23,7 @@ urlpatterns = [
     path('getExcel/', views.ExampleViewSet.as_view({'post' : 'getData'})),
     path('optimize/',views.ModelOptimize.as_view()),
     path('promo-simulate/',views.PromoSimulatorView.as_view({'get': 'get'})),
+    path('promo-simulate-file-upload/',views.PromoSimulatorUploadView.as_view({'get': 'get'})),
     path('save-promo/',views.savePromo),
     path('list-saved-promo-test/', views.LoadScenarioTest.as_view({'get' : 'list',})),
     path('list-saved-promo-test/<int:id>/', views.LoadScenarioTest.as_view({'get' : 'list',})),

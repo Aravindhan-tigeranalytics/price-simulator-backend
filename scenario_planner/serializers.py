@@ -211,7 +211,10 @@ class DynamicInputSerializer(serializers.Serializer):
     promo_depth =serializers.IntegerField(initial = 0.0,default=0.0)
     promo_mechanics = serializers.ChoiceField(choices=PROMO_CHOICE,allow_blank=True)
     co_investment = serializers.IntegerField(initial = 0,default=0)
-        
+
+class ModelMetaExcelUpload(serializers.Serializer):
+    simulator_input = serializers.FileField(max_length=None, allow_empty_file=False)
+
 class ModelMetaGetSerializer(serializers.Serializer):
     OBJ_CHOICES = (
         ("cell", "Choose Strategic Cell"), 
