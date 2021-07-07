@@ -173,6 +173,9 @@ LOGGING_CONFIG = {
     }
 }
 
+PROMO_SIMULATOR_EXCEL_INPUT_COLS = ['Account name','Corporate segment','Strategic cell','Brand','Brand format','Product group',
+'Promo elasticity','Week','Promo depth','Promo mechanics','Co investment']
+
 PROMO_MODEL_COEFF_MAP = {**CALCULATION_METRIC , **COEFF_MAP}
 PROMO_MODEL_DATA_MAP = {**CALCULATION_METRIC , **DATA_MAP}
 

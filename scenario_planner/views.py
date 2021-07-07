@@ -38,6 +38,7 @@ import decimal
 import math
 import openpyxl
 import pandas as pd
+from utils import constants as CONST
 
 def savePromo():
     return  {'account_name': 'Lenta', 'corporate_segment': 'BOXES', 'strategic_cell': 'cell', 'brand': 'brand', 'brand_format': 'format', 
@@ -592,14 +593,19 @@ class PromoSimulatorUploadView(viewsets.GenericViewSet,mixin.CalculationMixin):
     def post(self, request, format=None):
         get_serializer = sc.ModelMetaExcelUpload(request.data)
         csv_file = request.FILES["simulator_input"]
-        book = openpyxl.load_workbook(csv_file,data_only=True)
-        sheet = book['simulator-input']
-        data = sheet.values
+        workbook = openpyxl.load_workbook(csv_file,data_only=True)
+        sheet_name = workbook.sheetnames
+        sheet = workbook[sheet_name[0]]
+        excel_data = sheet.values
         # Get the first line in file as a header line
-        columns = next(data)[0:]
-        excel_input_df = pd.DataFrame(data,columns=columns)
+        columns = next(excel_data)[0:]
+        excel_input_df = pd.DataFrame(excel_data,columns=columns)
         if excel_input_df.shape[0] != 52:
             return Response({'error' : "Please upload a excel with all 52 week values"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        print(columns)
+        print(CONST.PROMO_SIMULATOR_EXCEL_INPUT_COLS)
+        if list(columns) != CONST.PROMO_SIMULATOR_EXCEL_INPUT_COLS:
+            return Response({'error' : "Headers doesn't match, please upload a valid excel"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         excel_input_df['Promo elasticity'] = excel_input_df['Promo elasticity'].astype(int)
         excel_input_df['Promo depth'] = excel_input_df['Promo depth'].astype(float)
         excel_input_df['Co investment'] = excel_input_df['Co investment'].astype(float)
