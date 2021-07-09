@@ -679,6 +679,16 @@ def process(constraints = None):
   # min_consecutive_promo,max_consecutive_promo,min_promo_length_gap,tot_promo_min,tot_promo_max = get_promo_wave_values(temp_model_Data['TPR_Discount'])
   min_consecutive_promo,max_consecutive_promo,min_promo_length_gap,tot_promo_min,tot_promo_max = get_promo_wave_values(model_data_all['TPR_Discount'])
 
+  compul_no_promo_weeks = []
+  compul_promo_weeks = []
+  if constraints['param_compulsory_no_promo_weeks'] != '':
+    compul_no_promo_weeks_input = constraints['param_compulsory_no_promo_weeks'].split(',')
+    for i in compul_no_promo_weeks_input:
+	    compul_no_promo_weeks.append(int(i))
+  if constraints['param_compulsory_promo_weeks'] != '':
+    compul_promo_weeks_input = constraints['param_compulsory_promo_weeks'].split(',')
+    for i in compul_promo_weeks_input:
+	    compul_promo_weeks.append(int(i))
 # config_constrain : Actiavte/deactivate config constraint -True/False
 # For financial metrics, a value of the form 1.xx or 0.xx where we want the maximum metric value to be xx*100 % higher or lower than the baseline value. Similary, for the # LowerBound_value and LB percentage
 # compulsory no_promo weeks and promo weeks : empty list means no compulsory weeks
@@ -687,13 +697,13 @@ def process(constraints = None):
 # Fin_Pref_Order : The order of relaxing financial metric when we get a infeasible solution
 
   config = {"Reatiler": constraints['account_name'],"PPG":constraints['product_group'],'Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
-          "Objective_metric":"Trade_Expense","Objective":"Minimize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
+          "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
           "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
                               ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
                     'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
           "constrain_params": {'MAC':1.1,'RP':1.05,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
                                 'min_consecutive_promo': min_consecutive_promo,'max_consecutive_promo': max_consecutive_promo,
-                    'promo_gap': min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':10}}
+                    'promo_gap': min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks': compul_no_promo_weeks,'compul_promo_weeks' : compul_promo_weeks,'promo_price':10}}
   
   # retailer, ppg filter
   slct_retailer = constraints['account_name']
@@ -795,13 +805,13 @@ def process(constraints = None):
   baseline_info['max_promo_gap']=promo_wave_summary['Promo_gap'].max()
   # baseline_info
   config = {"Reatiler": constraints['account_name'],"PPG":constraints['product_group'],'Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
-          "Objective_metric":"Trade_Expense","Objective":"Minimize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
+          "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
           "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
                               ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
                     'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
           "constrain_params": {'MAC':1.1,'RP':1.05,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
                                 'min_consecutive_promo':min_consecutive_promo,'max_consecutive_promo':max_consecutive_promo,
-                    'promo_gap':min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':0}}
+                    'promo_gap':min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks': compul_no_promo_weeks,'compul_promo_weeks' : compul_promo_weeks,'promo_price':0}}
   # financial metric preference order
   fin_pref_order = config['Fin_Pref_Order']
   print(baseline_data,"baseline_data")
