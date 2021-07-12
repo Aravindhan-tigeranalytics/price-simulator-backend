@@ -5,7 +5,10 @@ from django.db.models.query import QuerySet
 from core import models as db_model
 from utils import util as util
 from utils import models as model
-from .query import roi_values , data_values
+# from .query import roi_values , data_values
+from utils.constants import (
+     DATA_VALUES as data_values , ROI_VALUES as roi_values
+)
 import math
 import decimal
 import copy
@@ -248,7 +251,8 @@ def calculate_financial_mertrics_from_pricing( data_list ,roi_list,unit_info , f
             gmac_percent_lsv = roi[roi_values.index('gmac')] * 100,
             # average_selling_price = data[data_values.index('wk_sold_avg_price_byppg')],
             product_group_weight_in_grams = data[data_values.index('weighted_weight_in_grams')], 
-            median_base_price_log = math.log(pricing_week[i].rsp_increase),
+            # median_base_price_log = math.log(pricing_week[i].rsp_increase),
+            median_base_price_log = data[data_values.index('median_base_price_log')],
             incremental_unit = decimal.Decimal(unit['Incremental']),
             base_unit = decimal.Decimal(unit['Base']),
             promo_elasticity=0,
@@ -319,32 +323,67 @@ def _get_promotion_flag(promo_from_req):
 
 def update_from_request(data_list , querydict):
     cloned_list = copy.deepcopy(data_list)
+    cataloge_average = 0
+    catalogue_index = []
     for i in querydict.keys():
         week_regex = util._regex(r'week-\d{1,2}',i)
         if week_regex:
             week = int(util._regex(r'\d{1,2}',week_regex.group()).group())
-            # import pdb
-            # pdb.set_trace()
+            index = week -1
+            cat = cloned_list[index][data_values.index('catalogue')]
+            if cat :
+                cataloge_average = util.average(cataloge_average , cat)
+                cloned_list[index][data_values.index('catalogue')] = 0
             if querydict[i]['promo_mechanics']:
-                cloned_list[week-1][data_values.index(
+                cloned_list[index][data_values.index(
                     _get_promotion_flag(querydict[i]['promo_mechanics']))] = 1
-            # import pdb
-            # pdb.set_trace()
-            # cloned_list[week-1].append({'co_investment' :querydict[i]['co_investment'] })
-            cloned_list[week-1][data_values.index('co_investment')] = querydict[i]['co_investment']
-            # cloned_list[week-1][data_values.index('promo_depth')] = querydict[i]['promo_depth']
+            cloned_list[index][data_values.index('co_investment')] = querydict[i]['co_investment']
             if querydict['param_depth_all']:
-                # print("setting depth all")
-                cloned_list[week-1][data_values.index('promo_depth')] = querydict[i]['promo_depth']
-                # promo_data.prefetched_data[week-1].tpr_discount = querydict['param_depth_all'] 
+                cloned_list[index][data_values.index('promo_depth')] =querydict['param_depth_all']
+                if index + 1 < len(cloned_list):
+                    cloned_list[index+1][data_values.index('tpr_discount_lag1')] = querydict['param_depth_all']
+                if index + 2 < len(cloned_list):
+                    cloned_list[index+2][data_values.index('tpr_discount_lag2')] =querydict['param_depth_all']
+                catalogue_index.append(index)
             else: 
-                cloned_list[week-1][data_values.index('promo_depth')] = querydict[i]['promo_depth']
+                cloned_list[index][data_values.index('promo_depth')] = querydict[i]['promo_depth']
+                if index + 1 < len(cloned_list):
+                    cloned_list[index+1][data_values.index('tpr_discount_lag1')] = querydict[i]['promo_depth']
+                if index + 2 < len(cloned_list):
+                    cloned_list[index+2][data_values.index('tpr_discount_lag2')] =querydict[i]['promo_depth']
+                if querydict[i]['promo_depth']:
+                    catalogue_index.append(index)
+    for value in catalogue_index:
+        cloned_list[value][data_values.index('catalogue')] = cataloge_average
     return cloned_list
 
-def update_from_saved_data(data_list , promo_week : QuerySet[db_model.PromoWeek]):
+def update_optimizer_from_pricing(data_list , pricing_week : QuerySet[db_model.PricingWeek] , roi_list):
     cloned_list = copy.deepcopy(data_list)
-    # import pdb
-    # pdb.set_trace()
+    cloned_roi = copy.deepcopy(roi_list)
+    for week in pricing_week:
+        index = week.week - 1
+        cloned_list[index][data_values.index('median_base_price_log')] = math.log(week.rsp_increase)
+        if roi_list:
+            cloned_roi[index][roi_values.index('list_price')] = week.lp_increase
+            if len(cloned_roi[index]) > len(roi_values):
+                cloned_roi[index][-1] = week.cogs_increase
+    return cloned_list , roi_list
+
+def update_from_saved_data(data_list , promo_week : QuerySet[db_model.PromoWeek] , roi_list = None):
+    cloned_list = copy.deepcopy(data_list)
+    if roi_list : 
+        cloned_roi = copy.deepcopy(roi_list)
+    saved_pricing = promo_week[0].pricing_save.saved_pricing
+    if saved_pricing:
+        pricing_week = db_model.PricingWeek.objects.filter(pricing_save = saved_pricing)
+        for week in pricing_week:
+            index = week.week - 1
+            cloned_list[index][data_values.index('median_base_price_log')] = math.log(week.rsp_increase)
+            if roi_list:
+                cloned_roi[index][roi_values.index('list_price')] = week.lp_increase
+                if len(cloned_roi[index]) > len(roi_values):
+                    cloned_roi[index][-1] = week.cogs_increase
+               
     if promo_week:
         for week in promo_week:
             index = week.week - 1
@@ -353,9 +392,112 @@ def update_from_saved_data(data_list , promo_week : QuerySet[db_model.PromoWeek]
                 cloned_list[index][data_values.index(
                         _get_promotion_flag(week.promo_mechanic))] = 1
             cloned_list[index][data_values.index('promo_depth')] = week.promo_depth
+            if index + 1 < len(promo_week):
+                cloned_list[index+1][data_values.index('tpr_discount_lag1')] = week.promo_depth
+            if index + 2 < len(promo_week):
+                cloned_list[index+2][data_values.index('tpr_discount_lag2')] =week.promo_depth
+    if roi_list:
+        return cloned_list , roi_list
     return cloned_list
 
 
-def update_from_pricing(data_list):
+def update_from_optimizer(data_list , optimizer_week:List[db_model.OptimizerSave]):
     cloned_list = copy.deepcopy(data_list)
+    cataloge_average = 0
+    catalogue_index = []
+    for week in optimizer_week:  
+        index = week.week -1
+        cat = cloned_list[index][data_values.index('catalogue')]
+        if cat :
+            cataloge_average = util.average(cataloge_average , cat)
+            cloned_list[index][data_values.index('catalogue')] = 0
+            
+        if week.optimum_promo:
+            catalogue_index.append(index)
+        cloned_list[index][data_values.index('co_investment')]= week.optimum_co_investment
+        cloned_list[index][data_values.index('promo_depth')] = week.optimum_promo
+        if index + 1 < len(optimizer_week):
+            cloned_list[index+1][data_values.index('tpr_discount_lag1')] = week.optimum_promo
+        if index + 2 < len(optimizer_week):
+            cloned_list[index+2][data_values.index('tpr_discount_lag2')] = week.optimum_promo
+    for value in catalogue_index:
+        cloned_list[value][data_values.index('catalogue')] = cataloge_average
     return cloned_list
+
+def update_from_pricing(data_list , pricing_week : QuerySet[db_model.PricingWeek] , roi_list = None):
+    cloned_list = copy.deepcopy(data_list)
+    if roi_list:
+        cloned_roi = copy.deepcopy(roi_list)
+    for week in pricing_week:
+        index = week.week - 1
+        cloned_list[index][data_values.index('median_base_price_log')] = math.log(week.rsp_increase)
+        
+    
+    return cloned_list
+
+def update_from_pricing_promo(data_list , pricing_week : List[db_model.PricingWeek] , promo_week : List[db_model.PromoWeek]):
+    cloned_list = copy.deepcopy(data_list)
+    
+    for week in pricing_week:
+        # print(week , "Pricing update...")
+        index = week.week - 1
+        cloned_list[index][data_values.index('median_base_price_log')] = math.log(week.rsp_increase)
+    
+    if promo_week:
+        for week in promo_week:
+            # print(week , "Promo update...")
+            index = week.week - 1
+            
+            if week.promo_mechanic:
+                cloned_list[index][data_values.index(
+                        _get_promotion_flag(week.promo_mechanic))] = 1
+            cloned_list[index][data_values.index('co_investment')] = week.co_investment
+            cloned_list[index][data_values.index('promo_depth')] = week.promo_depth
+            if index + 1 < len(promo_week):
+                cloned_list[index+1][data_values.index('tpr_discount_lag1')] = week.promo_depth
+            if index + 2 < len(promo_week):
+                cloned_list[index+2][data_values.index('tpr_discount_lag2')] = week.promo_depth
+    return cloned_list
+
+
+
+def calculate_financial_mertrics_from_pricing_promo(data_list ,roi_list,unit_info , flag,pricing_week:List[db_model.PricingWeek],promo_elasticity = 0):
+    weekly_units = []
+    total_units = model.TotalUnit()
+    
+    for i in range(0,len(data_list)):
+      
+        roi = roi_list[i]
+        unit = unit_info[i]
+        data = data_list[i]
+        
+        ob = model.UnitModelPrice(
+            data[data_values.index('date')],
+            week = int(data[data_values.index('week')]),
+            predicted_units=decimal.Decimal(unit['Predicted_sales']),
+            on_inv_percent=roi[roi_values.index('on_inv')] * 100,
+            list_price = pricing_week[i].lp_increase,
+            promo_depth=decimal.Decimal(data[data_values.index('promo_depth')]),
+            off_inv_percent = roi[roi_values.index('off_inv')] * 100, 
+            gmac_percent_lsv = roi[roi_values.index('gmac')] * 100,
+            # average_selling_price = data[data_values.index('wk_sold_avg_price_byppg')],
+            product_group_weight_in_grams = data[data_values.index('weighted_weight_in_grams')], 
+            # median_base_price_log = math.log(pricing_week[i].rsp_increase),
+            median_base_price_log = data[data_values.index('median_base_price_log')],
+            incremental_unit = decimal.Decimal(unit['Incremental']),
+            base_unit = decimal.Decimal(unit['Base']),
+            promo_elasticity=promo_elasticity,
+            co_investment = decimal.Decimal(data[data_values.index('co_investment')]),
+            mars_cogs_per_unit = pricing_week[i].cogs_increase
+            
+        )
+        update_total(total_units , ob)
+        weekly_units.append(ob.__dict__)
+    
+    return {
+        flag : {
+            'total' :  total_units.__dict__,
+            'weekly' : weekly_units
+        }
+       
+    }

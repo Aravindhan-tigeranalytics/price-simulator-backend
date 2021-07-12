@@ -8,6 +8,8 @@ from decimal import Decimal
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.core.exceptions import ValidationError
+from numpy import mod
+from datetime import datetime
 from utils import error_message as error
 from utils import util as util
 from . import managers as manager
@@ -37,15 +39,21 @@ class User(AbstractBaseUser, PermissionsMixin):
     name = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    allowed_retailers = models.ManyToManyField(
+        'core.ModelMeta' , related_name='allowed_retailers' , blank=True
+    )
 
     USERNAME_FIELD = 'email'
     objects = UserManager()
+    def __str__(self):
+        return self.email
 
 
 class Scenario(models.Model):
     SCENARIO_CHOICES = (
     ("pricing", "pricing"),
     ("promo", "promo"),
+    ("optimizer", "optimizer"),
 
 )
     scenario_type = models.CharField(
@@ -297,6 +305,7 @@ class SavedScenario(models.Model):
     SCENARIO_CHOICES = (
     ("pricing", "pricing"),
     ("promo", "promo"),
+      ("optimizer", "optimizer"),
 
 )
     scenario_type = models.CharField(
@@ -312,6 +321,8 @@ class SavedScenario(models.Model):
         on_delete=models.CASCADE
 
     )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 class MetaSave(models.Model):
     account_name = models.CharField(max_length=100,verbose_name="Account Name")
@@ -370,3 +381,24 @@ class PromoWeek(models.Model):
     class Meta:
         db_table = 'promo_week_save'
         ordering = ('week',)
+        
+        
+class OptimizerSave(models.Model):
+    model_meta = models.ForeignKey(
+        'core.ModelMeta' , related_name="optimizer" , on_delete=models.CASCADE
+    )
+    saved_scenario = models.ForeignKey(
+        'core.SavedScenario' , related_name="optimizer_saved" , on_delete=models.CASCADE,null=True
+    )
+    promo_save = models.ForeignKey(
+        'core.PromoSave' , related_name="optimizer_promo" , on_delete=models.SET_NULL , null=True,blank=True
+    )
+    pricing_save = models.ForeignKey(
+        'core.PricingSave' , related_name="optimzer_pricing" , on_delete=models.SET_NULL , null=True , blank=True
+    )
+    week = models.IntegerField(verbose_name="week" , default=1 , null=True)
+    optimum_promo = models.DecimalField(max_digits=30 , decimal_places=15,null=True)
+    optimum_co_investment = models.DecimalField(max_digits=30 , decimal_places=15,null=True)
+    
+    class Meta:
+        db_table = 'optimizer_save'

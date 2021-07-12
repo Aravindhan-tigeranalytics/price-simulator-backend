@@ -16,13 +16,17 @@ from django.shortcuts import get_object_or_404
 from core import models as model
 from core.models import ModelMeta, ModelROI, Scenario , ScenarioPlannerMetrics,ModelData,ModelCoefficient
 from scenario_planner import serializers as sc
+from scenario_planner import permissions as perm
 from rest_framework import serializers
- 
+from utils import excel as excel
+from scenario_planner import query as pd_query
 from . import mixins as mixin
 
 from utils import exceptions as exception
 from utils import excel as excel
 from utils import optimizer as optimizer
+from scenario_planner import calculations as cal
+from utils import units_calculation as uc
 from json import loads, dumps
 import ast
 # import xlwt
@@ -39,6 +43,104 @@ import math
 import openpyxl
 import pandas as pd
 from utils import constants as CONST
+
+
+class MyUploadView(viewsets.GenericViewSet):
+    from rest_framework.exceptions import ParseError
+    from rest_framework.parsers import FileUploadParser
+    parser_class = (FileUploadParser,)
+    serializer_class = sc.FileSerializer
+    
+    def get(self,request):
+        ser = sc.FileSerializer()
+        return Response(ser.data , status=status.HTTP_201_CREATED)
+
+
+    def put(self, request, format=None):
+         
+
+        f = request.data['file']
+        return Response(status=status.HTTP_201_CREATED)
+
+class PromoSimulatorViewTest(viewsets.GenericViewSet,mixin.CalculationMixin):
+    # queryset = model.ModelMeta.objects.all()
+     
+    def get(self, request, format=None):
+        
+        serializer = sc.OptimizerMeta()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    def get_serializer_class(self):
+        return sc.OptimizerMeta
+    
+    def get_queryset(self):
+        return super().get_queryset()
+    
+    def post(self, request, format=None):
+        get_serializer = sc.ModelMetaGetSerializer(request.data)
+        value_dict = loads(dumps((get_serializer.to_internal_value(request.data))))
+        try:
+            response = self.calculate_finacial_metrics_from_request(value_dict)
+            return Response(response ,
+                        status=status.HTTP_201_CREATED)
+        except ObjectDoesNotExist as e:
+            return Response({'error' : str(e)},status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error' : "Something went wrong!"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+
+class SavePromo(viewsets.GenericViewSet):
+    serializer_class = sc.SavePromo
+    def get(self, request, format=None):
+        serializer = sc.SavePromo()
+        return Response(serializer.data)
+    
+    def post(self, request, format=None):
+        # import pdb
+        # pdb.set_trace()
+        value = ast.literal_eval(request.data['optimizer_data'].strip())
+        # import pdb
+        # pdb.set_trace()
+        # value = savePromo()
+        scenario = model.SavedScenario(
+            scenario_type = 'promo',
+            name =  request.data['savescenario.name'],
+            comments = request.data['savescenario.comments'],
+            user = request.user
+            
+        )   
+        scenario.save()
+        pr_save = model.PromoSave(
+                account_name = value['account_name'],
+                corporate_segment = value['corporate_segment'],
+                product_group =value['product_group'],
+                promo_elasticity = value['promo_elasticity'],
+                saved_scenario = scenario
+            )
+        pr_save.save()
+        bulk_pricing_week = []
+        for i in value.keys():
+            week_regex = util._regex(r'week-\d{1,2}',i)
+            if week_regex:
+                week = int(util._regex(r'\d{1,2}',week_regex.group()).group())
+                # print(week , "week")
+                # print(value[i] , "week value")
+                pw = model.PromoWeek(
+                   
+                    week = week,
+                    year = 2021,
+                    promo_depth = value[i]['promo_depth'],
+                     co_investment = value[i]['co_investment'],
+                      promo_mechanic =value[i]['promo_mechanics'],
+                       pricing_save = pr_save,
+                )
+                bulk_pricing_week.append(pw)
+        model.PromoWeek.objects.bulk_create(bulk_pricing_week)    
+        return Response({"mess" : "saved"} , 200)    
+
 
 def savePromo():
     return  {'account_name': 'Lenta', 'corporate_segment': 'BOXES', 'strategic_cell': 'cell', 'brand': 'brand', 'brand_format': 'format', 
@@ -67,13 +169,28 @@ class MapPricingPromo(APIView):
     def create_promo(self,request):
         # import pdb
         # pdb.set_trace()
+        saved_scenario = model.SavedScenario(
+            scenario_type = request.data['save_scenario.scenario_type'],
+            name = request.data['save_scenario.name'],
+            comments = request.data['save_scenario.comments'],
+            user = request.user
+        )
+        saved_scenario.save()
         value =  ast.literal_eval(request.data['promo_details'].strip())
         ps = model.PricingSave.objects.get(id=int(request.data['pricing_id']))
+        # new_ps = model.PricingSave(
+        #     account_name = ps.account_name,
+        #     corporate_segment = ps.corporate_segment,
+        #     product_group = ps.product_group,
+        #     saved_scenario = saved_scenario
+            
+        # )
+        # new_ps.save()
         pr_save = model.PromoSave(
             account_name = ps.account_name,
             corporate_segment = ps.corporate_segment,
             product_group = ps.product_group,
-            saved_scenario = ps.saved_scenario,
+            saved_scenario = saved_scenario,
             saved_pricing = ps,
             promo_elasticity = value['promo_elasticity']
             
@@ -117,10 +234,6 @@ class MapPricingPromo(APIView):
     
     def post(self, request, format=None):
         self.create_promo(request)
-        # import pdb
-        # pdb.set_trace()
-        
-            
         return Response({}, status=status.HTTP_201_CREATED)
     
 
@@ -322,6 +435,16 @@ mixins.UpdateModelMixin,mixins.DestroyModelMixin , mixins.RetrieveModelMixin):
 class ScenarioPlannerMetricsViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
     queryset = ScenarioPlannerMetrics.objects.all()
     serializer_class = sc.ScenarioPlannerMetricsSerializer
+    
+    
+    def list(self, request, *args, **kwargs):
+        # import pdb
+        # pdb.set_trace()
+        coeff_list , data_list,roi_list = pd_query.get_list_value_from_query_all()
+        # import pdb
+        # pdb.set_trace()
+        res = uc.list_to_frame_many(coeff_list , data_list)
+        return super().list(request, *args, **kwargs)
 
 class ScenarioPlannerMetricsViewSetObject(viewsets.GenericViewSet, mixins.ListModelMixin):
     queryset = ScenarioPlannerMetrics.objects.all()
@@ -329,7 +452,7 @@ class ScenarioPlannerMetricsViewSetObject(viewsets.GenericViewSet, mixins.ListMo
     
 class LoadScenario(viewsets.ReadOnlyModelViewSet,mixin.CalculationMixin):
     # queryset = Scenario.objects.filter(scenario_type = 'promo')
-    queryset = model.SavedScenario.objects.all()
+    queryset = model.SavedScenario.objects.prefetch_related('optimizer_saved' , 'promo_saved').all()
     # serializer_class = sc.PromoScenarioSavedList
     serializer_class = sc.ScenarioSavedList
     lookup_field = "id"
@@ -346,56 +469,51 @@ class LoadScenario(viewsets.ReadOnlyModelViewSet,mixin.CalculationMixin):
         # pdb.set_trace()
         # self.calculate_finacial_metrics_from_pricing(pricing_week)
         return Response(self.calculate_finacial_metrics_from_pricing(pricing_week), status = 200)
-    def retrieve_bkp(self, request, *args, **kwargs):
-        self.get_object()
+    # def retrieve_bkp(self, request, *args, **kwargs):
+    #     self.get_object()
         
-        weeks = model.PromoWeek.objects.select_related('pricing_save','pricing_save__saved_scenario').filter(
-         pricing_save__saved_scenario = self.get_object()
-        )
-        self.calculate_finacial_metrics(weeks)
+    #     weeks = model.PromoWeek.objects.select_related('pricing_save','pricing_save__saved_scenario').filter(
+    #      pricing_save__saved_scenario = self.get_object()
+    #     )
+    #     self.calculate_finacial_metrics(weeks)
         
-        value_dict = ast.literal_eval(self.get_object().savedump)
-        return Response( self.calculate_finacial_metrics(value_dict),
-                        status=status.HTTP_201_CREATED)
+    #     value_dict = ast.literal_eval(self.get_object().savedump)
+    #     return Response( self.calculate_finacial_metrics(value_dict),
+    #                     status=status.HTTP_201_CREATED)
         
     def retrieve(self, request, *args, **kwargs):
         obj = self.get_object()
-        # import pdb
-        # pdb.set_trace()
+        
         if obj.scenario_type == 'pricing':
             pricing_save = model.PricingSave.objects.filter(saved_scenario = obj)
-            # import pdb
-            # pdb.set_trace()
+           
             serializer = sc.PricingSaveSerializer(pricing_save,many=True)
             return Response(serializer.data , status=200)
-    
+        if obj.scenario_type == 'optimizer':
+            optimizer_save = model.OptimizerSave.objects.filter(saved_scenario = obj)
+            return Response(self.calculate_finacial_metrics_from_optimizer(optimizer_save), status=status.HTTP_200_OK)
+            # return Response( self.calculate_finacial_metrics(weeks),
+                            
+            #             status=status.HTTP_201_CREATED)
+        # import pdb
+        # pdb.set_trace()
+        pricing = model.PromoSave.objects.get(saved_scenario = obj).saved_pricing
+        print(pricing , "pricing details ")
         weeks = model.PromoWeek.objects.select_related('pricing_save','pricing_save__saved_scenario').filter(
             pricing_save__saved_scenario = obj
         )
        
-        # for i in weeks:
-        #     print(i)
-        # print( weeks[0].pricing_save.account_name , 'accname')
-        # print( weeks[0].pricing_save.product_group , 'product group')
-        # print( weeks[0].pricing_save.promo_elasticity , 'promo_elasticity')
-            
-        
-        
-        # value_dict = ast.literal_eval(self.get_object().savedump)
+        if pricing:
+            pricing_week = model.PricingWeek.objects.select_related('pricing_save').filter(pricing_save = pricing )
+            return Response( self.calculate_finacial_metrics_pricing_promo(weeks,pricing_week ),
+                        
+                    status=status.HTTP_201_CREATED)
+    
+       
         return Response( self.calculate_finacial_metrics(weeks),
                         
                     status=status.HTTP_201_CREATED)
-        # return Response( {},
-                        
-        #             status=status.HTTP_201_CREATED)
-
         
-    # @action(methods=['get'], detail=True)
-    # def detail(self, *args, **kwargs):
-    #     return Response({
-    #         "rr"  : "dddd"
-    #     })
-
 class ExampleViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Scenario.objects.all()
     serializer_class = sc.ScenarioSerializer
@@ -524,26 +642,37 @@ class ModelOptimize(APIView):
 #         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
-    queryset = ModelMeta.objects.prefetch_related(
-        Prefetch(
-            'data',
-        queryset = ModelData.objects.all().order_by('week'),
-        to_attr='prefetched_data'
-        ),
-        # 'data',
-        Prefetch(
-            'coefficient',
-            queryset=ModelCoefficient.objects.all(),
-            to_attr='prefetched_coeff'
-        ),
-        Prefetch(
-            'roi',
-            queryset=ModelROI.objects.all().order_by('week'),
-            to_attr='prefetched_roi'
-        )
-    ).order_by('id')
-     
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (perm.PromoPermission,)
+    queryset = ModelMeta.objects.all()
+    # queryset = ModelMeta.objects.prefetch_related(
+    #     Prefetch(
+    #         'data',
+    #     queryset = ModelData.objects.all().order_by('week'),
+    #     to_attr='prefetched_data'
+    #     ),
+    #     # 'data',
+    #     Prefetch(
+    #         'coefficient',
+    #         queryset=ModelCoefficient.objects.all(),
+    #         to_attr='prefetched_coeff'
+    #     ),
+    #     Prefetch(
+    #         'roi',
+    #         queryset=ModelROI.objects.all().order_by('week'),
+    #         to_attr='prefetched_roi'
+    #     )
+    # ).order_by('id')
+    def get_queryset(self):
+        return super().get_queryset()
+    
+    def get_serializer_context(self):
+        context =  super().get_serializer_context()
+        context.update({"request" : self.request})
+        return context
+
     def get(self, request, format=None):
+       
         
         serializer = sc.ModelMetaGetSerializer()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -555,10 +684,135 @@ class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
         return super().get_queryset()
     
     def post(self, request, format=None):
+        # if 'download' in request.stream.path:
+        #     filename = 'django_simple.xlsx'
+        #     response = HttpResponse(
+        #         excel.download_excel_optimizer('response'),
+        #         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        #     )
+        #     response['Content-Disposition'] = 'attachment; filename=%s' % filename
+        #     return response
         get_serializer = sc.ModelMetaGetSerializer(request.data)
         value_dict = loads(dumps((get_serializer.to_internal_value(request.data))))
         try:
             response = self.calculate_finacial_metrics_from_request(value_dict)
+            
+            if 'download' in request.stream.path:
+                filename = 'promo_optimizer.xlsx'
+                response = HttpResponse(
+                    excel.download_excel_promo(response),
+                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
+                response['Content-Disposition'] = 'attachment; filename=%s' % filename
+                return response
+                 
+            return Response(response ,
+                        status=status.HTTP_201_CREATED)
+        except ObjectDoesNotExist as e:
+            return Response({'error' : str(e)},status=status.HTTP_404_NOT_FOUND)
+        # except Exception as e:
+        #     # import pdb
+        #     # pdb.set_trace
+        #     # e.with_traceback
+        #     print(e.with_traceback() , "error")
+        #     return Response({'error' : "Something went wrong!"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class PromoSimulatorUploadView(viewsets.GenericViewSet,mixin.CalculationMixin):
+    def get(self, request, format=None):
+        serializer = sc.ModelMetaExcelUpload()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    def get_serializer_class(self):
+        return sc.ModelMetaExcelUpload
+    
+    def get_queryset(self):
+        return super().get_queryset()
+
+    def get_promo_mechanics(self,value):
+        if value == "Motivation":
+            return "Flag_promotype_Motivation"
+        elif value == "N Pls 1":
+            return "Flag_promotype_N_pls_1"
+        elif value == "Traffic":
+            return "Flag_promotype_traffic"
+        elif value == "Promo depth":
+            return "Flag_promotype_traffic"
+        else:
+            return None
+    
+    def post(self, request, format=None):
+        get_serializer = sc.ModelMetaExcelUpload(request.data)
+        csv_file = request.FILES["simulator_input"]
+        workbook = openpyxl.load_workbook(csv_file,data_only=True)
+        sheet_name = workbook.sheetnames
+        sheet = workbook[sheet_name[0]]
+        excel_data = sheet.values
+        # Get the first line in file as a header line
+        columns = next(excel_data)[0:]
+        excel_input_df = pd.DataFrame(excel_data,columns=columns)
+
+        # Validating the excel input 
+        if excel_input_df.shape[0] != 52:
+            return Response({'error' : "Please upload a excel with all 52 week values"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if list(columns) != CONST.PROMO_SIMULATOR_EXCEL_INPUT_COLS:
+            return Response({'error' : "Headers doesn't match, please upload a valid excel"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        account_name = excel_input_df['Account name'].unique()
+        corporate_segment = excel_input_df['Corporate segment'].unique()
+        strategic_cell = excel_input_df['Strategic cell'].unique()
+        brand = excel_input_df['Brand'].unique()
+        brand_format = excel_input_df['Brand format'].unique()
+        product_group = excel_input_df['Product group'].unique()
+        promo_elasticity = excel_input_df['Promo elasticity'].unique()
+
+        if len(account_name) != 1:
+            return Response({'error' : "Account Name should be unique"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if len(corporate_segment) != 1:
+            return Response({'error' : "Corporate segment should be unique"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if len(strategic_cell) != 1:
+            return Response({'error' : "Strategic cell should be unique"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if len(brand) != 1:
+            return Response({'error' : "Brand should be unique"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if len(brand_format) != 1:
+            return Response({'error' : "Brand format should be unique"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if len(product_group) != 1:
+            return Response({'error' : "Product group should be unique"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if len(promo_elasticity) != 1:
+            return Response({'error' : "Promo elasticity should be unique"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+        unique_ppg_combination = excel_input_df["Account name"] + '-' + excel_input_df["Product group"]
+        unique_ppg_combination = unique_ppg_combination.unique()
+        if len(unique_ppg_combination) != 1:
+            return Response({'error' : "Retailer and PPG Combination should be unique"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        co_investment = excel_input_df['Co investment'].between(0,100,inclusive = True)
+        promo_depth = excel_input_df['Promo depth'].between(0,100,inclusive = True)
+        if promo_depth.nunique() != 1:
+            return Response({'error' : "Promo depth values should be in between 0 to 100"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if co_investment.nunique() != 1:
+            return Response({'error' : "Co-Investment values should be in between 0 to 100"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        excel_input_df['Promo elasticity'] = excel_input_df['Promo elasticity'].astype(int)
+        excel_input_df['Promo depth'] = excel_input_df['Promo depth'].astype(float)
+        excel_input_df['Co investment'] = excel_input_df['Co investment'].astype(float)
+
+
+        simulator_input = {
+            'account_name': account_name[0],
+            'corporate_segment': corporate_segment[0],
+            'strategic_cell': strategic_cell[0],
+            'brand': brand[0],
+            'brand_format': brand_format[0],
+            'product_group': product_group[0],
+            'promo_elasticity': promo_elasticity[0],
+            'param_depth_all': 0,
+        }
+        for i in range(0,52):
+            simulator_input["week-"+str(i+1)] = {
+                'promo_depth': excel_input_df['Promo depth'][i], 
+                'promo_mechanics': self.get_promo_mechanics(excel_input_df['Promo mechanics'][i]), 
+                'co_investment': excel_input_df['Co investment'][i]
+            }
+        try:
+            response = self.calculate_finacial_metrics_from_request(simulator_input)
             return Response(response ,
                         status=status.HTTP_201_CREATED)
         except ObjectDoesNotExist as e:

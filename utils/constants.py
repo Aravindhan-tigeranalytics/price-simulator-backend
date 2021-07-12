@@ -179,6 +179,46 @@ PROMO_SIMULATOR_EXCEL_INPUT_COLS = ['Account name','Corporate segment','Strategi
 PROMO_MODEL_COEFF_MAP = {**CALCULATION_METRIC , **COEFF_MAP}
 PROMO_MODEL_DATA_MAP = {**CALCULATION_METRIC , **DATA_MAP}
 
+COEFFICIENT_VALUES = [
+    'model_meta__account_name', 'model_meta__corporate_segment', 'model_meta__product_group', 'model_meta__brand_filter',
+    'model_meta__brand_format_filter', 'model_meta__strategic_cell_filter','wmape', 'rsq','intercept', 
+    'median_base_price_log', 'tpr_discount', 'tpr_discount_lag1', 'tpr_discount_lag2', 'catalogue', 'display', 'acv', 
+    'si','si_month','si_quarter', 'c_1_crossretailer_discount', 'c_1_crossretailer_log_price', 'c_1_intra_discount', 
+    'c_2_intra_discount', 'c_3_intra_discount', 'c_4_intra_discount', 'c_5_intra_discount','c_1_intra_log_price', 
+    'c_2_intra_log_price', 'c_3_intra_log_price', 'c_4_intra_log_price', 'c_5_intra_log_price', 'category_trend', 
+    'trend_month', 'trend_quarter', 'trend_year', 'month_no', 'flag_promotype_motivation', 'flag_promotype_n_pls_1',
+    'flag_promotype_traffic', 'flag_nonpromo_1', 'flag_nonpromo_2', 'flag_nonpromo_3', 'flag_promo_1', 'flag_promo_2',
+    'flag_promo_3', 'holiday_flag_1', 'holiday_flag_2', 'holiday_flag_3', 'holiday_flag_4', 'holiday_flag_5', 
+    'holiday_flag_6', 'holiday_flag_7', 'holiday_flag_8', 'holiday_flag_9', 'holiday_flag_10' 
+]
+DATA_VALUES = [
+    'model_meta__account_name','model_meta__corporate_segment', 'model_meta__product_group',
+    'model_meta__brand_filter','model_meta__brand_format_filter', 'model_meta__strategic_cell_filter',
+    'year','quater','month','period','date','week','intercept','median_base_price_log','tpr_discount',
+    'tpr_discount_lag1','tpr_discount_lag2','catalogue','display', 'acv', 'si','si_month','si_quarter',
+    'c_1_crossretailer_discount','c_1_crossretailer_log_price','c_1_intra_discount','c_2_intra_discount',
+    'c_3_intra_discount', 'c_4_intra_discount', 'c_5_intra_discount','c_1_intra_log_price',
+    'c_2_intra_log_price', 'c_3_intra_log_price', 'c_4_intra_log_price','c_5_intra_log_price',
+    'category_trend','trend_month','trend_quarter','trend_year','month_no','flag_promotype_motivation',
+    'flag_promotype_n_pls_1','flag_promotype_traffic','flag_nonpromo_1','flag_nonpromo_2', 'flag_nonpromo_3',
+    'flag_promo_1','flag_promo_2','flag_promo_3','holiday_flag_1','holiday_flag_2','holiday_flag_3',
+    'holiday_flag_4','holiday_flag_5','holiday_flag_6','holiday_flag_7','holiday_flag_8','holiday_flag_9', 
+    'holiday_flag_10', 'wk_sold_avg_price_byppg','average_weight_in_grams','weighted_weight_in_grams',
+    'promo_depth','co_investment','optimiser_flag'
+    ]
+COEFFICIENT_MAP_VALUES = [
+    'model_meta__account_name','model_meta__corporate_segment', 'model_meta__product_group','model_meta__brand_filter',
+    'model_meta__brand_format_filter', 'model_meta__strategic_cell_filter','coefficient_new','value','coefficient_old'
+    ]
+
+
+ROI_VALUES = [
+    'model_meta__account_name','model_meta__corporate_segment', 'model_meta__product_group','model_meta__brand_filter',
+    'model_meta__brand_format_filter', 'model_meta__strategic_cell_filter','neilson_sku_name','date','year','week',
+    'activity_name','mechanic','discount_nrv','off_inv','on_inv','gmac','list_price'
+    ]
+
+
 
 def get_key_from_value(dict_map , value):
     return list(dict_map.keys())[list(dict_map.values()).index(value)]
