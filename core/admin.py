@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib import messages
-# from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 # from django.utils.translation import ugettext_lazy as _
 from core import models
 from django import forms
@@ -120,6 +120,7 @@ class ModelDataAdmin(admin.ModelAdmin):
 class ModelROIAdmin(admin.ModelAdmin):
     search_fields = ['model_meta__id','model_meta__slug','model_meta__account_name']
     list_display = [field.name for field in models.ModelROI._meta.fields]
+    list_filter = ('model_meta__account_name','model_meta__product_group')
     
 class CoeffMapAdmin(admin.ModelAdmin):
     search_fields = ['model_meta__id','model_meta__slug','model_meta__account_name']
@@ -134,14 +135,57 @@ class PricingSaveAdmin(admin.ModelAdmin):
     
 class PromoSaveAdmin(admin.ModelAdmin):
     list_display = [field.name for field in models.PromoSave._meta.fields]
+    def queryset(self, request):
+        return super(PromoSaveAdmin, self).queryset(request).select_related('saved_scenario','saved_pricing')
     
 class PricingWeekAdmin(admin.ModelAdmin):
     list_display = [field.name for field in models.PricingWeek._meta.fields]
 
 class PromoWeekAdmin(admin.ModelAdmin):
     list_display = [field.name for field in models.PromoWeek._meta.fields]
+    
+class OptimizerSaveAdmin(admin.ModelAdmin):
+    list_display = [field.name for field in models.OptimizerSave._meta.fields]
+    list_select_related = ['saved_scenario','model_meta','promo_save']
+    # def queryset(self, request):
+    #     return super(OptimizerSaveAdmin, self).queryset(request).select_related('saved_scenario','model_meta')
 
-admin.site.register(models.User)
+from django.contrib.sessions.models import Session
+class SessionAdmin(admin.ModelAdmin):
+    def _session_data(self, obj):
+        return obj.get_decoded()
+    list_display = ['session_key', '_session_data', 'expire_date']
+admin.site.register(Session, SessionAdmin)
+
+
+class UserAdmin(BaseUserAdmin):
+    ordering = ['id']
+    list_display = ['email', 'name','get_groups' , 'is_active' ]
+    filter_horizontal = ('allowed_retailers',)
+    
+    fieldsets = (
+        (None,{'fields':('email' , 'name' ,) }),
+        ('permissions' , {'fields' : ('is_staff' , 'is_active' ,'is_superuser', 'groups' , 'allowed_retailers')}),
+    )
+    add_fieldsets = (
+        (None , {
+            'classes' : ('wide' ,),
+            'fields' : ('email' , 'name' , 'password1' , 'password2' , 'groups' , 'is_active' ,
+                        'is_staff','is_superuser','allowed_retailers')
+        }
+            
+        ),
+    )
+    
+    def get_groups(self,obj):
+        # # obj.
+        # import pdb
+        # pdb.set_trace()
+        return "\n, ".join([p.name for p in obj.groups.all()])
+    
+
+
+admin.site.register(models.User,UserAdmin)
 admin.site.register(models.ScenarioPlannerMetrics,ScenarioPlannerMetricsAdmin)
 admin.site.register(models.Scenario,ScenarioAdmin)
 admin.site.register(models.ModelMeta,ModelMetaAdmin)
@@ -149,6 +193,8 @@ admin.site.register(models.ModelCoefficient,ModelCoefficientAdmin)
 admin.site.register(models.ModelData,ModelDataAdmin)
 admin.site.register(models.ModelROI,ModelROIAdmin)
 admin.site.register(models.CoeffMap,CoeffMapAdmin)
+
+admin.site.register(models.OptimizerSave,OptimizerSaveAdmin)
 
 admin.site.register(models.SavedScenario,SavedScenarioAdmin)
 admin.site.register(models.PricingSave,PricingSaveAdmin)

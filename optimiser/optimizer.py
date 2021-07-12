@@ -1,4 +1,5 @@
 import os
+from typing import List
 import numpy as np
 import pandas as pd
 import re
@@ -652,56 +653,52 @@ def get_promo_wave_values(tpr_discount):
   print(tot_promo_max , "total promo max")
   return min_consecutive_promo,max_consecutive_promo,min_length_gap,tot_promo_min,tot_promo_max
 
-def process(constraints = None):
+
+def update_data():
+      pass
+
+def process(constraints = None , optimizer_save = None ,promo_week = None , pricing_week = None):
+  # import pdb
+  # pdb.set_trace()
+  
   logging.info('Main Funtion Begin')
+  # import pdb
+  # pdb.set_trace()
 
   # Model_Data,ROI_data, Model_Coeff = pr.get_list_from_db(constraints['account_name'],constraints['product_group'])
-  model_data_all,ROI_data,model_coeff,coeff_mapping = pr.get_list_from_db(constraints['account_name'],constraints['product_group'])
-
-  # Load from excel
-  # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-  # path = os.path.join(BASE_DIR + "/data/")
-
-  # model_data_all = pd.read_excel(path+'Simulator_Optimiser_combined_v2.xlsx',sheet_name='MODEL_DATA')
-  # model_data_all = model_data_all[(model_data_all['Account Name'] == constraints['account_name']) & (model_data_all['PPG'] == constraints['product_group'])]
-
-  # model_coeff = pd.read_excel(path+'Simulator_Optimiser_combined_v2.xlsx',sheet_name='MODEL_COEFFICIENT')
-  # model_coeff = model_coeff[(model_coeff['Account Name'] == constraints['account_name']) & (model_coeff['PPG'] == constraints['product_group'])]
-
-  # coeff_mapping = pd.read_excel(path+'Simulator_Optimiser_combined_v2.xlsx',sheet_name='COEFF_MAPPING')
-  # coeff_mapping = coeff_mapping[(coeff_mapping['Account Name'] == constraints['account_name']) & (coeff_mapping['PPG'] == constraints['product_group'])]
-
-  # ROI_data =  pd.read_csv(path+'ROI_Data_All_retailers_flag_N_pls_1.csv')
-  # ROI_data = ROI_data[(ROI_data['Account Name'] == constraints['account_name']) & (ROI_data['PPG'] == constraints['product_group'])]
-
-  # print(ROI_data)
-  # temp_model_Data = model_data_all.reset_index()
-  # min_consecutive_promo,max_consecutive_promo,min_promo_length_gap,tot_promo_min,tot_promo_max = get_promo_wave_values(temp_model_Data['TPR_Discount'])
+  if constraints:
+    account_name = constraints['account_name']
+    product_group = constraints['product_group']
+    segment = constraints['corporate_segment']
+    model_data_all,ROI_data,model_coeff,coeff_mapping = pr.get_list_from_db(constraints['account_name'],constraints['product_group'] , optimizer_save = optimizer_save)
+  if optimizer_save:
+    optimizer_save = list(optimizer_save)
+    account_name = optimizer_save[0].model_meta.account_name
+    product_group = optimizer_save[0].model_meta.product_group
+    segment = optimizer_save[0].model_meta.corporate_segment
+    model_data_all,ROI_data,model_coeff,coeff_mapping = pr.get_list_from_db(account_name,product_group , optimizer_save = optimizer_save)
+  if promo_week : 
+    promo_week = list(promo_week)
+    account_name = promo_week[0].pricing_save.account_name
+    product_group = promo_week[0].pricing_save.product_group
+    segment = promo_week[0].pricing_save.corporate_segment
+    model_data_all,ROI_data,model_coeff,coeff_mapping = pr.get_list_from_db(account_name,product_group , promo_week = promo_week)
+  if pricing_week:
+    pricing_week = list(pricing_week)
+    account_name = pricing_week[0].pricing_save.account_name
+    product_group = pricing_week[0].pricing_save.product_group
+    segment = pricing_week[0].pricing_save.corporate_segment
+    model_data_all,ROI_data,model_coeff,coeff_mapping = pr.get_list_from_db(account_name,product_group , pricing_week = pricing_week)
+  
   min_consecutive_promo,max_consecutive_promo,min_promo_length_gap,tot_promo_min,tot_promo_max = get_promo_wave_values(model_data_all['TPR_Discount'])
 
-# config_constrain : Actiavte/deactivate config constraint -True/False
-# For financial metrics, a value of the form 1.xx or 0.xx where we want the maximum metric value to be xx*100 % higher or lower than the baseline value. Similary, for the # LowerBound_value and LB percentage
-# compulsory no_promo weeks and promo weeks : empty list means no compulsory weeks
-# Co_investment : Investment from the retailers
-# MARS_TPRS : additional tprs to include in the optimization
-# Fin_Pref_Order : The order of relaxing financial metric when we get a infeasible solution
-
-  config = {"Reatiler": constraints['account_name'],"PPG":constraints['product_group'],'Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
-          "Objective_metric":"Trade_Expense","Objective":"Minimize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
-          "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
-                              ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
-                    'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
-          "constrain_params": {'MAC':1.1,'RP':1.05,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
-                                'min_consecutive_promo': min_consecutive_promo,'max_consecutive_promo': max_consecutive_promo,
-                    'promo_gap': min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':10}}
-  
-  # retailer, ppg filter
-  slct_retailer = constraints['account_name']
-  slct_ppg = constraints['product_group']
+  slct_retailer = account_name
+  slct_ppg =product_group
 
 
   # getting coefficient name mapping and values for selected retailer, ppg
-  coeff_mapping_temp = coeff_mapping.loc[(coeff_mapping['Account Name']==slct_retailer) & (coeff_mapping['PPG']==slct_ppg)]
+  # coeff_mapping_temp = coeff_mapping.loc[(coeff_mapping['Account Name']==slct_retailer) & (coeff_mapping['PPG']==slct_ppg)]
+  coeff_mapping_temp = coeff_mapping
   col_dict = dict(zip(coeff_mapping_temp['Coefficient_new'], coeff_mapping_temp['Coefficient']))
   col_dict_2 = dict(zip(coeff_mapping_temp['Coefficient'], coeff_mapping_temp['Coefficient_new']))
   col_dict_2.pop('Intercept')
@@ -711,8 +708,9 @@ def process(constraints = None):
   idvs = coeff_mapping_temp['Coefficient_new'].to_list()
   idvs.remove('Intercept')
   # getting model data for retailer, ppg and renaming columns
-  Model_Data = model_data_all.loc[(model_data_all['Account Name']==slct_retailer) & (model_data_all['PPG']==slct_ppg) 
-                                & (model_data_all['Optimiser_flag']==1)].reset_index(drop=True)
+  # Model_Data = model_data_all.loc[(model_data_all['Account Name']==slct_retailer) & (model_data_all['PPG']==slct_ppg) 
+  #                               & (model_data_all['Optimiser_flag']==1)].reset_index(drop=True)
+  Model_Data = model_data_all.loc[(model_data_all['Optimiser_flag']==1)].reset_index(drop=True)
   Model_Data = Model_Data[['Date'] + idvs]
   Model_Data.rename(columns=col_dict,inplace=True)
   # getting model coefficients values with original names and format 
@@ -724,7 +722,8 @@ def process(constraints = None):
                             Model_Coeff['Coefficient_new'].str.contains('death')]['names'].to_list()
   Model_Coeff
   print(Model_Data.shape)
-  promo_list_PPG = ROI_data[(ROI_data['Account Name'] == slct_retailer) & (ROI_data['PPG'] == slct_ppg)].reset_index(drop=True)
+  # promo_list_PPG = ROI_data[(ROI_data['Account Name'] == slct_retailer) & (ROI_data['PPG'] == slct_ppg)].reset_index(drop=True)
+  promo_list_PPG = ROI_data.reset_index(drop=True)
   print(promo_list_PPG.shape)
   Period_data=promo_list_PPG[['Date','Discount, NRV %','TE Off Inv','TE On Inv','GMAC','COGS','List_Price','Mechanic', 'Coinvestment','Flag_promotype_N_pls_1']]
   Model_Coeff_list_Keep=list(Model_Coeff['names'])
@@ -794,15 +793,17 @@ def process(constraints = None):
   baseline_info['min_promo_gap']=promo_wave_summary['Promo_gap'].min()
   baseline_info['max_promo_gap']=promo_wave_summary['Promo_gap'].max()
   # baseline_info
-  config = {"Reatiler": constraints['account_name'],"PPG":constraints['product_group'],'Segment':"Choco","MARS_TPRS":[10,20],"Co_investment":[0,0],
+  config = {"Reatiler": account_name,"PPG":product_group,'Segment':segment,"MARS_TPRS":[],"Co_investment":[],
           "Objective_metric":"Trade_Expense","Objective":"Minimize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
           "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
                               ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
                     'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
-          "constrain_params": {'MAC':1.1,'RP':1.05,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
+          "constrain_params": {'MAC':1,'RP':1.0,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
                                 'min_consecutive_promo':min_consecutive_promo,'max_consecutive_promo':max_consecutive_promo,
                     'promo_gap':min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':0}}
   # financial metric preference order
+  if constraints:
+    _update_params(config , constraints)
   fin_pref_order = config['Fin_Pref_Order']
   print(baseline_data,"baseline_data")
   # getting TE for all the tprs
@@ -1009,11 +1010,22 @@ def process(constraints = None):
   Optimal_data = optimal_summary_fun(baseline_data,Model_Coeff,Optimal_calendar_fin,TE_dict,ret_inv_dict)
   # getting comparison between baseline and optimal calendar
   opt_base = get_opt_base_comparison(baseline_data,Optimal_data,Model_Coeff,config)
+  # process_calc.update_db(opt_base,config['Reatiler'] , config['PPG'])
   # metric summary comparison between optimal and baseline calendar
   summary = get_calendar_summary(baseline_data,Optimal_data,opt_base)
-  parsed = json.loads(summary.to_json(orient="records"))
+  opt_base['week'] = opt_base.sort_values("Date").index + 1
+  opt_base['Coinvestment']  = Optimal_data.sort_values("Date")['Coinvestment']
+  # import pdb
+  # pdb.set_trace()
+  parsed_summary = json.loads(summary.to_json(orient="records"))
+  parsed_base = json.loads(opt_base.to_json(orient="records"))
+  # import pdb
+  # pdb.set_trace()
   logging.info('Main Funtion Ends')
-  return parsed
+  return {
+    "summary" : parsed_summary,
+    "optimal" : parsed_base
+  }
 
 
 
@@ -1376,8 +1388,8 @@ def optimizer_fun(baseline_data,Required_base,config):
       R3_sum = lpSum([WK_vars[Required_base['WK_ID'][k+1+j*52]] for j in range(0,1)])
       gap_weeks = len(range(k+1, min(52, k+constrain_params['promo_gap']+1)))
       prob+= R1_sum + gap_weeks * R2_sum >= gap_weeks * R3_sum
-    #   prob.solve()
-  prob.solve(PULP_CBC_CMD(msg=True, maxSeconds=1200000,keepFiles=1, fracGap=None))
+  prob.solve()
+  # prob.solve(PULP_CBC_CMD(msg=True, maxSeconds=1200000,keepFiles=1, fracGap=None))
   print('loop ends')
   print(LpStatus[prob.status])
   print(pulp.value(prob.objective))
@@ -1653,6 +1665,4 @@ def get_calendar_summary(baseline_data,optimal_data,opt_base):
   summary_metric['Change']=summary_metric['Recommended_Scenario']-summary_metric['Base_Scenario']
   summary_metric['Delta']=summary_metric['Change']/summary_metric['Base_Scenario']
   return summary_metric
-
-
 

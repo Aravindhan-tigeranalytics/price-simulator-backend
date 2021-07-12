@@ -1,12 +1,14 @@
 from numpy import save
 from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
+from rest_framework import response
 import xlsxwriter
 import datetime
 import openpyxl
 import decimal
+import io
 # from openpyxl import worksheet
-from datetime import datetime,timedelta
+from datetime import datetime as dt,timedelta
 from core import models as model
 from utils import models
 from . import constants as const
@@ -82,16 +84,6 @@ def excel(data , output):
             col+=1
         row+=1
 
-
-
-    # for item, cost in (expenses):
-    #     worksheet.write(row, col,     item,format2)
-    #     worksheet.write(row, col + 1, cost , format2)
-    #     row += 1
-
-    # worksheet.write(row, 0, 'Total' , bold)
-    # worksheet.write(row, 1, '=SUM(B1:B4)' , money)
-
     workbook.close()
 def excel_summary(data , output):
     ROW_CONST = 6
@@ -127,7 +119,6 @@ def excel_summary(data , output):
         'border': 1,
         'align': 'center',
         'valign': 'vcenter'})
-    # format_name.set_font_size(20)
 
     row = ROW_CONST
     col = COL_CONST
@@ -135,15 +126,9 @@ def excel_summary(data , output):
     worksheet.merge_range('B2:D2', 'Downloaded on ' +dateformat() , merge_format_date)
     worksheet.merge_range('B3:D3', 'Price Simulator Tool' , merge_format_app)
     worksheet.merge_range('B4:D4', 'Comparison Summary',merge_format_app)
-    # for header in keys:
-    #     worksheet.write(row, col,     header,format2)
-    #     worksheet.set_row(row, 20)
-    #     worksheet.set_column(col,col, 15)
-    #     col+=1
     zip_list = []
     data_val = list(data.values())
     for i in data_val:
-        # print(i['name'] , "i vaue")
         zip_list.append(zip(i["header"],i["current"],i["simulated"],i["Absolute change"],i["percent change"]))
     for idx,z in enumerate(zip_list):
         worksheet.merge_range(row+1,col-4,row+4,col-2 ,data_val[idx]['name'] ,format_name)
@@ -164,6 +149,177 @@ def excel_summary(data , output):
     
     
     workbook.close()
+
+def download_excel_promo(data):
+    output = io.BytesIO()
+   
+    ROW_CONST = 6
+    COL_CONST = 1
+    # from . import test
+    # data = test.RESPONSE_PROMO
+    # import pdb
+    # pdb.set_trace()
+    # data = {'sc1sdf': {'name': 'sc1sdf', 'header': ['units', 'tonnes', 'lsv', 'rsv', 'nsv', 'cogs', 'nsv_tonnes', 'te', 'te_percent_lsv', 'te_units', 'mac', 'mac_percent_nsv', 'rp', 'rp_percent_rsv'], 'current': ['136.0M ₽', '2.0K ₽', '2.6B ₽', '3.0B ₽', '1.6B ₽', '709.4M ₽', '815.1K ₽', '968.1M ₽', '37.5 ₽', '7.1 ₽', '907.1M ₽', '56.1 ₽', '1.4B ₽', '45.7 ₽'], 'simulated': ['123.4M ₽', '1.8K ₽', '2.7B ₽', '2.8B ₽', '1.7B ₽', '659.0M ₽', '928.8K ₽', '1.0B ₽', '37.5 ₽', '8.1 ₽', '1.0B ₽', '60.7 ₽', '1.2B ₽', '41.0 ₽'], 'Absolute change': ['-12.6M ₽', '-0.2K ₽', '95.6M ₽', '-0.1B ₽', '59.9M ₽', '-50.4M ₽', '-0.3M ₽', '35.7M ₽', '-0.0 ₽', '-2.8 ₽', '110.3M ₽', '4.6 ₽', '-0.2B ₽', '-4.7 ₽'], 'percent change': ['-9.2 %', '-9.0 %', '3.7 %', '-4.5 %', '3.7 %', '-7.1 %', '-0.4 %', '3.7 %', '-0.0 %', '-0.4 %', '12.2 %', '8.2 %', '-14.3 %', '-10.2 %']}, 'otc&xxl': {'name': 'otc&xxl', 'header': ['units', 'tonnes', 'lsv', 'rsv', 'nsv', 'cogs', 'nsv_tonnes', 'te', 'te_percent_lsv', 'te_units', 'mac', 'mac_percent_nsv', 'rp', 'rp_percent_rsv'], 'current': ['266.1M ₽', '10.2K ₽', '5.8B ₽', '6.9B ₽', '4.2B ₽', '1.9B ₽', '406.8K ₽', '1.6B ₽', '28.2 ₽', '6.1 ₽', '2.3B ₽', '55.0 ₽', '2.8B ₽', '40.1 ₽'], 'simulated': ['241.0M ₽', '9.9K ₽', '5.5B ₽', '6.6B ₽', '4.0B ₽', '1.8B ₽', '405.1K ₽', '1.5B ₽', '27.8 ₽', '6.4 ₽', '2.2B ₽', '55.0 ₽', '2.6B ₽', '39.9 ₽'], 'Absolute change': ['-25.1M ₽', '-0.4K ₽', '-0.3B ₽', '-0.3B ₽', '-0.2B ₽', '-69.5M ₽', '453.9K ₽', '-96.0M ₽', '-0.4 ₽', '3.8 ₽', '-92.3M ₽', '-0.1 ₽', '-0.1B ₽', '-0.2 ₽'], 'percent change': ['-9.4 %', '-3.5 %', '-4.4 %', '-4.3 %', '-3.9 %', '-3.7 %', '1.1 %', '-5.9 %', '-1.5 %', '0.6 %', '-4.0 %', '-0.1 %', '-4.8 %', '-0.6 %']}}
+    workbook = xlsxwriter.Workbook(output)
+    merge_format_date = workbook.add_format({
+        'bold': 1,
+        'align': 'center',
+        'valign': 'vcenter',
+         })
+
+    merge_format_app = workbook.add_format({
+        'bold': 1,
+        
+        'align': 'center',
+        'valign': 'vcenter'
+        })
+    merge_format_app.set_font_size(20)
+   
+    worksheet = workbook.add_worksheet()
+    worksheet.hide_gridlines(2)
+    format_header = workbook.add_format({'bold': 1,
+        'border': 1,
+        'align': 'center',
+        'valign': 'vcenter'})
+    format_header.set_font_size(14)
+    
+    format_name = workbook.add_format({'bold': 1,
+        'border': 1,
+        'align': 'center',
+        'valign': 'vcenter'})
+    format_name.set_font_size(20)
+    format_value = workbook.add_format({
+        'border': 1,
+        'align': 'center',
+        'valign': 'vcenter'})
+
+    row = ROW_CONST
+    col = COL_CONST
+    
+    
+    worksheet.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
+    worksheet.merge_range('B3:D3', 'Promo Simulator Tool' , merge_format_app)
+    worksheet.set_column('B:D', 20)
+    worksheet.merge_range('B4:D4', "Account Name : {}".format(data['account_name']),merge_format_app)
+    worksheet.merge_range('B5:D5', "Product Group : {}".format(data['product_group']),merge_format_app)
+    
+    data_val = data['simulated']['weekly'][0]
+    header_key = []
+    for key in data_val.keys():
+        header_key.append(key)
+        _writeExcel(worksheet,row, col," ".join(key.split("_")).title(),format_header)
+        # _writeExcel(worksheet,row+1, col,data_val[key],format_value)
+        col+=1
+    col = COL_CONST
+    row+=1
+    weekly = data['simulated']['weekly']
+    # import pdb
+    # pdb.set_trace()
+     
+    for week in weekly:
+        for k in header_key:
+            # import pdb
+            # pdb.set_trace()
+            _writeExcel(worksheet,row, col,
+                        week[k].strftime("%b %d %Y") if k =='date' else week[k],
+                        format_value)
+            col+=1
+        row+=1
+        col = COL_CONST
+         
+    workbook.close()
+    output.seek(0)
+    return output
+
+def download_excel_optimizer(account_name , product_group,data):
+    output = io.BytesIO()
+   
+    ROW_CONST = 6
+    COL_CONST = 1
+    # from . import test
+    # data = test.RESPONSE_OPTIMIZER
+    workbook = xlsxwriter.Workbook(output)
+    merge_format_date = workbook.add_format({
+        'bold': 1,
+        'align': 'center',
+        'valign': 'vcenter',
+         })
+
+    merge_format_app = workbook.add_format({
+        'bold': 1,
+        
+        'align': 'center',
+        'valign': 'vcenter'
+        })
+    merge_format_app.set_font_size(20)
+   
+    worksheet = workbook.add_worksheet()
+    worksheet.hide_gridlines(2)
+    format_header = workbook.add_format({'bold': 1,
+        'border': 1,
+        'align': 'center',
+        'valign': 'vcenter'})
+    format_header.set_font_size(14)
+    
+    format_name = workbook.add_format({'bold': 1,
+        'border': 1,
+        'align': 'center',
+        'valign': 'vcenter'})
+    format_name.set_font_size(20)
+    format_value = workbook.add_format({
+        'border': 1,
+        'align': 'center',
+        'valign': 'vcenter'})
+
+    row = ROW_CONST
+    col = COL_CONST
+    
+    
+    worksheet.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
+    worksheet.merge_range('B3:D3', 'Promo Optimizer Tool' , merge_format_app)
+    worksheet.set_column('B:D', 20)
+    worksheet.merge_range('B4:D4', "Account Name : {}".format(account_name),merge_format_app)
+    worksheet.merge_range('B5:D5', "Product Group : {}".format(product_group),merge_format_app)
+    
+    data_val = [d['Metric'] for d in data]
+    header_key = []
+    for val in data_val:
+        # header_key.append(key)
+        _writeExcel(worksheet,row, col," ".join(val.split("_")).title(),format_header)
+        # _writeExcel(worksheet,row+1, col,data_val[key],format_value)
+        col+=1
+    col = COL_CONST
+    row+=1
+    _writeExcel(worksheet,row, col-1,'Base Scenario',format_header)
+    _writeExcel(worksheet,row+1, col-1,'Recommended Scenario',format_header)
+    _writeExcel(worksheet,row+2, col-1,'Change',format_header)
+    _writeExcel(worksheet,row+3, col-1,'Delta',format_header)
+    for kv in data: 
+        
+        _writeExcel(worksheet,row, col,kv['Base_Scenario'],format_value)
+        _writeExcel(worksheet,row+1, col,kv['Recommended_Scenario'],format_value)
+        _writeExcel(worksheet,row+2, col,kv['Change'],format_value)
+        _writeExcel(worksheet,row+3, col,kv['Delta'],format_value)
+        # row+=1
+        col+=1
+         
+        # col+=1
+        # row+=1
+        # col = COL_CONST
+        
+    # weekly = data['simulated']['weekly']
+     
+    # for week in weekly:
+    #     for k in header_key:
+    #         _writeExcel(worksheet,row, col,week[k],format_value)
+    #         col+=1
+    #     row+=1
+    #     col = COL_CONST
+         
+    workbook.close()
+    output.seek(0)
+    return output
+
 
 def _writeExcel(worksheet , row , col , val , _format):
     worksheet.write(row, col,val,_format)

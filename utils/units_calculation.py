@@ -1,3 +1,4 @@
+from django.db import connection
 from django.db.models import base
 import numpy as np
 import pandas as pd
@@ -101,6 +102,7 @@ def get_var_contribution_wo_baseline_defined(df, model_coef, wk_sold_price,  all
     tuple of pd.DataFrame
     """
     # Predict Sales
+    
     ppg_cols = ["PPG_Cat", "PPG_MFG", "PPG_Item_No", "PPG_Description"]
     ppg = df["PPG_Item_No"].to_list()[0]
     model_df = df.drop(columns=ppg_cols).copy()
@@ -326,7 +328,9 @@ def main(data_frame,coeff_frame):
 
     
     coeff = train_coef.melt(var_name = "Variable",value_name='Value')
-    coeff = coeff.iloc[9:].reset_index(drop=True) # taking only the numeric rows  8 -> 9
+    # import pdb
+    # pdb.set_trace()
+    coeff = coeff.iloc[int(coeff[coeff['Variable']=='Intercept'].index[0]):].reset_index(drop=True) # taking only the numeric rows  8 -> 9
     coeff['Value'] = coeff['Value'].astype(float)
     ### train_data is the original or the simulated model data
     train_data = base_data.copy() 
@@ -419,13 +423,31 @@ def main_file(file1,file2, retailer , ppg, segment):
 
 
 
-coeff_columns = ['meta_id','Account Name', 'Corporate Segment', 'PPG', 'Brand Filter',
-       'Brand Format Filter', 'Strategic Cell Filter', 'WMAPE', 'Rsq','Intercept', 'Median_Base_Price_log', 'TPR_Discount', 'TPR_Discount_lag1', 'TPR_Discount_lag2', 'Catalogue', 'Display', 'ACV', 'SI', 'SI_month', 'SI_quarter', 'C_1_crossretailer_discount', 'C_1_crossretailer_log_price', 'C_1_intra_discount', 'C_2_intra_discount', 'C_3_intra_discount', 'C_4_intra_discount', 'C_5_intra_discount', 'C_1_intra_log_price', 'C_2_intra_log_price', 'C_3_intra_log_price', 'C_4_intra_log_price', 'C_5_intra_log_price', 'Category trend', 'Trend_month', 'Trend_quarter', 'Trend_year', 'month_no', 'Flag_promotype_Motivation', 'Flag_promotype_N_pls_1', 'Flag_promotype_traffic', 'Flag_nonpromo_1', 'Flag_nonpromo_2', 'Flag_nonpromo_3', 'Flag_promo_1', 'Flag_promo_2', 'Flag_promo_3', 'Holiday_Flag1', 'Holiday_Flag2', 'Holiday_Flag3', 'Holiday_Flag4', 'Holiday_Flag5', 'Holiday_Flag6', 'Holiday_Flag7', 'Holiday_Flag8', 'Holiday_Flag9', 'Holiday_Flag10']
+coeff_columns = [
+    'Account Name', 'Corporate Segment', 'PPG', 'Brand Filter','Brand Format Filter', 'Strategic Cell Filter',
+    'WMAPE', 'Rsq','Intercept', 'Median_Base_Price_log', 'TPR_Discount', 'TPR_Discount_lag1', 'TPR_Discount_lag2',
+    'Catalogue', 'Display', 'ACV', 'SI', 'SI_month', 'SI_quarter', 'C_1_crossretailer_discount',
+    'C_1_crossretailer_log_price', 'C_1_intra_discount', 'C_2_intra_discount', 'C_3_intra_discount','C_4_intra_discount',
+    'C_5_intra_discount', 'C_1_intra_log_price', 'C_2_intra_log_price', 'C_3_intra_log_price', 'C_4_intra_log_price',
+    'C_5_intra_log_price', 'Category trend','Trend_month', 'Trend_quarter', 'Trend_year', 'month_no', 
+    'Flag_promotype_Motivation', 'Flag_promotype_N_pls_1', 'Flag_promotype_traffic', 'Flag_nonpromo_1','Flag_nonpromo_2',
+    'Flag_nonpromo_3', 'Flag_promo_1', 'Flag_promo_2', 'Flag_promo_3', 'Holiday_Flag1','Holiday_Flag2', 'Holiday_Flag3',
+    'Holiday_Flag4', 'Holiday_Flag5', 'Holiday_Flag6', 'Holiday_Flag7', 'Holiday_Flag8', 'Holiday_Flag9', 'Holiday_Flag10'
+    ]
 # coeff_columns
-data_columns =  ['meta_id','Account Name', 'Corporate Segment', 'PPG', 'Brand Filter',
-       'Brand Format Filter', 'Strategic Cell Filter','Year', 'Quarter',
-       'Month', 'Period', 'Date', 'Week','Intercept', 'Median_Base_Price_log', 'TPR_Discount','promo_depth','co investment', 'TPR_Discount_lag1', 'TPR_Discount_lag2', 'Catalogue', 'Display', 'ACV', 'SI', 'SI_month', 'SI_quarter', 'C_1_crossretailer_discount', 'C_1_crossretailer_log_price', 'C_1_intra_discount', 'C_2_intra_discount', 'C_3_intra_discount', 'C_4_intra_discount', 'C_5_intra_discount', 'C_1_intra_log_price', 'C_2_intra_log_price', 'C_3_intra_log_price', 'C_4_intra_log_price', 'C_5_intra_log_price', 'Category trend', 'Trend_month', 'Trend_quarter', 'Trend_year', 'month_no', 'Flag_promotype_Motivation', 'Flag_promotype_N_pls_1', 'Flag_promotype_traffic', 'Flag_nonpromo_1', 'Flag_nonpromo_2', 'Flag_nonpromo_3', 'Flag_promo_1', 'Flag_promo_2', 'Flag_promo_3', 'Holiday_Flag1', 'Holiday_Flag2', 'Holiday_Flag3', 'Holiday_Flag4', 'Holiday_Flag5', 'Holiday_Flag6', 'Holiday_Flag7', 'Holiday_Flag8', 'Holiday_Flag9',
-        'Holiday_Flag10', 'wk_sold_avg_price_byppg','Average Weight in grams','Weighted Weight in grams']
+data_columns =  [
+    'Account Name', 'Corporate Segment', 'PPG', 'Brand Filter','Brand Format Filter', 'Strategic Cell Filter',
+    'Year', 'Quarter','Month', 'Period', 'Date', 'Week','Intercept', 'Median_Base_Price_log', 'TPR_Discount',
+    'TPR_Discount_lag1', 'TPR_Discount_lag2', 'Catalogue', 'Display', 'ACV', 'SI', 'SI_month', 'SI_quarter',
+    'C_1_crossretailer_discount', 'C_1_crossretailer_log_price', 'C_1_intra_discount', 'C_2_intra_discount',
+    'C_3_intra_discount', 'C_4_intra_discount', 'C_5_intra_discount', 'C_1_intra_log_price', 'C_2_intra_log_price',
+    'C_3_intra_log_price', 'C_4_intra_log_price', 'C_5_intra_log_price', 'Category trend', 'Trend_month', 'Trend_quarter',
+    'Trend_year', 'month_no', 'Flag_promotype_Motivation', 'Flag_promotype_N_pls_1', 'Flag_promotype_traffic',
+    'Flag_nonpromo_1', 'Flag_nonpromo_2', 'Flag_nonpromo_3', 'Flag_promo_1', 'Flag_promo_2', 'Flag_promo_3',
+    'Holiday_Flag1', 'Holiday_Flag2', 'Holiday_Flag3', 'Holiday_Flag4', 'Holiday_Flag5', 'Holiday_Flag6', 'Holiday_Flag7', 
+    'Holiday_Flag8', 'Holiday_Flag9','Holiday_Flag10', 'wk_sold_avg_price_byppg','Average Weight in grams',
+    'Weighted Weight in grams','promo_depth','co investment', 'optimiser_flag'
+    ]
 
 
 # coeff_dt = pd.DataFrame(coeff, columns = coeff_columns)
@@ -454,13 +476,57 @@ def list_to_frame_bkp(coeff,data,flag=False):
     return retuned_dt
 
 def list_to_frame(coeff,data):
+    # import pdb
+    # pdb.set_trace()
     coeff_dt = pd.DataFrame(coeff, columns = coeff_columns)
    
 
     data_dt = pd.DataFrame(data, columns = data_columns)
+    # import pdb
+    # pdb.set_trace()
     data_dt['TPR_Discount'] = data_dt['promo_depth'] + data_dt['co investment']
+    # print( data_dt[['promo_depth','Catalogue','TPR_Discount_lag1','TPR_Discount_lag2','co investment']] , "dataframe check")
         
-   
-    return main( data_dt,coeff_dt )
+    val = main( data_dt,coeff_dt )
+    # import pdb
+    # pdb.set_trace()
+    # print(val[['Incremental' , 'Base' , 'Predicted_sales']] , "val")
 
+    return val
+
+
+def list_to_frame_many(coeff,data):
+    # import pdb
+    # pdb.set_trace()
+    coeff_dt = pd.DataFrame(coeff, columns = coeff_columns)
+    
+
+    data_dt = pd.DataFrame(data, columns = data_columns)
+    val = []
+    for index , row in coeff_dt.iterrows():
+        # import pdb
+        # pdb.set_trace()
+        data_dt = data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]
+        data_dt['TPR_Discount'] = data_dt['promo_depth'] + data_dt['co investment']
+        if data_dt.empty:
+            continue
+        val.append(main( data_dt,
+                        coeff_dt[(coeff_dt['Account Name'] == row['Account Name']) & (coeff_dt['PPG'] == row['PPG'])] 
+                        ))
+        # break
+   
+    
+    # import pdb
+    # pdb.set_trace()
+    
+    # print( data_dt[['promo_depth','Catalogue','TPR_Discount_lag1','TPR_Discount_lag2','co investment']] , "dataframe check")
+        
+    
+    # import pdb
+    # pdb.set_trace()
+    # print(val[['Incremental' , 'Base' , 'Predicted_sales']] , "val")
+    # import pdb
+    # pdb.set_trace()
+
+    return val
 

@@ -14,3 +14,7 @@ test.py
 *.xlsm
 local_settings.py
 local-requirements.txt
+*.mps
+*.sol
+*.log
+debug.log
