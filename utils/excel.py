@@ -246,8 +246,13 @@ def download_excel_optimizer(account_name , product_group,data):
    
     ROW_CONST = 6
     COL_CONST = 1
-    # from . import test
+
+    # from optimiser import testdata as test
     # data = test.RESPONSE_OPTIMIZER
+    
+    summary_data = data['summary']
+    optimal_data = data['optimal']
+
     workbook = xlsxwriter.Workbook(output)
     merge_format_date = workbook.add_format({
         'bold': 1,
@@ -291,7 +296,7 @@ def download_excel_optimizer(account_name , product_group,data):
     worksheet.merge_range('B4:D4', "Account Name : {}".format(account_name),merge_format_app)
     worksheet.merge_range('B5:D5', "Product Group : {}".format(product_group),merge_format_app)
     
-    data_val = [d['Metric'] for d in data]
+    data_val = [d['Metric'] for d in summary_data]
     header_key = []
     for val in data_val:
         # header_key.append(key)
@@ -304,7 +309,7 @@ def download_excel_optimizer(account_name , product_group,data):
     _writeExcel(worksheet,row+1, col-1,'Recommended Scenario',format_header)
     _writeExcel(worksheet,row+2, col-1,'Change',format_header)
     _writeExcel(worksheet,row+3, col-1,'Delta',format_header)
-    for kv in data: 
+    for kv in summary_data: 
         
         _writeExcel(worksheet,row, col,kv['Base_Scenario'],format_value)
         _writeExcel(worksheet,row+1, col,kv['Recommended_Scenario'],format_value)
@@ -312,20 +317,32 @@ def download_excel_optimizer(account_name , product_group,data):
         _writeExcel(worksheet,row+3, col,kv['Delta'],format_value)
         # row+=1
         col+=1
-         
-        # col+=1
-        # row+=1
-        # col = COL_CONST
-        
-    # weekly = data['simulated']['weekly']
-     
-    # for week in weekly:
-    #     for k in header_key:
-    #         _writeExcel(worksheet,row, col,week[k],format_value)
-    #         col+=1
-    #     row+=1
-    #     col = COL_CONST
-         
+
+    col = COL_CONST
+    worksheet.merge_range('B13:D13', "Optimizer Weekly Data",merge_format_app)
+    row = 15
+    optimal_header = ['Date','SI','Baseline_Promo','Baseline_Units','Baseline_Base','Baseline_Incremental','Baseline_ROI','Baseline_Lift','Optimum_Promo','Optimum_Units','Optimum_Base','Optimum_Incremental','Optimum_ROI','Optimum_Lift']
+
+    for key in optimal_header:
+        _writeExcel(worksheet,row, col," ".join(key.split("_")).title(),format_header)
+        col+=1
+    row+=1
+    col = COL_CONST
+
+    for data in optimal_data:
+        for k in optimal_header:
+            _writeExcel(worksheet,row, col, datetime.datetime.fromtimestamp(int(str(data[k])[0:10])).strftime('%Y-%m-%d') if k =='Date' else data[k],format_value)
+            col+=1
+        row+=1
+        col = COL_CONST
+    
+    row = 15
+    worksheet.write('A{}'.format(row+1), "Week",format_header)
+    row+=1
+    for i in range(0,len(optimal_data)):
+        _writeExcel(worksheet,row, col-1, 'Week-{}'.format(i+1),format_value)
+        row+=1
+
     workbook.close()
     output.seek(0)
     return output
