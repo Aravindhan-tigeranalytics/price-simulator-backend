@@ -203,30 +203,40 @@ def download_excel_promo(data):
     worksheet.merge_range('B4:D4', "Account Name : {}".format(data['account_name']),merge_format_app)
     worksheet.merge_range('B5:D5', "Product Group : {}".format(data['product_group']),merge_format_app)
     
-    data_val = data['simulated']['weekly'][0]
-    header_key = []
-    for key in data_val.keys():
-        header_key.append(key)
+    # data_val = data['simulated']['weekly'][0]
+    # header_key= []
+    header_key = ['date','week','base_unit','incremental_unit','predicted_units','asp','total_rsv_w_o_vat','promo_asp','total_lsv','total_nsv',
+    'te_per_units','roi','mars_mac','total_weight_in_tons','trade_expense','retailer_margin','retailer_margin_percent_of_nsv','mars_mac_percent_of_nsv',
+    'te_percent_of_lsv']
+    # for key in data_val.keys():
+    for key in header_key:
+        # header_key.append(key)
         _writeExcel(worksheet,row, col," ".join(key.split("_")).title(),format_header)
         # _writeExcel(worksheet,row+1, col,data_val[key],format_value)
         col+=1
     col = COL_CONST
     row+=1
     weekly = data['simulated']['weekly']
-    # import pdb
-    # pdb.set_trace()
-     
+
     for week in weekly:
         for k in header_key:
-            # import pdb
-            # pdb.set_trace()
             _writeExcel(worksheet,row, col,
                         week[k].strftime("%b %d %Y") if k =='date' else week[k],
                         format_value)
             col+=1
         row+=1
         col = COL_CONST
-         
+
+    total = data['simulated']['total']
+    total_header = ['base_units','increment_units','units','asp','total_rsv_w_o_vat','avg_promo_selling_price','lsv','nsv',
+    'te_per_unit','roi','mac','volume','te','rp','rp_percent','mac_percent','te_percent_of_lsv']
+    worksheet.merge_range('B{}:C{}'.format(row+1,row+1), 'Total ' , format_header)
+    col = 3
+    for k in total_header:
+        _writeExcel(worksheet,row, col,total[k],format_header)
+        col+=1
+    col = COL_CONST
+    
     workbook.close()
     output.seek(0)
     return output
