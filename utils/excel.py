@@ -152,14 +152,18 @@ def excel_summary(data , output):
 
 def download_excel_promo(data):
     output = io.BytesIO()
-   
+    no_format_header = ['date', 'week']
+    currency_header = ['asp', 'total_rsv_w_o_vat', 'promo_asp','total_lsv','mars_mac', 'total_weight_in_tons', 'trade_expense', 'retailer_margin','avg_promo_selling_price','lsv','mac','volume','te','rp']
+    percent_header = [ 'retailer_margin_percent_of_nsv','mars_mac_percent_of_nsv','te_per_unit','te_percent_of_lsv','te_per_units'
+    ,'rp_percent','mac_percent','roi']
+
     ROW_CONST = 6
     COL_CONST = 1
     # from . import test
     # data = test.RESPONSE_PROMO
     # import pdb
     # pdb.set_trace()
-    # data = {'sc1sdf': {'name': 'sc1sdf', 'header': ['units', 'tonnes', 'lsv', 'rsv', 'nsv', 'cogs', 'nsv_tonnes', 'te', 'te_percent_lsv', 'te_units', 'mac', 'mac_percent_nsv', 'rp', 'rp_percent_rsv'], 'current': ['136.0M ₽', '2.0K ₽', '2.6B ₽', '3.0B ₽', '1.6B ₽', '709.4M ₽', '815.1K ₽', '968.1M ₽', '37.5 ₽', '7.1 ₽', '907.1M ₽', '56.1 ₽', '1.4B ₽', '45.7 ₽'], 'simulated': ['123.4M ₽', '1.8K ₽', '2.7B ₽', '2.8B ₽', '1.7B ₽', '659.0M ₽', '928.8K ₽', '1.0B ₽', '37.5 ₽', '8.1 ₽', '1.0B ₽', '60.7 ₽', '1.2B ₽', '41.0 ₽'], 'Absolute change': ['-12.6M ₽', '-0.2K ₽', '95.6M ₽', '-0.1B ₽', '59.9M ₽', '-50.4M ₽', '-0.3M ₽', '35.7M ₽', '-0.0 ₽', '-2.8 ₽', '110.3M ₽', '4.6 ₽', '-0.2B ₽', '-4.7 ₽'], 'percent change': ['-9.2 %', '-9.0 %', '3.7 %', '-4.5 %', '3.7 %', '-7.1 %', '-0.4 %', '3.7 %', '-0.0 %', '-0.4 %', '12.2 %', '8.2 %', '-14.3 %', '-10.2 %']}, 'otc&xxl': {'name': 'otc&xxl', 'header': ['units', 'tonnes', 'lsv', 'rsv', 'nsv', 'cogs', 'nsv_tonnes', 'te', 'te_percent_lsv', 'te_units', 'mac', 'mac_percent_nsv', 'rp', 'rp_percent_rsv'], 'current': ['266.1M ₽', '10.2K ₽', '5.8B ₽', '6.9B ₽', '4.2B ₽', '1.9B ₽', '406.8K ₽', '1.6B ₽', '28.2 ₽', '6.1 ₽', '2.3B ₽', '55.0 ₽', '2.8B ₽', '40.1 ₽'], 'simulated': ['241.0M ₽', '9.9K ₽', '5.5B ₽', '6.6B ₽', '4.0B ₽', '1.8B ₽', '405.1K ₽', '1.5B ₽', '27.8 ₽', '6.4 ₽', '2.2B ₽', '55.0 ₽', '2.6B ₽', '39.9 ₽'], 'Absolute change': ['-25.1M ₽', '-0.4K ₽', '-0.3B ₽', '-0.3B ₽', '-0.2B ₽', '-69.5M ₽', '453.9K ₽', '-96.0M ₽', '-0.4 ₽', '3.8 ₽', '-92.3M ₽', '-0.1 ₽', '-0.1B ₽', '-0.2 ₽'], 'percent change': ['-9.4 %', '-3.5 %', '-4.4 %', '-4.3 %', '-3.9 %', '-3.7 %', '1.1 %', '-5.9 %', '-1.5 %', '0.6 %', '-4.0 %', '-0.1 %', '-4.8 %', '-0.6 %']}}
+
     workbook = xlsxwriter.Workbook(output)
     merge_format_date = workbook.add_format({
         'bold': 1,
@@ -191,7 +195,23 @@ def download_excel_promo(data):
     format_value = workbook.add_format({
         'border': 1,
         'align': 'center',
+        'text_wrap': True,
         'valign': 'vcenter'})
+    format_value_left = workbook.add_format({
+    'border': 1,
+    'align': 'left',
+    'text_wrap': True,
+    'valign': 'vcenter'})
+    format_value_left.set_indent(6)
+    summary_value_format = workbook.add_format({
+        'border': 1,
+        'align': 'left',
+        'text_wrap': True,
+        'valign': 'vcenter'})
+    summary_value_format.set_font_size(14)
+    summary_value_format.set_indent(6)
+    summary_value_bold = workbook.add_format({'bold': True})
+    summary_value_bold.set_font_size(14)
 
     row = ROW_CONST
     col = COL_CONST
@@ -204,10 +224,10 @@ def download_excel_promo(data):
     worksheet.merge_range('B5:D5', "Product Group : {}".format(data['product_group']),merge_format_app)
     
     # data_val = data['simulated']['weekly'][0]
-    # header_key= []
-    header_key = ['date','week','base_unit','incremental_unit','predicted_units','asp','total_rsv_w_o_vat','promo_asp','total_lsv','total_nsv',
-    'te_per_units','roi','mars_mac','total_weight_in_tons','trade_expense','retailer_margin','retailer_margin_percent_of_nsv','mars_mac_percent_of_nsv',
+
+    header_key = ['date','week','base_unit','incremental_unit','predicted_units','asp','total_rsv_w_o_vat','promo_asp','total_lsv','total_nsv','te_per_units','roi','mars_mac','total_weight_in_tons','trade_expense','retailer_margin','retailer_margin_percent_of_nsv','mars_mac_percent_of_nsv',
     'te_percent_of_lsv']
+
     # for key in data_val.keys():
     for key in header_key:
         # header_key.append(key)
@@ -216,24 +236,43 @@ def download_excel_promo(data):
         col+=1
     col = COL_CONST
     row+=1
-    weekly = data['simulated']['weekly']
 
-    for week in weekly:
+    simulated_weekly = data['simulated']['weekly']
+    base_weekly = data['base']['weekly']
+    bold = workbook.add_format({'bold': True})
+    red = workbook.add_format({'color': 'red'})
+    for base,simulated in zip(base_weekly,simulated_weekly):
         for k in header_key:
-            _writeExcel(worksheet,row, col,
-                        week[k].strftime("%b %d %Y") if k =='date' else week[k],
-                        format_value)
+            base_value = util.format_value(simulated[k].strftime("%b %d %Y") if k =='date' else base[k], k in percent_header , k in currency_header , k in no_format_header)
+
+            simulated_value = util.format_value(simulated[k].strftime("%b %d %Y") if k =='date' else simulated[k], k in percent_header , k in currency_header , k in no_format_header)
+
+            if k == 'date' or k == 'week':
+                value = simulated_value
+                _writeExcel(worksheet,row, col, value ,format_value)
+            else:
+                # value = str(base_value)+ "\n" +str(simulated_value)
+                diff_value = util.format_value(base[k]-simulated[k], k in percent_header , k in currency_header , k in no_format_header)
+                segments = ["Base: " +str(base_value)+ "\n", bold, "Simulated: "+str(simulated_value) + " " ,red ,"("+diff_value+")" ]
+                worksheet.write_rich_string(row, col, *segments,format_value_left)
             col+=1
         row+=1
         col = COL_CONST
 
-    total = data['simulated']['total']
+    simulated_total = data['simulated']['total']
+    base_total = data['base']['total']
+
     total_header = ['base_units','increment_units','units','asp','total_rsv_w_o_vat','avg_promo_selling_price','lsv','nsv',
     'te_per_unit','roi','mac','volume','te','rp','rp_percent','mac_percent','te_percent_of_lsv']
     worksheet.merge_range('B{}:C{}'.format(row+1,row+1), 'Total ' , format_header)
     col = 3
     for k in total_header:
-        _writeExcel(worksheet,row, col,total[k],format_header)
+        base_total_value = util.format_value(base_total[k], k in percent_header , k in currency_header , k in no_format_header)
+        simulated_total_value = util.format_value(simulated_total[k], k in percent_header , k in currency_header , k in no_format_header)
+        diff_total_value = util.format_value(base_total[k]-simulated_total[k], k in percent_header , k in currency_header , k in no_format_header)
+        segments = ["Base: " +str(base_total_value)+ "    " + "\n", summary_value_bold, "Simulated: "+str(simulated_total_value)+ " " ,red ,"("+diff_total_value+")"]
+        worksheet.write_rich_string(row, col, *segments,summary_value_format)
+        # _writeExcel(worksheet,row, col,util.format_value(total[k], k in percent_header , k in currency_header , k in no_format_header),format_header)
         col+=1
     col = COL_CONST
     
@@ -246,9 +285,12 @@ def download_excel_optimizer(account_name , product_group,data):
    
     ROW_CONST = 6
     COL_CONST = 1
+    no_format_header = ['ROI']
+    currency_header = ['Avg_PromoSellingPrice','Trade_Expense','MAC','RP','AvgSellingPrice','Sales','GSV', 'NSV']
+    percent_header = ['RP_Perc', 'Mac_Perc']
 
-    # from optimiser import testdata as test
-    # data = test.RESPONSE_OPTIMIZER
+    from optimiser import testdata as test
+    data = test.RESPONSE_OPTIMIZER
     
     summary_data = data['summary']
     optimal_data = data['optimal']
@@ -262,7 +304,6 @@ def download_excel_optimizer(account_name , product_group,data):
 
     merge_format_app = workbook.add_format({
         'bold': 1,
-        
         'align': 'center',
         'valign': 'vcenter'
         })
@@ -275,7 +316,6 @@ def download_excel_optimizer(account_name , product_group,data):
         'align': 'center',
         'valign': 'vcenter'})
     format_header.set_font_size(14)
-    
     format_name = workbook.add_format({'bold': 1,
         'border': 1,
         'align': 'center',
@@ -310,11 +350,10 @@ def download_excel_optimizer(account_name , product_group,data):
     _writeExcel(worksheet,row+2, col-1,'Change',format_header)
     _writeExcel(worksheet,row+3, col-1,'Delta',format_header)
     for kv in summary_data: 
-        
-        _writeExcel(worksheet,row, col,kv['Base_Scenario'],format_value)
-        _writeExcel(worksheet,row+1, col,kv['Recommended_Scenario'],format_value)
-        _writeExcel(worksheet,row+2, col,kv['Change'],format_value)
-        _writeExcel(worksheet,row+3, col,kv['Delta'],format_value)
+        _writeExcel(worksheet,row, col,util.format_value(kv['Base_Scenario'], kv['Metric'] in percent_header , kv['Metric'] in currency_header , kv['Metric'] in no_format_header),format_value)
+        _writeExcel(worksheet,row+1, col,util.format_value(kv['Recommended_Scenario'], kv['Metric'] in percent_header , kv['Metric'] in currency_header , kv['Metric'] in no_format_header),format_value)
+        _writeExcel(worksheet,row+2, col,util.format_value(kv['Change'], kv['Metric'] in percent_header , kv['Metric'] in currency_header , kv['Metric'] in no_format_header),format_value)
+        _writeExcel(worksheet,row+3, col,util.format_value(kv['Delta'], kv['Metric'] in percent_header , kv['Metric'] in currency_header , kv['Metric'] in no_format_header),format_value)
         # row+=1
         col+=1
 
@@ -351,7 +390,7 @@ def download_excel_optimizer(account_name , product_group,data):
 def _writeExcel(worksheet , row , col , val , _format):
     worksheet.write(row, col,val,_format)
     worksheet.set_row(row, 30)
-    worksheet.set_column(col,col, 20)
+    worksheet.set_column(col,col, 40)
 
 
 def dateformat():

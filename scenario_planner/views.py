@@ -698,7 +698,7 @@ class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
             response = self.calculate_finacial_metrics_from_request(value_dict)
             
             if 'download' in request.stream.path:
-                filename = 'promo_optimizer.xlsx'
+                filename = 'promo_simulator.xlsx'
                 response = HttpResponse(
                     excel.download_excel_promo(response),
                     content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
