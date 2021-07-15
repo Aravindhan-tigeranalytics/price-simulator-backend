@@ -443,8 +443,29 @@ class ScenarioPlannerMetricsViewSet(viewsets.GenericViewSet, mixins.ListModelMix
         coeff_list , data_list,roi_list = pd_query.get_list_value_from_query_all()
         # import pdb
         # pdb.set_trace()
-        res = uc.list_to_frame_many(coeff_list , data_list)
-        return super().list(request, *args, **kwargs)
+        result_dt = uc.list_to_frame_many(coeff_list , data_list , roi_list)
+        
+        
+        res = result_dt[['Account Name','Corporate Segment_x','PPG' , 'Brand Filter_x' , 'Brand Format Filter_x',
+                   'Strategic Cell Filter_x' , 'Year' , 'Quarter','Month', 'Period', 'Date', 'Week',
+                   'Median_Base_Price_log_y' ,  'cross_elasticity', 'net_elasticity','Predicted_sales','list_price',
+                   'Median_Base_Price_log_x','on_inv','off_inv','TPR_Discount_x',
+                   'gmac','Weighted Weight in grams'
+                   ]]
+        res.rename(columns = {'Account Name':'account_name' , 'Corporate Segment_x':'corporate_segment',
+                              'PPG'  :'poduct_group' , 'Brand Filter_x':'brand_filter' , 
+                              'Brand Format Filter_x':'brand_format' , 'Strategic Cell Filter_x':'strategic_cell_filter', 
+                              'Year' : 'year' , 'Quarter' : 'quarter','Month' : 'month', 'Period' : 'period', 
+                              'Date' : 'date', 'Week' : 'week','Median_Base_Price_log_y' : 'base_price_elasticity' ,
+                              'Predicted_sales' : 'base_units' ,  'Median_Base_Price_log_x' : 'retail_median_base_price_w_o_vat',
+                              'TPR_Discount_x' : 'tpr_discount','Weighted Weight in grams' : 'product_weight_in_grams'
+                              },
+                   inplace = True)
+        # rankings_pd.rename(columns = {'test':'TEST'}, inplace = True)
+        # import pdb
+        # pdb.set_trace()
+        parsed_summary = json.loads(res.to_json(orient="records"))
+        return Response(parsed_summary , status=200)
 
 class ScenarioPlannerMetricsViewSetObject(viewsets.GenericViewSet, mixins.ListModelMixin):
     queryset = ScenarioPlannerMetrics.objects.all()
@@ -684,14 +705,14 @@ class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
         return super().get_queryset()
     
     def post(self, request, format=None):
-        # if 'download' in request.stream.path:
-        #     filename = 'django_simple.xlsx'
-        #     response = HttpResponse(
-        #         excel.download_excel_optimizer('response'),
-        #         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        #     )
-        #     response['Content-Disposition'] = 'attachment; filename=%s' % filename
-        #     return response
+        if 'download' in request.stream.path:
+            filename = 'django_simple.xlsx'
+            response = HttpResponse(
+                excel.download_excel_promo_compare('response'),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = 'attachment; filename=%s' % filename
+            return response
         get_serializer = sc.ModelMetaGetSerializer(request.data)
         value_dict = loads(dumps((get_serializer.to_internal_value(request.data))))
         try:

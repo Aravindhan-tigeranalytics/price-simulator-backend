@@ -234,6 +234,7 @@ def download_excel_promo(data):
         _writeExcel(worksheet,row, col," ".join(key.split("_")).title(),format_header)
         # _writeExcel(worksheet,row+1, col,data_val[key],format_value)
         col+=1
+
     col = COL_CONST
     row+=1
 
@@ -279,6 +280,113 @@ def download_excel_promo(data):
     workbook.close()
     output.seek(0)
     return output
+
+def download_excel_promo_compare(data):
+    no_format_header = ['date', 'week' ]
+    currency_header = ['tpr_budget_roi', 'mars_uplift_net_invoice_price', 'mars_total_net_invoice_price',
+                       'mars_uplift_off_invoice', 'mars_total_off_invoice', 'uplift_trade_expense', 
+                       'total_trade_expense','uplift_nsv', 'total_nsv', 'uplift_royalty', 'total_uplift_cost', 'roi', 'tpr_budget',
+                        'asp', 'total_rsv_w_o_vat', 'promo_asp', 'uplift_lsv','uplift_gmac_lsv', 'total_lsv', 'mars_uplift_on_invoice', 'mars_total_on_invoice',
+                       'mars_uplift_nrv', 'mars_total_nrv', 'uplift_promo_cost',
+                        'uplift_cogs', 'uplift_mac', 'total_cogs', 'mars_mac', 'total_weight_in_tons', 'trade_expense', 'retailer_margin',]
+    percent_header = [ 'retailer_margin_percent_of_nsv', 'retailer_margin_percent_of_rsp', 
+                      'mars_mac_percent_of_nsv', 'te_percent_of_lsv', 'mars_cogs_per_unit', 'te_per_units',] 
+    output = io.BytesIO()
+   
+    ROW_CONST = 7
+    COL_CONST = 1
+    from . import test
+    data = test.RESPONSE_PROMO
+    # import pdb
+    # pdb.set_trace()
+    # data = {'sc1sdf': {'name': 'sc1sdf', 'header': ['units', 'tonnes', 'lsv', 'rsv', 'nsv', 'cogs', 'nsv_tonnes', 'te', 'te_percent_lsv', 'te_units', 'mac', 'mac_percent_nsv', 'rp', 'rp_percent_rsv'], 'current': ['136.0M ₽', '2.0K ₽', '2.6B ₽', '3.0B ₽', '1.6B ₽', '709.4M ₽', '815.1K ₽', '968.1M ₽', '37.5 ₽', '7.1 ₽', '907.1M ₽', '56.1 ₽', '1.4B ₽', '45.7 ₽'], 'simulated': ['123.4M ₽', '1.8K ₽', '2.7B ₽', '2.8B ₽', '1.7B ₽', '659.0M ₽', '928.8K ₽', '1.0B ₽', '37.5 ₽', '8.1 ₽', '1.0B ₽', '60.7 ₽', '1.2B ₽', '41.0 ₽'], 'Absolute change': ['-12.6M ₽', '-0.2K ₽', '95.6M ₽', '-0.1B ₽', '59.9M ₽', '-50.4M ₽', '-0.3M ₽', '35.7M ₽', '-0.0 ₽', '-2.8 ₽', '110.3M ₽', '4.6 ₽', '-0.2B ₽', '-4.7 ₽'], 'percent change': ['-9.2 %', '-9.0 %', '3.7 %', '-4.5 %', '3.7 %', '-7.1 %', '-0.4 %', '3.7 %', '-0.0 %', '-0.4 %', '12.2 %', '8.2 %', '-14.3 %', '-10.2 %']}, 'otc&xxl': {'name': 'otc&xxl', 'header': ['units', 'tonnes', 'lsv', 'rsv', 'nsv', 'cogs', 'nsv_tonnes', 'te', 'te_percent_lsv', 'te_units', 'mac', 'mac_percent_nsv', 'rp', 'rp_percent_rsv'], 'current': ['266.1M ₽', '10.2K ₽', '5.8B ₽', '6.9B ₽', '4.2B ₽', '1.9B ₽', '406.8K ₽', '1.6B ₽', '28.2 ₽', '6.1 ₽', '2.3B ₽', '55.0 ₽', '2.8B ₽', '40.1 ₽'], 'simulated': ['241.0M ₽', '9.9K ₽', '5.5B ₽', '6.6B ₽', '4.0B ₽', '1.8B ₽', '405.1K ₽', '1.5B ₽', '27.8 ₽', '6.4 ₽', '2.2B ₽', '55.0 ₽', '2.6B ₽', '39.9 ₽'], 'Absolute change': ['-25.1M ₽', '-0.4K ₽', '-0.3B ₽', '-0.3B ₽', '-0.2B ₽', '-69.5M ₽', '453.9K ₽', '-96.0M ₽', '-0.4 ₽', '3.8 ₽', '-92.3M ₽', '-0.1 ₽', '-0.1B ₽', '-0.2 ₽'], 'percent change': ['-9.4 %', '-3.5 %', '-4.4 %', '-4.3 %', '-3.9 %', '-3.7 %', '1.1 %', '-5.9 %', '-1.5 %', '0.6 %', '-4.0 %', '-0.1 %', '-4.8 %', '-0.6 %']}}
+    workbook = xlsxwriter.Workbook(output)
+    merge_format_date = workbook.add_format({
+        'bold': 1,
+        'align': 'center',
+        'valign': 'vcenter',
+         })
+
+    merge_format_app = workbook.add_format({
+        'bold': 1,
+        
+        'align': 'center',
+        'valign': 'vcenter'
+        })
+    merge_format_app.set_font_size(20)
+   
+    worksheet = workbook.add_worksheet()
+    worksheet.hide_gridlines(2)
+    format_header = workbook.add_format({'bold': 1,
+        'border': 1,
+        'align': 'center',
+        'valign': 'vcenter'})
+    format_header.set_font_size(14)
+    
+    format_name = workbook.add_format({'bold': 1,
+        'border': 1,
+        'align': 'center',
+        'valign': 'vcenter'})
+    format_name.set_font_size(20)
+    format_value = workbook.add_format({
+        'border': 1,
+        'align': 'center',
+        'valign': 'vcenter'})
+
+    row = ROW_CONST
+    col = COL_CONST
+    
+    
+    worksheet.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
+    worksheet.merge_range('B3:D3', 'Promo Simulator Tool' , merge_format_app)
+    worksheet.set_column('B:D', 20)
+    worksheet.merge_range('B4:D4', "Account Name : {}".format(data['account_name']),merge_format_app)
+    worksheet.merge_range('B5:D5', "Product Group : {}".format(data['product_group']),merge_format_app)
+    worksheet.merge_range("B6:D6", "Scenario 1",merge_format_date)
+    
+    data_val = data['simulated']['weekly'][0]
+    header_key = []
+    for key in data_val.keys():
+        header_key.append(key)
+        _writeExcel(worksheet,row, col," ".join(key.split("_")).title(),format_header)
+        # _writeExcel(worksheet,row+1, col,data_val[key],format_value)
+        col+=1
+    print(header_key , "header key ")
+    col = COL_CONST
+    row+=1
+    weekly = data['simulated']['weekly']
+     
+    for week in weekly:
+        for k in header_key:
+            _writeExcel(worksheet,row, col,
+                        week[k] if k =='date' else util.format_value(
+                            week[k], k in percent_header , k in currency_header , k in no_format_header
+                            ),
+                        format_value)
+            col+=1
+        row+=1
+        col = COL_CONST
+    worksheet.merge_range("B{}:D{}".format(row+1 , row+1), "Scenario 2",merge_format_date)
+    row+=2
+    for week in weekly:
+        for k in header_key:
+            # week[k].strftime("%b %d %Y")
+            _writeExcel(worksheet,row, col,
+                        week[k] if k =='date' else util.format_value(
+                            week[k], k in percent_header , k in currency_header , k in no_format_header
+                            ),
+                        format_value)
+            col+=1
+        row+=1
+        col = COL_CONST
+
+         
+    workbook.close()
+    output.seek(0)
+    return output
+
+
+
 
 def download_excel_optimizer(account_name , product_group,data):
     output = io.BytesIO()
