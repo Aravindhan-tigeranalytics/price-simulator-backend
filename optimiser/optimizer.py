@@ -695,6 +695,12 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
   slct_retailer = account_name
   slct_ppg =product_group
 
+  # Get Holiday Columns Names
+  coeff_mapping['Coefficient_Holiday'] = list(map(lambda x: x.startswith('Holiday'),coeff_mapping['Coefficient_new']))
+  holiday_list = []
+  for index, row in coeff_mapping.iterrows():
+    if row['Coefficient_Holiday'] == True:
+      holiday_list.append(row['Coefficient'])
 
   # getting coefficient name mapping and values for selected retailer, ppg
   # coeff_mapping_temp = coeff_mapping.loc[(coeff_mapping['Account Name']==slct_retailer) & (coeff_mapping['PPG']==slct_ppg)]
@@ -1035,12 +1041,19 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
   opt_base['Coinvestment']  = Optimal_data.sort_values("Date")['Coinvestment']
   # import pdb
   # pdb.set_trace()
+
+  if len(holiday_list) > 0:
+    for value in holiday_list:
+      opt_base[value] = Optimal_data[value]
+
   parsed_summary = json.loads(summary.to_json(orient="records"))
   parsed_base = json.loads(opt_base.to_json(orient="records"))
+
   # import pdb
   # pdb.set_trace()
   logging.info('Main Funtion Ends')
   return {
+    "holiday" : holiday_list,
     "summary" : parsed_summary,
     "optimal" : parsed_base
   }

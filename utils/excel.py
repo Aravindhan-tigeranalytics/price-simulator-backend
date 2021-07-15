@@ -397,11 +397,12 @@ def download_excel_optimizer(account_name , product_group,data):
     currency_header = ['Avg_PromoSellingPrice','Trade_Expense','MAC','RP','AvgSellingPrice','Sales','GSV', 'NSV']
     percent_header = ['RP_Perc', 'Mac_Perc']
 
-    # from optimiser import testdata as test
-    # data = test.RESPONSE_OPTIMIZER
+    from optimiser import testdata as test
+    data = test.RESPONSE_OPTIMIZER
     
     summary_data = data['summary']
     optimal_data = data['optimal']
+    holiday_data = data['holiday']
 
     workbook = xlsxwriter.Workbook(output)
     merge_format_date = workbook.add_format({
@@ -469,6 +470,8 @@ def download_excel_optimizer(account_name , product_group,data):
     worksheet.merge_range('B13:D13', "Optimizer Weekly Data",merge_format_app)
     row = 15
     optimal_header = ['Date','SI','Baseline_Promo','Baseline_Units','Baseline_Base','Baseline_Incremental','Baseline_ROI','Baseline_Lift','Optimum_Promo','Optimum_Units','Optimum_Base','Optimum_Incremental','Optimum_ROI','Optimum_Lift']
+    if len(holiday_data) > 0:
+        optimal_header = optimal_header + holiday_data
 
     for key in optimal_header:
         _writeExcel(worksheet,row, col," ".join(key.split("_")).title(),format_header)
@@ -476,9 +479,14 @@ def download_excel_optimizer(account_name , product_group,data):
     row+=1
     col = COL_CONST
 
+    number_format_header = ['Baseline_Units','Baseline_Base','Baseline_Incremental','Optimum_Units','Optimum_Base','Optimum_Incremental']
     for data in optimal_data:
         for k in optimal_header:
-            _writeExcel(worksheet,row, col, datetime.datetime.fromtimestamp(int(str(data[k])[0:10])).strftime('%Y-%m-%d') if k =='Date' else data[k],format_value)
+            if k in number_format_header:
+                value = datetime.datetime.fromtimestamp(int(str(data[k])[0:10])).strftime('%Y-%m-%d') if k =='Date' else data[k]
+                _writeExcel(worksheet,row, col, util.format_value(value, k in percent_header , k in currency_header , k in no_format_header) ,format_value)
+            else:
+                _writeExcel(worksheet,row, col, datetime.datetime.fromtimestamp(int(str(data[k])[0:10])).strftime('%Y-%m-%d') if k =='Date' else data[k],format_value)
             col+=1
         row+=1
         col = COL_CONST
