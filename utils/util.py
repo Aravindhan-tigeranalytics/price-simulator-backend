@@ -4,6 +4,34 @@ import random
 import re
 from utils import exceptions as ex
 
+
+def format_value(val ,is_percent = False , is_currency= False , no_format = False):
+    if no_format:
+        return val
+    currency = "₽"
+    percentage = "%"
+    value = val
+    val = str(val).split(".")[0]
+    final = 0
+    if is_percent:
+        return "{} {}".format("{:.2f}".format(value) , percentage)
+    strlen = len(val)
+    curr = ""
+    if(strlen >=4 and strlen <=6):
+        final = value / 1000;
+        curr = "K"
+    elif (strlen >=7 and strlen <=9):
+        final = value / 1000000
+        curr = "M"
+    elif(strlen >= 10):
+        final = value / 1000000000
+        curr = "B"
+    if is_currency:
+        return "{} {} {}".format("{:.2f}".format(final),curr , currency)
+    
+    return "{} {}".format("{:.2f}".format(final),curr)
+
+
 # def get_key(val):
 #     for key, value in my_dict.items():
 #          if val == value:

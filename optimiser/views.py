@@ -293,7 +293,7 @@ class ModelOptimize(viewsets.GenericViewSet):
     def retrieve(self):
         return Response(status=200)
     def get(self, request, format=None):
-        serializer = sc.OptimizerMeta()
+        serializer = sc.OptimizerMeta(self.queryset , many=True)
         # serializer = sc.OptimizerMeta(self.queryset , many=True)
         return Response(serializer.data)
     def post(self,request,format=None):

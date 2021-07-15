@@ -79,13 +79,13 @@ class OptimizerSerializerBkp(serializers.Serializer):
         return optimizer.process(dict(ob))
 
 
-class OptimizerMetaBKP(serializers.ModelSerializer):
+class OptimizerMeta(serializers.ModelSerializer):
     class Meta:
         model = model.ModelMeta
         fields = '__all__'
    
 
-class OptimizerMeta(serializers.Serializer):
+class OptimizerMetaBkp(serializers.Serializer):
     OBJ_CHOICES1 = (
         ("cell", "Choose Strategic Cell"), 
     )

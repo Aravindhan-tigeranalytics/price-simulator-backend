@@ -449,6 +449,12 @@ data_columns =  [
     'Weighted Weight in grams','promo_depth','co investment', 'optimiser_flag'
     ]
 
+roi_columns = [
+    'Account Name', 'Corporate Segment', 'PPG', 'Brand Filter','Brand Format Filter', 'Strategic Cell Filter',
+    'neilson_sku_name','date','year','week','activity_name','mechanic','discount_nrv','off_inv','on_inv','gmac','list_price'
+    ]
+
+
 
 # coeff_dt = pd.DataFrame(coeff, columns = coeff_columns)
 # coeff_dt
@@ -495,38 +501,95 @@ def list_to_frame(coeff,data):
     return val
 
 
-def list_to_frame_many(coeff,data):
+def list_to_frame_many(coeff,data , roi):
     # import pdb
     # pdb.set_trace()
     coeff_dt = pd.DataFrame(coeff, columns = coeff_columns)
     
 
     data_dt = pd.DataFrame(data, columns = data_columns)
+    roi_dt = pd.DataFrame(roi, columns = roi_columns)
+    data_dt['Incremental'] = 0
+    data_dt['Base'] = 0
+    data_dt['Predicted_sales'] = 0
+    
+    # import pdb
+    # pdb.set_trace()
     val = []
     for index , row in coeff_dt.iterrows():
         # import pdb
         # pdb.set_trace()
-        data_dt = data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]
-        data_dt['TPR_Discount'] = data_dt['promo_depth'] + data_dt['co investment']
-        if data_dt.empty:
+        d_dt = data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]
+        d_dt['TPR_Discount'] = d_dt['promo_depth'] + d_dt['co investment']
+        if d_dt.empty:
             continue
-        val.append(main( data_dt,
-                        coeff_dt[(coeff_dt['Account Name'] == row['Account Name']) & (coeff_dt['PPG'] == row['PPG'])] 
-                        ))
-        # break
-   
-    
-    # import pdb
-    # pdb.set_trace()
-    
-    # print( data_dt[['promo_depth','Catalogue','TPR_Discount_lag1','TPR_Discount_lag2','co investment']] , "dataframe check")
+        ret_val = main(d_dt,coeff_dt[(coeff_dt['Account Name'] == row['Account Name']) & 
+                                     (coeff_dt['PPG'] == row['PPG'])]) 
+        data_dt['off_inv'] = 0.0
+        data_dt['on_inv'] = 0.0
+        data_dt['gmac'] = 0.0
+        data_dt['list_price'] = 0.0
+        # import pdb
+        # pdb.set_trace()
         
+        # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['TPR_Discount'] = d_dt['TPR_Discount']
+        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'TPR_Discount'] = d_dt['TPR_Discount']
+        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'Incremental'] = ret_val['Incremental']
+        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'Base'] = ret_val['Base']
+        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'Predicted_sales'] = ret_val['Predicted_sales']
+        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'off_inv'] = roi_dt['off_inv']
+        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'on_inv'] = roi_dt['on_inv']
+        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'gmac'] = roi_dt['gmac']
+        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'list_price'] = roi_dt['list_price']
+        # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['Incremental'] = ret_val['Incremental']
+        # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['Base'] = ret_val['Base']
+        # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['Predicted_sales'] = ret_val['Predicted_sales']
     
+    
+    coeff_dt['cross_elasticity'] = 0.0
+    coeff_dt['net_elasticity'] = 0.0
+    coeff_dt['cross_elasticity'] = coeff_dt['C_1_crossretailer_log_price'] + coeff_dt['C_1_intra_log_price']
+    + coeff_dt['C_2_intra_log_price'] + coeff_dt['C_3_intra_log_price']
+    +coeff_dt['C_4_intra_log_price'] +  coeff_dt['C_5_intra_log_price'] 
+    coeff_dt['net_elasticity'] = coeff_dt['cross_elasticity'] + coeff_dt['Median_Base_Price_log'] 
+   
+    # 'off_inv', 'on_inv', 'gmac', 'list_price'
+    result_dt = pd.merge(data_dt,coeff_dt,how="inner" ,left_on = ["Account Name" , "PPG"] , right_on = ["Account Name" , "PPG"])
     # import pdb
-    # pdb.set_trace()
-    # print(val[['Incremental' , 'Base' , 'Predicted_sales']] , "val")
-    # import pdb
-    # pdb.set_trace()
+    # pdb.set_trace() 
+    # result_dt = pd.merge(result_dt,roi_dt,how="inner" ,left_on = ["Account Name" , "PPG" , "Week"] , right_on = ["Account Name" , "PPG" , "week"]) 
+    # C_1_crossretailer_log_price,C_1_intra_log_price,C_2_intra_log_price,C_3_intra_log_price
+    # C_4_intra_log_price,C_5_intra_log_price
+  
 
-    return val
+    return result_dt
 
+
+['Account Name', 'Corporate Segment_x', 'PPG', 'Brand Filter_x', 'Brand Format Filter_x', 
+ 'Strategic Cell Filter_x', 'Year', 'Quarter', 'Month', 'Period', 'Date', 'Week', 'Intercept_x',
+ 'Median_Base_Price_log_x', 'TPR_Discount_x', 'TPR_Discount_lag1_x', 'TPR_Discount_lag2_x', 'Catalogue_x', 
+ 'Display_x', 'ACV_x', 'SI_x', 'SI_month_x', 'SI_quarter_x', 'C_1_crossretailer_discount_x',
+ 'C_1_crossretailer_log_price_x', 'C_1_intra_discount_x', 'C_2_intra_discount_x', 'C_3_intra_discount_x',
+ 'C_4_intra_discount_x', 'C_5_intra_discount_x', 'C_1_intra_log_price_x', 'C_2_intra_log_price_x', 
+ 'C_3_intra_log_price_x', 'C_4_intra_log_price_x', 'C_5_intra_log_price_x', 'Category trend_x', 
+ 'Trend_month_x', 'Trend_quarter_x', 'Trend_year_x', 'month_no_x', 'Flag_promotype_Motivation_x', 
+ 'Flag_promotype_N_pls_1_x', 'Flag_promotype_traffic_x', 'Flag_nonpromo_1_x', 'Flag_nonpromo_2_x',
+ 'Flag_nonpromo_3_x', 'Flag_promo_1_x', 'Flag_promo_2_x', 'Flag_promo_3_x', 'Holiday_Flag1_x', 
+ 'Holiday_Flag2_x', 'Holiday_Flag3_x', 'Holiday_Flag4_x', 'Holiday_Flag5_x', 'Holiday_Flag6_x', 
+ 'Holiday_Flag7_x', 'Holiday_Flag8_x', 'Holiday_Flag9_x', 'Holiday_Flag10_x', 'wk_sold_avg_price_byppg', 
+ 'Average Weight in grams', 'Weighted Weight in grams', 'promo_depth', 'co investment', 'optimiser_flag', 
+ 'Incremental', 'Base', 'Predicted_sales', 'Corporate Segment_y', 'Brand Filter_y', 'Brand Format Filter_y',
+ 'Strategic Cell Filter_y', 'WMAPE', 'Rsq', 'Intercept_y', 
+'Median_Base_Price_log_y', 'TPR_Discount_y', 'TPR_Discount_lag1_y', 'TPR_Discount_lag2_y', 'Catalogue_y', 
+'Display_y', 'ACV_y', 'SI_y', 'SI_month_y', 'SI_quarter_y', 'C_1_crossretailer_discount_y', 
+'C_1_crossretailer_log_price_y', 'C_1_intra_discount_y', 'C_2_intra_discount_y', 'C_3_intra_discount_y',
+'C_4_intra_discount_y', 'C_5_intra_discount_y', 'C_1_intra_log_price_y', 'C_2_intra_log_price_y', 
+'C_3_intra_log_price_y', 'C_4_intra_log_price_y', 'C_5_intra_log_price_y', 'Category trend_y', 'Trend_month_y',
+'Trend_quarter_y', 'Trend_year_y', 'month_no_y', 'Flag_promotype_Motivation_y', 'Flag_promotype_N_pls_1_y',
+'Flag_promotype_traffic_y', 'Flag_nonpromo_1_y', 'Flag_nonpromo_2_y', 'Flag_nonpromo_3_y',
+'Flag_promo_1_y', 'Flag_promo_2_y', 'Flag_promo_3_y', 'Holiday_Flag1_y', 'Holiday_Flag2_y', 
+'Holiday_Flag3_y', 'Holiday_Flag4_y', 'Holiday_Flag5_y', 'Holiday_Flag6_y', 'Holiday_Flag7_y',
+'Holiday_Flag8_y', 'Holiday_Flag9_y', 'Holiday_Flag10_y', 'cross_elasticity', 'net_elasticity',
+'Corporate Segment', 'Brand Filter', 'Brand Format Filter', 'Strategic Cell Filter', 'neilson_sku_name',
+'date', 'year', 'week', 'activity_name', 'mechanic', 'discount_nrv', 'off_inv', 'on_inv', 'gmac', 
+'list_price']
