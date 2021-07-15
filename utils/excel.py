@@ -289,8 +289,8 @@ def download_excel_optimizer(account_name , product_group,data):
     currency_header = ['Avg_PromoSellingPrice','Trade_Expense','MAC','RP','AvgSellingPrice','Sales','GSV', 'NSV']
     percent_header = ['RP_Perc', 'Mac_Perc']
 
-    from optimiser import testdata as test
-    data = test.RESPONSE_OPTIMIZER
+    # from optimiser import testdata as test
+    # data = test.RESPONSE_OPTIMIZER
     
     summary_data = data['summary']
     optimal_data = data['optimal']
