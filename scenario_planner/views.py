@@ -1,5 +1,6 @@
 # from xlwt import Workbook
 from os import stat
+import re
 from django.core.exceptions import ObjectDoesNotExist
 from utils import util
 from rest_framework import fields, viewsets, mixins
@@ -718,7 +719,7 @@ class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
             response = self.calculate_finacial_metrics_from_request(value_dict)
             
             if 'download' in request.stream.path:
-                filename = 'promotion.xlsx'
+                filename = 'promo_simulator.xlsx'
                 response = HttpResponse(
                     excel.download_excel_promo(response),
                     content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -839,6 +840,111 @@ class PromoSimulatorUploadView(viewsets.GenericViewSet,mixin.CalculationMixin):
             return Response({'error' : str(e)},status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error' : "Something went wrong!"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PromoSimulatorUploadView(viewsets.GenericViewSet,mixin.CalculationMixin):
+    def get(self, request, format=None):
+        serializer = sc.ModelMetaExcelUpload()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    def get_serializer_class(self):
+        return sc.ModelMetaExcelUpload
+    
+    def get_queryset(self):
+        return super().get_queryset()
+
+    def get_promo_mechanics(self,value):
+        if value == "Motivation":
+            return "Flag_promotype_Motivation"
+        elif value == "N Pls 1":
+            return "Flag_promotype_N_pls_1"
+        elif value == "Traffic":
+            return "Flag_promotype_traffic"
+        elif value == "Promo depth":
+            return "Flag_promotype_traffic"
+        else:
+            return None
+    
+    def post(self, request, format=None):
+        get_serializer = sc.ModelMetaExcelUpload(request.data)
+        csv_file = request.FILES["simulator_input"]
+        workbook = openpyxl.load_workbook(csv_file,data_only=True)
+        sheet_name = workbook.sheetnames
+        sheet = workbook[sheet_name[0]]
+        excel_data = sheet.values
+        # Get the first line in file as a header line
+        columns = next(excel_data)[0:]
+        excel_input_df = pd.DataFrame(excel_data,columns=columns)
+
+        # Validating the excel input 
+        if excel_input_df.shape[0] != 52:
+            return Response({'error' : "Please upload a excel with all 52 week values"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if list(columns) != CONST.PROMO_SIMULATOR_EXCEL_INPUT_COLS:
+            return Response({'error' : "Headers doesn't match, please upload a valid excel"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        account_name = excel_input_df['Account name'].unique()
+        corporate_segment = excel_input_df['Corporate segment'].unique()
+        strategic_cell = excel_input_df['Strategic cell'].unique()
+        brand = excel_input_df['Brand'].unique()
+        brand_format = excel_input_df['Brand format'].unique()
+        product_group = excel_input_df['Product group'].unique()
+        promo_elasticity = excel_input_df['Promo elasticity'].unique()
+
+        if len(account_name) != 1:
+            return Response({'error' : "Account Name should be unique"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if len(corporate_segment) != 1:
+            return Response({'error' : "Corporate segment should be unique"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if len(strategic_cell) != 1:
+            return Response({'error' : "Strategic cell should be unique"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if len(brand) != 1:
+            return Response({'error' : "Brand should be unique"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if len(brand_format) != 1:
+            return Response({'error' : "Brand format should be unique"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if len(product_group) != 1:
+            return Response({'error' : "Product group should be unique"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if len(promo_elasticity) != 1:
+            return Response({'error' : "Promo elasticity should be unique"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+        unique_ppg_combination = excel_input_df["Account name"] + '-' + excel_input_df["Product group"]
+        unique_ppg_combination = unique_ppg_combination.unique()
+        if len(unique_ppg_combination) != 1:
+            return Response({'error' : "Retailer and PPG Combination should be unique"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        co_investment = excel_input_df['Co investment'].between(0,100,inclusive = True)
+        promo_depth = excel_input_df['Promo depth'].between(0,100,inclusive = True)
+        if promo_depth.nunique() != 1:
+            return Response({'error' : "Promo depth values should be in between 0 to 100"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if co_investment.nunique() != 1:
+            return Response({'error' : "Co-Investment values should be in between 0 to 100"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        excel_input_df['Promo elasticity'] = excel_input_df['Promo elasticity'].astype(int)
+        excel_input_df['Promo depth'] = excel_input_df['Promo depth'].astype(float)
+        excel_input_df['Co investment'] = excel_input_df['Co investment'].astype(float)
+
+
+        simulator_input = {
+            'account_name': account_name[0],
+            'corporate_segment': corporate_segment[0],
+            'strategic_cell': strategic_cell[0],
+            'brand': brand[0],
+            'brand_format': brand_format[0],
+            'product_group': product_group[0],
+            'promo_elasticity': promo_elasticity[0],
+            'param_depth_all': 0,
+        }
+        for i in range(0,52):
+            simulator_input["week-"+str(i+1)] = {
+                'promo_depth': excel_input_df['Promo depth'][i], 
+                'promo_mechanics': self.get_promo_mechanics(excel_input_df['Promo mechanics'][i]), 
+                'co_investment': excel_input_df['Co investment'][i]
+            }
+        try:
+            response = self.calculate_finacial_metrics_from_request(simulator_input)
+            return Response(response ,
+                        status=status.HTTP_201_CREATED)
+        except ObjectDoesNotExist as e:
+            return Response({'error' : str(e)},status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error' : "Something went wrong!"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
             
         
 class LoadScenarioTest(viewsets.GenericViewSet,mixin.CalculationMixin):

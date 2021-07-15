@@ -794,7 +794,7 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
   baseline_info['max_promo_gap']=promo_wave_summary['Promo_gap'].max()
   # baseline_info
   config = {"Reatiler": account_name,"PPG":product_group,'Segment':segment,"MARS_TPRS":[],"Co_investment":[],
-          "Objective_metric":"Trade_Expense","Objective":"Minimize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
+          "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
           "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
                               ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
                     'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
