@@ -1,4 +1,7 @@
 import os
+
+from django.db.models.fields import mixins
+import scenario_planner
 from typing import List
 import numpy as np
 import pandas as pd
@@ -20,6 +23,9 @@ from optimiser import process as pr
 from utils import units_calculation as cal
 from optimiser import process as process_calc
 import logging.config
+
+from scenario_planner import mixins as mixin
+from optimiser import testdata as value_dict
 
 logging.config.dictConfig(CONST.LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
@@ -664,13 +670,14 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
   logging.info('Main Funtion Begin')
   # import pdb
   # pdb.set_trace()
-
+  
   # Model_Data,ROI_data, Model_Coeff = pr.get_list_from_db(constraints['account_name'],constraints['product_group'])
   if constraints:
     account_name = constraints['account_name']
     product_group = constraints['product_group']
     segment = constraints['corporate_segment']
     model_data_all,ROI_data,model_coeff,coeff_mapping = pr.get_list_from_db(constraints['account_name'],constraints['product_group'] , optimizer_save = optimizer_save)
+  
   if optimizer_save:
     optimizer_save = list(optimizer_save)
     account_name = optimizer_save[0].model_meta.account_name
@@ -695,6 +702,9 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
   slct_retailer = account_name
   slct_ppg =product_group
 
+
+  financial_metrics = mixin.calculate_finacial_metrics_for_optimizer(account_name,product_group,value_dict.RESPONSE_OPTIMIZER['optimal'],model_coeff,model_data_all,ROI_data)
+  
   # Get Holiday Columns Names
   coeff_mapping['Coefficient_Holiday'] = list(map(lambda x: x.startswith('Holiday'),coeff_mapping['Coefficient_new']))
   holiday_list = []
@@ -1055,7 +1065,8 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
   return {
     "holiday" : holiday_list,
     "summary" : parsed_summary,
-    "optimal" : parsed_base
+    "optimal" : parsed_base,
+    "financial_metrics": financial_metrics
   }
 
 

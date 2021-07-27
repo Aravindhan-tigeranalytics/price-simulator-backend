@@ -187,7 +187,7 @@ def calculate_financial_mertrics( data_list ,roi_list,unit_info , flag,promo_ela
     '''
     To calculate financial metrics for each week as well as total
     '''
-  
+
     weekly_units = []
     total_units = model.TotalUnit()
     
@@ -197,15 +197,20 @@ def calculate_financial_mertrics( data_list ,roi_list,unit_info , flag,promo_ela
         unit = unit_info[i]
         data = data_list[i]
         
+
         ob = model.UnitModel(
             data[data_values.index('date')],
             week = int(data[data_values.index('week')]),
+            flag_promotype_motivation = int(data[data_values.index('flag_promotype_motivation')]),
+            flag_promotype_n_pls_1 = int(data[data_values.index('flag_promotype_n_pls_1')]),
+            flag_promotype_traffic = int(data[data_values.index('flag_promotype_traffic')]),
             predicted_units=decimal.Decimal(unit['Predicted_sales']),
             on_inv_percent=roi[roi_values.index('on_inv')] * 100,
             list_price = roi[roi_values.index('list_price')],
             promo_depth=decimal.Decimal(data[data_values.index('promo_depth')]),
             off_inv_percent = roi[roi_values.index('off_inv')] * 100, 
             gmac_percent_lsv = roi[roi_values.index('gmac')] * 100,
+            si = int(data[data_values.index('si')]),
             # average_selling_price = data[data_values.index('wk_sold_avg_price_byppg')],
             product_group_weight_in_grams = data[data_values.index('weighted_weight_in_grams')], 
             median_base_price_log = data[data_values.index('median_base_price_log')],
@@ -262,7 +267,7 @@ def calculate_financial_mertrics_from_pricing( data_list ,roi_list,unit_info , f
         )
         update_total(total_units , ob)
         weekly_units.append(ob.__dict__)
-    
+    print(weekly_units)
     return {
         flag : {
             'total' :  total_units.__dict__,
@@ -274,6 +279,7 @@ def calculate_financial_mertrics_from_pricing( data_list ,roi_list,unit_info , f
 
 def update_total(total_unit:model.TotalUnit ,unit_model : model.UnitModel ):
     total_unit.total_rsv_w_o_vat = total_unit.total_rsv_w_o_vat + unit_model.total_rsv_w_o_vat
+    total_unit.cogs = total_unit.cogs + unit_model.total_cogs
     total_unit.units = total_unit.units + unit_model.predicted_units
     total_unit.te = total_unit.te + unit_model.trade_expense
     total_unit.lsv = total_unit.lsv + unit_model.total_lsv
@@ -356,6 +362,22 @@ def update_from_request(data_list , querydict):
     for value in catalogue_index:
         cloned_list[value][data_values.index('catalogue')] = cataloge_average
     return cloned_list
+
+def update_for_optimizer(data_list , querydict):
+    cloned_list = copy.deepcopy(data_list)
+    for i in range(0,len(querydict)):
+        week = querydict[i]['week']
+        index = week -1
+        cloned_list[index][data_values.index('promo_depth')] = querydict[i]['Optimum_Promo']
+        cloned_list[index][data_values.index('co_investment')] = querydict[i]['Coinvestment']
+    return cloned_list
+    # cloned_list = copy.deepcopy(data_list)
+    # for i in range(0,len(querydict)):
+    #     week = querydict[i]['week']
+    #     index = week -1
+    #     cloned_list[index]['Promo_Depth'] = querydict[i]['Optimum_Promo']
+    #     cloned_list[index]['Coinvestment'] = querydict[i]['Coinvestment']
+    # return cloned_list
 
 def update_optimizer_from_pricing(data_list , pricing_week : QuerySet[db_model.PricingWeek] , roi_list):
     cloned_list = copy.deepcopy(data_list)

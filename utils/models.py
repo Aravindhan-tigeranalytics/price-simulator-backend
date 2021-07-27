@@ -37,12 +37,25 @@ class UnitModel:
                  incremental_unit = 0.0,
                  base_unit = 0.0,
                  promo_elasticity = 0,
-                 co_investment = 0
+                 co_investment = 0,
+                 flag_promotype_motivation = 0,
+                 flag_promotype_n_pls_1 = 0,
+                 flag_promotype_traffic = 0,
+                 si = 0
                  ):
         self.date = date
         self.week = week
         self.base_unit = base_unit
         self.incremental_unit = incremental_unit
+
+        self.promo_depth = promo_depth
+        self.co_investment = co_investment
+        self.lift = (self.incremental_unit / self.base_unit )
+        self.flag_promotype_motivation = flag_promotype_motivation
+        self.flag_promotype_n_pls_1 = flag_promotype_n_pls_1
+        self.flag_promotype_traffic = flag_promotype_traffic
+        self.si = si
+        # self.promo_mech = 0
         # if promo_elasticity and promo_depth:
         #     import pdb
         #     pdb.set_trace()
@@ -177,3 +190,4 @@ class TotalUnit:
     base_units = 0
     increment_units = 0
     lift = 0
+    cogs = 0
