@@ -1,4 +1,7 @@
 import os
+
+from django.db.models.fields import mixins
+import scenario_planner
 from typing import List
 import numpy as np
 import pandas as pd
@@ -15,11 +18,14 @@ from pulp import *
 import pandas as pd
 from itertools import combinations
 from utils import constants as CONST
-
+import copy
 from optimiser import process as pr
 from utils import units_calculation as cal
 from optimiser import process as process_calc
 import logging.config
+
+from scenario_planner import mixins as mixin
+from optimiser import testdata as value_dict
 
 logging.config.dictConfig(CONST.LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
@@ -664,13 +670,14 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
   logging.info('Main Funtion Begin')
   # import pdb
   # pdb.set_trace()
-
+  
   # Model_Data,ROI_data, Model_Coeff = pr.get_list_from_db(constraints['account_name'],constraints['product_group'])
   if constraints:
     account_name = constraints['account_name']
     product_group = constraints['product_group']
     segment = constraints['corporate_segment']
     model_data_all,ROI_data,model_coeff,coeff_mapping = pr.get_list_from_db(constraints['account_name'],constraints['product_group'] , optimizer_save = optimizer_save)
+  
   if optimizer_save:
     optimizer_save = list(optimizer_save)
     account_name = optimizer_save[0].model_meta.account_name
@@ -695,6 +702,15 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
   slct_retailer = account_name
   slct_ppg =product_group
 
+
+  financial_metrics = mixin.calculate_finacial_metrics_for_optimizer(account_name,product_group,value_dict.RESPONSE_OPTIMIZER['optimal'],model_coeff,model_data_all,ROI_data)
+  
+  # Get Holiday Columns Names
+  coeff_mapping['Coefficient_Holiday'] = list(map(lambda x: x.startswith('Holiday'),coeff_mapping['Coefficient_new']))
+  holiday_list = []
+  for index, row in coeff_mapping.iterrows():
+    if row['Coefficient_Holiday'] == True:
+      holiday_list.append(row['Coefficient'])
 
   # getting coefficient name mapping and values for selected retailer, ppg
   # coeff_mapping_temp = coeff_mapping.loc[(coeff_mapping['Account Name']==slct_retailer) & (coeff_mapping['PPG']==slct_ppg)]
@@ -737,6 +753,7 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
   Model_Data.rename(columns={'tpr_discount_byppg':'tpr_discount_byppg_train'},inplace=True)
   print(Period_data['Date'],"SAte")
   Period_data['Date']=pd.to_datetime(Period_data['Date'], format='%Y-%m-%d')
+  Model_Data['Date']=pd.to_datetime(Model_Data['Date'], format='%Y-%m-%d')
   Final_Pred_Data=pd.merge(Period_data,Model_Data,how="left",on="Date")
   Final_Pred_Data['wk_base_price_perunit_byppg'] = np.exp(Final_Pred_Data['wk_sold_median_base_price_byppg_log'])
   Final_Pred_Data['Promo'] = np.where(Final_Pred_Data['tpr_discount_byppg'] == 0, Final_Pred_Data['wk_base_price_perunit_byppg'],
@@ -772,26 +789,28 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
   print(Final_Pred_Data[['Baseline_Prediction','Baseline_Sales',"Baseline_GSV","Baseline_Trade_Expense","Baseline_NSV","Baseline_MAC","Baseline_RP"]].sum().apply(lambda x: '%.3f' % x))
   baseline_df =Final_Pred_Data[['Baseline_Prediction','Baseline_Sales',"Baseline_GSV","Baseline_Trade_Expense","Baseline_NSV","Baseline_MAC","Baseline_RP"]].sum().astype(int)
   baseline_df['Baseline_MAC']
+  baseline_data = Final_Pred_Data.copy()
 
-  baseline_info ={}
+  # baseline_info ={}
   # baseline calendar metrics calculation
   # min and max consecutive weeks, promo gap, number of baseline promotions
-  baseline_data = Final_Pred_Data.copy()
-  promo_data = baseline_data[['Date','tpr_discount_byppg']]
-  promo_data['Week_no']=promo_data.index+1
-  promo_data['Promo_wave'] = promo_wave_cal(promo_data)
-  promo_data['Promo_flag'] = np.where(promo_data['tpr_discount_byppg']==0,0,1)
-  baseline_info['total_promotions']=promo_data['Promo_flag'].sum()
-  promo_data = promo_data.loc[promo_data['tpr_discount_byppg']!=0].reset_index(drop=True)
-  promo_wave_summary = promo_data.groupby(['Promo_wave']).agg( Tot_promo = ("Promo_flag",sum),
-                                                              start_week = ('Week_no',min),
-                                                              end_week = ("Week_no",max)).reset_index()
-  baseline_info['min_consecutive_promo']=promo_wave_summary['Tot_promo'].min()
-  baseline_info['max_consecutive_promo']=promo_wave_summary['Tot_promo'].max()
-  promo_wave_summary['Prev_end_week']=promo_wave_summary['end_week'].shift(1)#.fillna(0)
-  promo_wave_summary['Promo_gap']= promo_wave_summary['start_week']-promo_wave_summary['Prev_end_week']-1
-  baseline_info['min_promo_gap']=promo_wave_summary['Promo_gap'].min()
-  baseline_info['max_promo_gap']=promo_wave_summary['Promo_gap'].max()
+  # baseline_data = Final_Pred_Data.copy()
+  # promo_data = baseline_data[['Date','tpr_discount_byppg']]
+  # promo_data['Week_no']=promo_data.index+1
+  # promo_data['Promo_wave'] = promo_wave_cal(promo_data)
+  # promo_data['Promo_flag'] = np.where(promo_data['tpr_discount_byppg']==0,0,1)
+  # baseline_info['total_promotions']=promo_data['Promo_flag'].sum()
+  # promo_data = promo_data.loc[promo_data['tpr_discount_byppg']!=0].reset_index(drop=True)
+  # promo_wave_summary = promo_data.groupby(['Promo_wave']).agg( Tot_promo = ("Promo_flag",sum),
+  #                                                             start_week = ('Week_no',min),
+  #                                                             end_week = ("Week_no",max)).reset_index()
+  # baseline_info['min_consecutive_promo']=promo_wave_summary['Tot_promo'].min()
+  # baseline_info['max_consecutive_promo']=promo_wave_summary['Tot_promo'].max()
+  # promo_wave_summary['Prev_end_week']=promo_wave_summary['end_week'].shift(1)#.fillna(0)
+  # promo_wave_summary['Promo_gap']= promo_wave_summary['start_week']-promo_wave_summary['Prev_end_week']-1
+  # baseline_info['min_promo_gap']=promo_wave_summary['Promo_gap'].min()
+  # baseline_info['max_promo_gap']=promo_wave_summary['Promo_gap'].max()
+
   # baseline_info
   config = {"Reatiler": account_name,"PPG":product_group,'Segment':segment,"MARS_TPRS":[],"Co_investment":[],
           "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
@@ -801,9 +820,10 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
           "constrain_params": {'MAC':1,'RP':1.0,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
                                 'min_consecutive_promo':min_consecutive_promo,'max_consecutive_promo':max_consecutive_promo,
                     'promo_gap':min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':0}}
-  # financial metric preference order
   if constraints:
     _update_params(config , constraints)
+
+  # financial metric preference order
   fin_pref_order = config['Fin_Pref_Order']
   print(baseline_data,"baseline_data")
   # getting TE for all the tprs
@@ -812,10 +832,20 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
   Required_base = get_required_base(baseline_data,Model_Coeff,TE_dict,ret_inv_dict,config)
   Optimal_calendar_fin = pd.DataFrame()
   infeasible_solution = True
-  Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
-  if((Optimal_calendar.shape[0]==52) or (Optimal_calendar['Solution'].unique()=='Optimal')):
+
+  # creating a copy of config for ppgs with lag variables
+  config_temp = copy.deepcopy(config)
+  # increasing/decresing the limit to satisfy the actual constraints in ppgs with lag variables
+  config_temp = config_lag_function(Model_Coeff,config_temp)
+  # config and config temp will be same in all the ppgs without lag variables
+  print("Init dict",config["constrain_params"])
+  print("Init dict",config_temp["constrain_params"])
+
+  Optimal_calendar = optimizer_fun(baseline_data,Required_base,config_temp)
+  if((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
     Optimal_calendar_fin =Optimal_calendar.copy()
     infeasible_solution = False
+  # An iterative method to automate infeasible scenarios
   # step1 : decreasing the metrics with lower/upper limit higher/lower than baseline
   if(infeasible_solution):
     print("Infeasible solution : decreasing the metrics limit greater than baseline")
@@ -834,11 +864,16 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
     iteration =True
     delta_dict ={}
     iter_no =0
-    print("before iteration")
     while iteration:
+      if len(Act_fin_metrics)==0:
+        config_temp = copy.deepcopy(config)
+      # increasing/decresing the limit to satisfy the actual constraints in ppgs with lag variables
+        config_temp = config_lag_function(Model_Coeff,config_temp)
+        config = copy.deepcopy(config_temp)
+        iteration = False
+        continue
       iter_no +=1
       for rel in Act_fin_metrics:
-        print(rel)
         if(rel=='Trade_Expense'):
           if (config['constrain_params'][rel]<1 and iter_no==1):
             delta_dict[rel] = (1-config['constrain_params'][rel])/2
@@ -851,18 +886,19 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
             delta_dict[rel] = (config['constrain_params'][rel]-1)/2
           if ((config['constrain_params'][rel])>1):
             config['constrain_params'][rel]=config['constrain_params'][rel]-delta_dict[rel]
-      print(config['constrain_params'],"1361")
-      Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
-      print(Optimal_calendar,"Optimal_calendar")
+      print(config['constrain_params'])
+      config_temp = copy.deepcopy(config)
+      # increasing/decresing the limit to satisfy the actual constraints in ppgs with lag variables
+      config_temp = config_lag_function(Model_Coeff,config_temp)
+      Optimal_calendar = optimizer_fun(baseline_data,Required_base,config_temp)
       if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
-        print(config['constrain_params'],"config['constrain_params']")
+        print(config['constrain_params'])
         Optimal_calendar_fin = Optimal_calendar.copy()
         iteration = False
         infeasible_solution = False
       if iter_no==2:
+        config = copy.deepcopy(config_temp)
         iteration = False
-  print("check here")
-  print(infeasible_solution,"infeasible_solution")
   # if solution is infeasible after step 1 , we will relax each finacial metric one by one and check which metric is causing the infeasible solution
   if(infeasible_solution):
     print("Infeasible solution - relaxing financial metrics")
@@ -1003,28 +1039,34 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
             print(config['constrain_params'])
             Optimal_calendar_fin = Optimal_calendar.copy()
           k+=1
-  print("before ")
   if Optimal_calendar_fin.shape[0]==0:
     Optimal_calendar_fin['TPR']=baseline_data['tpr_discount_byppg']
   # getting data with optimal calendar
   Optimal_data = optimal_summary_fun(baseline_data,Model_Coeff,Optimal_calendar_fin,TE_dict,ret_inv_dict)
   # getting comparison between baseline and optimal calendar
   opt_base = get_opt_base_comparison(baseline_data,Optimal_data,Model_Coeff,config)
-  # process_calc.update_db(opt_base,config['Reatiler'] , config['PPG'])
   # metric summary comparison between optimal and baseline calendar
   summary = get_calendar_summary(baseline_data,Optimal_data,opt_base)
   opt_base['week'] = opt_base.sort_values("Date").index + 1
   opt_base['Coinvestment']  = Optimal_data.sort_values("Date")['Coinvestment']
   # import pdb
   # pdb.set_trace()
+
+  if len(holiday_list) > 0:
+    for value in holiday_list:
+      opt_base[value] = Optimal_data[value]
+
   parsed_summary = json.loads(summary.to_json(orient="records"))
   parsed_base = json.loads(opt_base.to_json(orient="records"))
+
   # import pdb
   # pdb.set_trace()
   logging.info('Main Funtion Ends')
   return {
+    "holiday" : holiday_list,
     "summary" : parsed_summary,
-    "optimal" : parsed_base
+    "optimal" : parsed_base,
+    "financial_metrics": financial_metrics
   }
 
 
@@ -1149,6 +1191,22 @@ def optimizer_fun(baseline_data,Required_base,config):
   # defining objective function
   obj_metric = config['Objective_metric']
   prob+=lpSum([WK_vars[Required_base['WK_ID'][i]]*(Required_base[obj_metric][i])  for i in range(0,Required_base.shape[0])])
+
+  if obj_metric=='MAC':
+    obj_basevalue = baseline_df['Baseline_MAC']
+  elif obj_metric=='RP':
+    obj_basevalue = baseline_df['Baseline_RP']
+  elif obj_metric=='Trade_Expense':
+    obj_basevalue = baseline_df['Baseline_Trade_Expense']
+  elif obj_metric=='Units':
+    obj_basevalue = baseline_df['Baseline_Prediction']
+  elif obj_metric=='NSV':
+    obj_basevalue = baseline_df['Baseline_NSV']
+  elif obj_metric=='GSV':
+    obj_basevalue = baseline_df['Baseline_GSV']
+  elif obj_metric=='Sales':
+    obj_basevalue = baseline_df['Baseline_Sales']
+
   # prob+=lpSum([WK_vars[i]  for i in WK_DV_vars ] )
   # Subject to 
   # MAC constraint
@@ -1417,10 +1475,7 @@ def optimizer_fun(baseline_data,Required_base,config):
   return(df)
   # prob.solve(PULP_CBC_CMD(msg=True, maxSeconds=1200000, threads=90, keepFiles=1, fracGap=None))
 
-
-
 def optimal_summary_fun(baseline_data,Model_Coeff,optimal_calendar,TE_dict,ret_inv_dict):
-  logging.info('Optimal Summary Function')
   # function for creating optimal calendar data
   model_cols = Model_Coeff['names'].to_list()
   model_cols.remove('Intercept')
@@ -1666,3 +1721,13 @@ def get_calendar_summary(baseline_data,optimal_data,opt_base):
   summary_metric['Delta']=summary_metric['Change']/summary_metric['Base_Scenario']
   return summary_metric
 
+def config_lag_function(Model_Coeff,config_dict):
+  # function for ppgs with lag variables
+  # if a lag variable is present, we will increase/decrease the ub and lb by 1%
+  model_vars = Model_Coeff['names'].to_list()
+  if ('tpr_discount_byppg_lag1' in model_vars or 'tpr_discount_byppg_lag2' in model_vars):
+    fin_vars =['MAC_Perc','RP','MAC']
+    for i in fin_vars:
+      if ((config_dict['config_constrain'][i])):
+        config_dict['constrain_params'][i] = config_dict['constrain_params'][i]+0.01
+  return config_dict

@@ -222,3 +222,23 @@ class CalculationMixin():
             return {**meta,**base_finalcial_metrics , **simulated_financial_metrics}
 
 
+def calculate_finacial_metrics_for_optimizer(account_name,product_group,value_dict,coeff_list,data_list,roi_list):
+    # coeff_list = coeff_list.to_dict('records')
+    # data_list = data_list.to_dict('records')
+    # roi_list = roi_list.to_dict('records')
+    
+    coeff_list , data_list ,roi_list = pd_query.get_list_value_from_query(model.ModelCoefficient,
+                                                                            model.ModelData,
+                                                                            model.ModelROI,
+                                                                            account_name,product_group)
+
+    simulated_data_list = cal.update_for_optimizer(data_list, value_dict)
+    base_incremental_split = json.loads(uc.list_to_frame(coeff_list , data_list).to_json(orient="records"))
+
+    simulated_incremental_split = json.loads(uc.list_to_frame(coeff_list , simulated_data_list).to_json(orient="records"))
+    base_finalcial_metrics = cal.calculate_financial_mertrics(data_list ,roi_list,
+                                               base_incremental_split , 'base')
+
+    simulated_financial_metrics = cal.calculate_financial_mertrics(simulated_data_list ,roi_list,
+                                            simulated_incremental_split , 'simulated',0)
+    return {**base_finalcial_metrics,**simulated_financial_metrics}

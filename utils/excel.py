@@ -397,11 +397,12 @@ def download_excel_optimizer(account_name , product_group,data):
     currency_header = ['Avg_PromoSellingPrice','Trade_Expense','MAC','RP','AvgSellingPrice','Sales','GSV', 'NSV']
     percent_header = ['RP_Perc', 'Mac_Perc']
 
-    from optimiser import testdata as test
-    data = test.RESPONSE_OPTIMIZER
+    # from optimiser import testdata as test
+    # data = test.RESPONSE_OPTIMIZER
     
     summary_data = data['summary']
     optimal_data = data['optimal']
+    holiday_data = data['holiday']
 
     workbook = xlsxwriter.Workbook(output)
     merge_format_date = workbook.add_format({
@@ -417,7 +418,7 @@ def download_excel_optimizer(account_name , product_group,data):
         })
     merge_format_app.set_font_size(20)
    
-    worksheet = workbook.add_worksheet()
+    worksheet = workbook.add_worksheet('Summary')
     worksheet.hide_gridlines(2)
     format_header = workbook.add_format({'bold': 1,
         'border': 1,
@@ -465,29 +466,42 @@ def download_excel_optimizer(account_name , product_group,data):
         # row+=1
         col+=1
 
+    row = ROW_CONST
     col = COL_CONST
-    worksheet.merge_range('B13:D13', "Optimizer Weekly Data",merge_format_app)
-    row = 15
+    weekly_worksheet = workbook.add_worksheet('Weekly')
+    weekly_worksheet.hide_gridlines(2)
+    weekly_worksheet.merge_range('A3:B3', "Optimizer Weekly Data",merge_format_app)
+    weekly_worksheet.merge_range('A4:B4', "Account Name : {}".format(account_name),merge_format_app)
+    weekly_worksheet.merge_range('A5:B5', "Product Group : {}".format(product_group),merge_format_app)
+
+    row+=1
     optimal_header = ['Date','SI','Baseline_Promo','Baseline_Units','Baseline_Base','Baseline_Incremental','Baseline_ROI','Baseline_Lift','Optimum_Promo','Optimum_Units','Optimum_Base','Optimum_Incremental','Optimum_ROI','Optimum_Lift']
+    if len(holiday_data) > 0:
+        optimal_header = optimal_header + holiday_data
 
     for key in optimal_header:
-        _writeExcel(worksheet,row, col," ".join(key.split("_")).title(),format_header)
+        _writeExcel(weekly_worksheet,row, col," ".join(key.split("_")).title(),format_header)
         col+=1
     row+=1
     col = COL_CONST
 
+    number_format_header = ['Baseline_Units','Baseline_Base','Baseline_Incremental','Optimum_Units','Optimum_Base','Optimum_Incremental']
     for data in optimal_data:
         for k in optimal_header:
-            _writeExcel(worksheet,row, col, datetime.datetime.fromtimestamp(int(str(data[k])[0:10])).strftime('%Y-%m-%d') if k =='Date' else data[k],format_value)
+            if k in number_format_header:
+                value = datetime.datetime.fromtimestamp(int(str(data[k])[0:10])).strftime('%Y-%m-%d') if k =='Date' else data[k]
+                _writeExcel(weekly_worksheet,row, col, util.format_value(value, k in percent_header , k in currency_header , k in no_format_header) ,format_value)
+            else:
+                _writeExcel(weekly_worksheet,row, col, datetime.datetime.fromtimestamp(int(str(data[k])[0:10])).strftime('%Y-%m-%d') if k =='Date' else data[k],format_value)
             col+=1
         row+=1
         col = COL_CONST
     
-    row = 15
-    worksheet.write('A{}'.format(row+1), "Week",format_header)
+    row = 7
+    weekly_worksheet.write('A{}'.format(row+1), "Week",format_header)
     row+=1
     for i in range(0,len(optimal_data)):
-        _writeExcel(worksheet,row, col-1, 'Week-{}'.format(i+1),format_value)
+        _writeExcel(weekly_worksheet,row, col-1, 'Week-{}'.format(i+1),format_value)
         row+=1
 
     workbook.close()

@@ -45,7 +45,7 @@ class UnitModel:
                  incremental_unit = 0.0,
                  base_unit = 0.0,
                  promo_elasticity = 0,
-                 co_investment = 0
+                 co_investment = 0,
                  ):
         self.date = date
         self.week = week
@@ -215,4 +215,8 @@ class TotalUnit:
     base_units = 0
     increment_units = 0
     lift = 0
+<<<<<<< HEAD
     cogs=0  
+=======
+    cogs = 0
+>>>>>>> feature-optimiser
