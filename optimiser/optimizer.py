@@ -25,12 +25,12 @@ from optimiser import process as process_calc
 import logging.config
 
 from scenario_planner import mixins as mixin
-from optimiser import testdata as value_dict
+# from optimiser import testdata as value_dict
 
 logging.config.dictConfig(CONST.LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
 
-
+value_dict = {}
 class my_dictionary(dict): 
   
     # __init__ function 
