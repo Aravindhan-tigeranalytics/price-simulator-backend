@@ -174,8 +174,15 @@ class CommentSerializer(serializers.Serializer):
     
 class SimulatedSerializer(serializers.Serializer):
     pass
-        
+      
 class ModelDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = model.ModelData
+        fields = ('model_meta','year' , 'quater','month','period','week','date','promo_depth' ,
+                  'co_investment','flag_promotype_motivation','flag_promotype_n_pls_1',
+                  'flag_promotype_traffic')
+    
+class ModelDataSerializerbkp(serializers.ModelSerializer):
     def __init__(self,*args,**kwargs):
         # ex_query = kwargs.pop('extra')
         # if ex_query:
@@ -270,20 +277,17 @@ class ModelMetaExcelUpload(serializers.Serializer):
 
     
 
-class OptimizerMeta(serializers.Serializer):
-    OBJ_CHOICES1 = (
-        ("cell", "Choose Strategic Cell"), 
-    )
-    query = model.ModelMeta.objects.prefetch_related('data').all()
-    account_name = field.ChoiceField(choices=[i + i for i in list(query.values_list('account_name').distinct())])
-    corporate_segment = field.ChoiceField(choices=[i + i for i in list(query.values_list('corporate_segment').distinct())])
-    strategic_cell = serializers.ChoiceField(choices=[i + i for i in list(query.filter(strategic_cell_filter__isnull=False).values_list('strategic_cell_filter').distinct())])
-    brand = serializers.ChoiceField(choices=[i + i for i in list(query.filter(brand_filter__isnull=False).values_list('brand_filter').distinct())])
-    brand_format = serializers.ChoiceField(choices=[i + i for i in list(query.filter(brand_format_filter__isnull=False).values_list('brand_format_filter').distinct())])
-
-    product_group = field.ChoiceField(choices=[i + i for i in list(query.values_list('product_group').distinct())])
-
+class OptimizerMeta(serializers.ModelSerializer):
+    class Meta:
+        model = model.ModelMeta
+        fields = '__all__'
         
+        
+# class ModelDataSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model= model.ModelData
+#         fields = "__all__"
+
 class ModelMetaGetSerializer(serializers.Serializer):
     OBJ_CHOICES = (
         ("cell", "Choose Strategic Cell"), 

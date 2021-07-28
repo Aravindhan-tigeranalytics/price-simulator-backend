@@ -296,6 +296,11 @@ class ModelOptimize(viewsets.GenericViewSet):
         serializer = sc.OptimizerMeta(self.queryset , many=True)
         # serializer = sc.OptimizerMeta(self.queryset , many=True)
         return Response(serializer.data)
+    def get_serializer_class(self):
+        return sc.OptimizerMeta
+    
+    def get_queryset(self):
+        return super().get_queryset()
     def post(self,request,format=None):
         # print(request.data , "request data")
         account_name = request.data['account_name']
