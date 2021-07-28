@@ -64,11 +64,23 @@ class MyUploadView(viewsets.GenericViewSet):
 
 class PromoSimulatorViewTest(viewsets.GenericViewSet,mixin.CalculationMixin):
     # queryset = model.ModelMeta.objects.all()
-     
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (perm.OptimizerPermission,)
+    serializer_class = sc.OptimizerMeta
+    queryset =model.ModelMeta.objects.all()
+    lookup_field = "id"
+    
+    def retrieve(self, request , *args , **kwargs):
+        # import pdb
+        # pdb.set_trace()
+        ser = sc.ModelDataSerializer(model.ModelData.objects.filter(model_meta = self.get_object()) , many=True)
+        
+        return Response(ser.data , status=status.HTTP_200_OK)
     def get(self, request, format=None):
         
-        serializer = sc.OptimizerMeta()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        serializer = sc.OptimizerMeta(self.queryset , many=True)
+        # serializer = sc.OptimizerMeta(self.queryset , many=True)
+        return Response(serializer.data)
     
     def get_serializer_class(self):
         return sc.OptimizerMeta
@@ -93,6 +105,7 @@ class PromoSimulatorViewTest(viewsets.GenericViewSet,mixin.CalculationMixin):
 
 
 class SavePromo(viewsets.GenericViewSet):
+    authentication_classes = (TokenAuthentication,)
     serializer_class = sc.SavePromo
     def get(self, request, format=None):
         serializer = sc.SavePromo()
@@ -101,14 +114,15 @@ class SavePromo(viewsets.GenericViewSet):
     def post(self, request, format=None):
         # import pdb
         # pdb.set_trace()
-        value = ast.literal_eval(request.data['optimizer_data'].strip())
+        # value = ast.literal_eval(request.data['optimizer_data'].strip())
+        value = request.data
         # import pdb
         # pdb.set_trace()
         # value = savePromo()
         scenario = model.SavedScenario(
             scenario_type = 'promo',
-            name =  request.data['savescenario.name'],
-            comments = request.data['savescenario.comments'],
+            name =  value['name'],
+            comments = value['comments'],
             user = request.user
             
         )   
@@ -131,7 +145,7 @@ class SavePromo(viewsets.GenericViewSet):
                 pw = model.PromoWeek(
                    
                     week = week,
-                    year = 2021,
+                    year = 2022,
                     promo_depth = value[i]['promo_depth'],
                      co_investment = value[i]['co_investment'],
                       promo_mechanic =value[i]['promo_mechanics'],
@@ -695,7 +709,8 @@ class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
     def get(self, request, format=None):
        
         
-        serializer = sc.ModelMetaGetSerializer()
+        # serializer = sc.ModelMetaGetSerializer()
+        serializer = sc.ModelDataSerializer(many=True)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     def get_serializer_class(self):
@@ -705,16 +720,27 @@ class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
         return super().get_queryset()
     
     def post(self, request, format=None):
-        if 'download' in request.stream.path:
-            filename = 'django_simple.xlsx'
-            response = HttpResponse(
-                excel.download_excel_promo_compare('response'),
-                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
-            response['Content-Disposition'] = 'attachment; filename=%s' % filename
-            return response
-        get_serializer = sc.ModelMetaGetSerializer(request.data)
-        value_dict = loads(dumps((get_serializer.to_internal_value(request.data))))
+        # if 'download' in request.stream.path:
+        #     filename = 'django_simple.xlsx'
+        #     response = HttpResponse(
+        #         excel.download_excel_promo_compare('response'),
+        #         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        #     )
+        #     response['Content-Disposition'] = 'attachment; filename=%s' % filename
+        #     return response
+        # print("---------------------------------")
+        # print(request.data , "request data")
+        # print("---------------------------------")
+        # get_serializer = sc.ModelMetaGetSerializer(request.data)
+        # value_dict = loads(dumps((get_serializer.to_internal_value(request.data))))
+        # import pdb
+        # pdb.set_trace()
+        value_dict = request.data
+        print("---------------------------------")
+        print(value_dict , "value_dict data")
+        print("---------------------------------")
+        
+        
         try:
             response = self.calculate_finacial_metrics_from_request(value_dict)
             

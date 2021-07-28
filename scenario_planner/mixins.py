@@ -32,6 +32,7 @@ class CalculationMixin():
         meta = {
             "scenario_id" : optimizer_week[0].saved_scenario.id,
             "scenario_name" : optimizer_week[0].saved_scenario.name,
+             "scenario_type" : optimizer_week[0].saved_scenario.scenario_type,
             "account_name" : account_name,
             "product_group" : product_group
         }
@@ -137,14 +138,17 @@ class CalculationMixin():
         scenario_name = promo_week[0].pricing_save.saved_scenario.name
         scenario_id = promo_week[0].pricing_save.saved_scenario.id
         scenario_comment =  promo_week[0].pricing_save.saved_scenario.comments
+        scenario_type =  promo_week[0].pricing_save.saved_scenario.scenario_type
        
         meta = {
         'scenario_id' : scenario_id,
         'scenario_name' : scenario_name,
+        'scenario_type' : scenario_type,
         'scenario_comment' : scenario_comment,   
         'account_name' : account_name,
         'corporate_segment' : account_name,
-        'product_group' :product_group
+        'product_group' :product_group,
+        "promo_elasticity" : promo_elasticity
         }
         
         
@@ -182,14 +186,17 @@ class CalculationMixin():
             scenario_name = promo_week[0].pricing_save.saved_scenario.name
             scenario_id = promo_week[0].pricing_save.saved_scenario.id
             scenario_comment =  promo_week[0].pricing_save.saved_scenario.comments
+            scenario_type = promo_week[0].pricing_save.saved_scenario.scenario_type
         
             meta = {
             'scenario_id' : scenario_id,
             'scenario_name' : scenario_name,
+            'scenario_type' : scenario_type,
             'scenario_comment' : scenario_comment,   
             'account_name' : account_name,
             'corporate_segment' : account_name,
-            'product_group' :product_group
+            'product_group' :product_group,
+            'promo_elasticity' : promo_elasticity
             }
             
             

@@ -30,7 +30,8 @@ urlpatterns = [
     path('list-saved-promo-test/', views.LoadScenarioTest.as_view({'get' : 'list',})),
     path('list-saved-promo-test/<int:id>/', views.LoadScenarioTest.as_view({'get' : 'list',})),
     path('map-promo-pricing/', views.MapPricingPromo.as_view() ),
-    path('promo-simulate-test/',views.PromoSimulatorViewTest.as_view({'get': 'get','post' : 'post'})),
+    path('promo-simulate-test/',views.PromoSimulatorViewTest.as_view({'get': 'get'})),
+    path('promo-simulate-test/<int:id>/',views.PromoSimulatorViewTest.as_view({'get': 'retrieve'})),
     path('upload/',views.MyUploadView.as_view({'get': 'get'}))
     
 ]

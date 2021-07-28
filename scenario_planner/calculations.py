@@ -200,6 +200,14 @@ def calculate_financial_mertrics( data_list ,roi_list,unit_info , flag,promo_ela
         ob = model.UnitModel(
             data[data_values.index('date')],
             week = int(data[data_values.index('week')]),
+            year = int(data[data_values.index('year')]),
+            quater = (data[data_values.index('quater')]),
+            month = (data[data_values.index('month')]),
+            period = (data[data_values.index('period')]),
+            flag_promotype_motivation = int(data[data_values.index('flag_promotype_motivation')]),
+            flag_promotype_n_pls_1 = int(data[data_values.index('flag_promotype_n_pls_1')]),
+            flag_promotype_traffic = int(data[data_values.index('flag_promotype_traffic')]),
+            si = data[data_values.index('si')],
             predicted_units=decimal.Decimal(unit['Predicted_sales']),
             on_inv_percent=roi[roi_values.index('on_inv')] * 100,
             list_price = roi[roi_values.index('list_price')],
@@ -243,6 +251,14 @@ def calculate_financial_mertrics_from_pricing( data_list ,roi_list,unit_info , f
         ob = model.UnitModelPrice(
             data[data_values.index('date')],
             week = int(data[data_values.index('week')]),
+            year = int(data[data_values.index('year')]),
+            quater = (data[data_values.index('quater')]),
+            month = (data[data_values.index('month')]),
+            period = (data[data_values.index('period')]),
+            flag_promotype_motivation = int(data[data_values.index('flag_promotype_motivation')]),
+            flag_promotype_n_pls_1 = int(data[data_values.index('flag_promotype_n_pls_1')]),
+            flag_promotype_traffic = int(data[data_values.index('flag_promotype_traffic')]),
+            si = data[data_values.index('si')],
             predicted_units=decimal.Decimal(unit['Predicted_sales']),
             on_inv_percent=roi[roi_values.index('on_inv')] * 100,
             list_price = pricing_week[i].lp_increase,
@@ -274,13 +290,14 @@ def calculate_financial_mertrics_from_pricing( data_list ,roi_list,unit_info , f
 
 def update_total(total_unit:model.TotalUnit ,unit_model : model.UnitModel ):
     total_unit.total_rsv_w_o_vat = total_unit.total_rsv_w_o_vat + unit_model.total_rsv_w_o_vat
+    total_unit.cogs = total_unit.cogs + unit_model.total_cogs
     total_unit.units = total_unit.units + unit_model.predicted_units
     total_unit.te = total_unit.te + unit_model.trade_expense
     total_unit.lsv = total_unit.lsv + unit_model.total_lsv
     total_unit.nsv = total_unit.nsv + unit_model.total_nsv
     total_unit.mac = total_unit.mac + unit_model.mars_mac
     total_unit.rp = total_unit.rp + unit_model.retailer_margin
-    total_unit.asp = total_unit.asp + unit_model.asp 
+    total_unit.asp = util.average(total_unit.asp,unit_model.asp)  
     total_unit.avg_promo_selling_price =  util.average(total_unit.avg_promo_selling_price,unit_model.promo_asp) 
     total_unit.roi = total_unit.roi + unit_model.roi
     total_unit.rp_percent = util.average(total_unit.rp_percent,unit_model.retailer_margin_percent_of_rsp)
@@ -315,6 +332,7 @@ def update_total(total_unit:model.TotalUnit ,unit_model : model.UnitModel ):
     # pass
   
 def _get_promotion_flag(promo_from_req):
+    print(promo_from_req , "promo from request")
     val ={"Flag_promotype_Motivation" : "flag_promotype_motivation", 
     "Flag_promotype_N_pls_1": "flag_promotype_n_pls_1", 
         "Flag_promotype_traffic": "flag_promotype_traffic", 
@@ -334,6 +352,7 @@ def update_from_request(data_list , querydict):
             if cat :
                 cataloge_average = util.average(cataloge_average , cat)
                 cloned_list[index][data_values.index('catalogue')] = 0
+             
             if querydict[i]['promo_mechanics']:
                 cloned_list[index][data_values.index(
                     _get_promotion_flag(querydict[i]['promo_mechanics']))] = 1

@@ -25,6 +25,14 @@ class UnitModel:
     def __init__(self,
                  date,
                  week = 0,
+                 year = 0,
+                 quater = 0,
+                 month = 0,
+                 period= 0,
+                 flag_promotype_motivation = 0,
+                 flag_promotype_n_pls_1 = 0,
+                 flag_promotype_traffic = 0,
+                 si = 0,
                  predicted_units = 0.0,
                  on_inv_percent = 0.0,
                  list_price = 0.0,
@@ -41,8 +49,19 @@ class UnitModel:
                  ):
         self.date = date
         self.week = week
+        self.year = year
+        self.quater = quater
+        self.month = month
+        self.period = period
+        self.si = si
+        self.flag_promotype_motivation = flag_promotype_motivation
+        self.flag_promotype_n_pls_1 = flag_promotype_n_pls_1
+        self.flag_promotype_traffic = flag_promotype_traffic
         self.base_unit = base_unit
         self.incremental_unit = incremental_unit
+        self.promo_depth = promo_depth
+        self.co_investment = co_investment
+        self.lift = (self.incremental_unit / self.base_unit )
         # if promo_elasticity and promo_depth:
         #     import pdb
         #     pdb.set_trace()
@@ -93,6 +112,14 @@ class UnitModelPrice:
     def __init__(self,
                  date,
                  week = 0,
+                 year = 0,
+                 quater = 0,
+                 month = 0,
+                 period= 0,
+                 flag_promotype_motivation = 0,
+                 flag_promotype_n_pls_1 = 0,
+                 flag_promotype_traffic = 0,
+                 si=0,
                  predicted_units = 0.0,
                  on_inv_percent = 0.0,
                  list_price = 0.0,
@@ -110,8 +137,19 @@ class UnitModelPrice:
                  ):
         self.date = date
         self.week = week
+        self.year = year
+        self.quater = quater
+        self.month = month
+        self.period = period
+        self.si = si
+        self.flag_promotype_motivation = flag_promotype_motivation
+        self.flag_promotype_n_pls_1 = flag_promotype_n_pls_1
+        self.flag_promotype_traffic = flag_promotype_traffic
         self.base_unit = base_unit
         self.incremental_unit = incremental_unit
+        self.promo_depth = promo_depth
+        self.co_investment = co_investment
+        self.lift = (self.incremental_unit / self.base_unit )
         # if promo_elasticity and promo_depth:
         #     import pdb
         #     pdb.set_trace()
@@ -177,3 +215,4 @@ class TotalUnit:
     base_units = 0
     increment_units = 0
     lift = 0
+    cogs=0  
