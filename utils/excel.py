@@ -159,8 +159,9 @@ def download_excel_promo(data):
 
     ROW_CONST = 6
     COL_CONST = 1
-    # from . import test
-    # data = test.RESPONSE_PROMO
+
+    # from scenario_planner import test as t
+    # data = t.RESPONSE_PROMO
     # import pdb
     # pdb.set_trace()
 
@@ -231,9 +232,14 @@ def download_excel_promo(data):
     # for key in data_val.keys():
     for key in header_key:
         # header_key.append(key)
-        _writeExcel(worksheet,row, col," ".join(key.split("_")).title(),format_header)
-        # _writeExcel(worksheet,row+1, col,data_val[key],format_value)
-        col+=1
+        if key == 'date' or key == 'week':
+            _writeExcel(worksheet,row, col," ".join(key.split("_")).title(),format_header)
+            col+=1
+        else:
+            _writeExcel(worksheet,row, col," ".join(key.split("_")).title()+"(Base)",format_header)
+            col+=1
+            _writeExcel(worksheet,row, col," ".join(key.split("_")).title()+"(Simulated)",format_header)
+            col+=1
 
     col = COL_CONST
     row+=1
@@ -251,12 +257,15 @@ def download_excel_promo(data):
             if k == 'date' or k == 'week':
                 value = simulated_value
                 _writeExcel(worksheet,row, col, value ,format_value)
+                col+=1
             else:
-                # value = str(base_value)+ "\n" +str(simulated_value)
-                diff_value = util.format_value(base[k]-simulated[k], k in percent_header , k in currency_header , k in no_format_header)
-                segments = ["Base: " +str(base_value)+ "\n", bold, "Simulated: "+str(simulated_value) + " " ,red ,"("+diff_value+")" ]
-                worksheet.write_rich_string(row, col, *segments,format_value_left)
-            col+=1
+                # diff_value = util.format_value(base[k]-simulated[k], k in percent_header , k in currency_header , k in no_format_header)
+                # segments = ["Base: " +str(base_value)+ "\n", bold, "Simulated: "+str(simulated_value) + " " ,red ,"("+diff_value+")" ]
+                # worksheet.write_rich_string(row, col, *segments,format_value_left)
+                _writeExcel(worksheet,row, col, base_value, format_value)
+                col+=1
+                _writeExcel(worksheet,row, col, simulated_value, format_value)
+                col+=1
         row+=1
         col = COL_CONST
 
@@ -270,10 +279,13 @@ def download_excel_promo(data):
     for k in total_header:
         base_total_value = util.format_value(base_total[k], k in percent_header , k in currency_header , k in no_format_header)
         simulated_total_value = util.format_value(simulated_total[k], k in percent_header , k in currency_header , k in no_format_header)
-        diff_total_value = util.format_value(base_total[k]-simulated_total[k], k in percent_header , k in currency_header , k in no_format_header)
-        segments = ["Base: " +str(base_total_value)+ "    " + "\n", summary_value_bold, "Simulated: "+str(simulated_total_value)+ " " ,red ,"("+diff_total_value+")"]
-        worksheet.write_rich_string(row, col, *segments,summary_value_format)
+        # diff_total_value = util.format_value(base_total[k]-simulated_total[k], k in percent_header , k in currency_header , k in no_format_header)
+        # segments = ["Base: " +str(base_total_value)+ "    " + "\n", summary_value_bold, "Simulated: "+str(simulated_total_value)+ " " ,red ,"("+diff_total_value+")"]
+        # worksheet.write_rich_string(row, col, *segments,summary_value_format)
         # _writeExcel(worksheet,row, col,util.format_value(total[k], k in percent_header , k in currency_header , k in no_format_header),format_header)
+        _writeExcel(worksheet,row, col,base_total_value,format_header)
+        col+=1
+        _writeExcel(worksheet,row, col,simulated_total_value,format_header)
         col+=1
     col = COL_CONST
     
@@ -512,7 +524,7 @@ def download_excel_optimizer(account_name , product_group,data):
 def _writeExcel(worksheet , row , col , val , _format):
     worksheet.write(row, col,val,_format)
     worksheet.set_row(row, 30)
-    worksheet.set_column(col,col, 40)
+    worksheet.set_column(col,col, 45)
 
 
 def dateformat():
