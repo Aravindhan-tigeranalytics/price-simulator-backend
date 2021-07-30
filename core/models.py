@@ -326,7 +326,7 @@ class SavedScenario(models.Model):
 
 class MetaSave(models.Model):
     account_name = models.CharField(max_length=100,verbose_name="Account Name")
-    corporate_segment =  models.CharField(max_length=100,verbose_name="Corporate Segment")
+    corporate_segment =  models.CharField(max_length=100,verbose_name="Corporate Segment" , null=True,blank=True)
     product_group = models.CharField(max_length=100,verbose_name="Product Group")
     
     class Meta:

@@ -90,10 +90,10 @@ class PromoScenarioSavedList(serializers.ModelSerializer):
         read_only_fields = ('id',)
         
 class ScenarioSavedList(serializers.ModelSerializer):
-    has_price = serializers.SerializerMethodField('has_pricing')
+    meta = serializers.SerializerMethodField('has_pricing')
     class Meta:
         model = model.SavedScenario
-        fields = ('id', 'name', 'comments','scenario_type' , 'has_price')
+        fields = ('id', 'name', 'comments','scenario_type' , 'meta')
         read_only_fields = ('id',)
         
     def get_fields(self , *args,**kwargs):
@@ -102,14 +102,23 @@ class ScenarioSavedList(serializers.ModelSerializer):
         
             
         if obj.scenario_type == 'promo':
-            # has_customer = False
-            # try:
-            #     promo_saved = (obj.promo_saved is not None)
-            # except:
-            #     pass
-            # return promo_saved and (promo_saved.saved_pricing is not None)
+            promo_save  = obj.promo_saved.get(saved_scenario = obj)
+            obj = {
+                "retailer" : promo_save.account_name,
+                "product_group" : promo_save.product_group,
+                "pricing" : False
+            }
+            if( bool(promo_save.saved_pricing)):
+                pricing = model.PricingWeek.objects.filter(pricing_save = promo_save.saved_pricing).first()
+                obj['pricing'] = {
+                    "lpi" : pricing.lp_increase,
+                    "rsp" : pricing.rsp_increase,
+                    "cogs" : pricing.cogs_increase,
+                    "elasticity" : pricing.base_price_elasticity
+                }
+            
                     
-            return bool(obj.promo_saved.get(saved_scenario = obj).saved_pricing)
+            return obj
         if obj.scenario_type == 'optimizer':
             # import pdb
             # pdb.set_trace()

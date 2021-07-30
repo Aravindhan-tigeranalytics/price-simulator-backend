@@ -614,8 +614,6 @@ def get_promo_wave_values(tpr_discount):
 
   val = tpr_discount
   for i in range(0,len(val)):
-      # import pdb
-      # pdb.set_trace()
       
       if val[i] :
           waves.append(val[i])
@@ -657,6 +655,9 @@ def get_promo_wave_values(tpr_discount):
   print(min_length_gap , "promo gap")
   print(tot_promo_min , "total promo min")
   print(tot_promo_max , "total promo max")
+  print(duration_of_waves , "duration of waves")
+  print(len(duration_of_waves) , "duration of waves length")
+  print(no_of_promo , "no of promo")
   return min_consecutive_promo,max_consecutive_promo,min_length_gap,tot_promo_min,tot_promo_max
 
 
