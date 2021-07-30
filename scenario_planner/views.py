@@ -750,7 +750,9 @@ class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
         # value_dict = loads(dumps((get_serializer.to_internal_value(request.data))))
         # import pdb
         # pdb.set_trace()
-        value_dict = request.data
+        # value_dict = request.data
+        get_serializer = sc.ModelMetaGetSerializer(request.data)
+        value_dict = loads(dumps((get_serializer.to_internal_value(request.data))))
         print("---------------------------------")
         print(value_dict , "value_dict data")
         print("---------------------------------")
