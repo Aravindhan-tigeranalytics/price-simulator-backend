@@ -1,0 +1,10 @@
+2021-07-30 16:11:39,291 django.utils.autoreload INFO     D:\MARS-RUSSIA\price-simulator-backend\core\models.py changed, reloading.
+2021-07-30 16:11:41,328 asyncio      DEBUG    Using proactor: IocpProactor
+2021-07-30 16:11:55,318 django.utils.autoreload INFO     D:\MARS-RUSSIA\price-simulator-backend\optimiser\optimizer.py changed, reloading.
+2021-07-30 16:11:57,386 asyncio      DEBUG    Using proactor: IocpProactor
+2021-07-30 16:12:34,219 django.utils.autoreload INFO     D:\MARS-RUSSIA\price-simulator-backend\core\models.py changed, reloading.
+2021-07-30 16:12:36,222 asyncio      DEBUG    Using proactor: IocpProactor
+2021-07-30 16:19:14,955 django.utils.autoreload INFO     D:\MARS-RUSSIA\price-simulator-backend\optimiser\optimizer.py changed, reloading.
+2021-07-30 16:19:17,075 asyncio      DEBUG    Using proactor: IocpProactor
+2021-07-30 16:21:54,196 django.utils.autoreload INFO     D:\MARS-RUSSIA\price-simulator-backend\scenario_planner\views.py changed, reloading.
+2021-07-30 16:21:56,208 asyncio      DEBUG    Using proactor: IocpProactor
