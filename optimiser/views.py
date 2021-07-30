@@ -317,10 +317,16 @@ class ModelOptimize(viewsets.GenericViewSet):
                 return Response(optimizer.process(dict(ser.validated_data)) , 200)
            
        
-        tpr = model.ModelData.objects.values_list('tpr_discount',flat=True).filter(model_meta__account_name = account_name, model_meta__product_group = product_group)
+        tpr = model.ModelData.objects.values(
+            'tpr_discount' , 'year','quater' , 'week' , 'date','promo_depth' , 'co_investment',
+            'flag_promotype_motivation' , 'flag_promotype_n_pls_1' , 'flag_promotype_traffic'
+            ).filter(
+            model_meta__account_name = account_name, model_meta__product_group = product_group
+            )
+            
+            
         
-      
-        min_consecutive_promo,max_consecutive_promo,min_length_gap,tot_promo_min,tot_promo_max = optimizer.get_promo_wave_values(list(tpr))
+        min_consecutive_promo,max_consecutive_promo,min_length_gap,tot_promo_min,tot_promo_max = optimizer.get_promo_wave_values([i['tpr_discount'] for i in tpr])
 
     
         serializer = sc.OptimizerSerializer({'param_total_promo_min' : tot_promo_min,
@@ -334,10 +340,9 @@ class ModelOptimize(viewsets.GenericViewSet):
                                              'account_name' :account_name,'corporate_segment' : corporate_segment,'brand':'','brand_format':'',
                                              'product_group' : product_group,'strategic_cell':'','result' : ''} )
         
-        # import pdb
-        # pdb.set_trace()
+
         if serializer.is_valid():
             
             optimizer.process(dict(serializer))
             return Response(serializer.data,200)
-        return Response(serializer.data,200)
+        return Response({"data" : serializer.data , "weekly" : tpr},200)

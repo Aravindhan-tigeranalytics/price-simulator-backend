@@ -215,4 +215,4 @@ class TotalUnit:
     base_units = 0
     increment_units = 0
     lift = 0
-    cogs = 0
+    cogs=0  

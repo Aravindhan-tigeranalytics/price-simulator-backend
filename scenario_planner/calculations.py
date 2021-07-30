@@ -335,9 +335,9 @@ def update_total(total_unit:model.TotalUnit ,unit_model : model.UnitModel ):
   
 def _get_promotion_flag(promo_from_req):
     print(promo_from_req , "promo from request")
-    val ={"Flag_promotype_Motivation" : "flag_promotype_motivation", 
-    "Flag_promotype_N_pls_1": "flag_promotype_n_pls_1", 
-        "Flag_promotype_traffic": "flag_promotype_traffic", 
+    val ={"Motivation" : "flag_promotype_motivation", 
+    "N+1": "flag_promotype_n_pls_1", 
+        "Traffic": "flag_promotype_traffic", 
         }  
     return val[promo_from_req]
 
