@@ -174,7 +174,6 @@ def download_excel_promo(data):
 
     merge_format_app = workbook.add_format({
         'bold': 1,
-        
         'align': 'center',
         'valign': 'vcenter'
         })
@@ -240,22 +239,20 @@ def download_excel_promo(data):
     
     # data_val = data['simulated']['weekly'][0]
 
-    header_key = ['date','week','base_unit','incremental_unit','predicted_units','asp','total_rsv_w_o_vat',
-    'promo_asp','total_lsv','total_nsv','te_per_units','roi','mars_mac','total_weight_in_tons','trade_expense',
-    'retailer_margin','retailer_margin_percent_of_nsv','mars_mac_percent_of_nsv',
-    'te_percent_of_lsv']
+    header_key =  ['date','week', 'predicted_units','base_unit','incremental_unit','total_weight_in_tons','total_lsv','total_nsv','mars_mac_percent_of_nsv','trade_expense','te_percent_of_lsv', 'te_per_units','roi','asp','promo_asp','total_rsv_w_o_vat', 'retailer_margin','retailer_margin_percent_of_nsv', 'mars_mac', ]
+
+    header_title = ['Date','Week','Units(Base)','Units(Simulated)','Base units(Base)','Base units(Simulated)','Incremental units(Base)',
+    'Incremental units(Simulated)','Volume(Base)','Volume(Simulated)','LSV(Base)','LSV(Simulated)','NSV(Base)','NSV(Simulated)',
+    'MAC, %NSV(Base)','MAC, %NSV(Simulated)','Trade expense(Base)','Trade expense(Simulated)','TE, % LSV(Base)','TE, % LSV(Simulated)',
+    'TE / Unit(Base)','TE / Unit(Simulated)','ROI(Base)','ROI(Simulated)','ASP(Base)','ASP(Simulated)','Promo ASP(Base)','Promo ASP(Simulated)',
+    'RSV w/o VAT(Base)','RSV w/o VAT(Simulated)','Customer Margin(Base)','Customer Margin(Simulated)','Customer Margin,%RSV(Base)',
+    'Customer Margin,%RSV(Simulated)','Mars MAC(Base)','Mars MAC(Simulated)']
 
     # for key in data_val.keys():
-    for key in header_key:
+    for key in header_title:
         # header_key.append(key)
-        if key == 'date' or key == 'week':
-            _writeExcel(worksheet,row, col," ".join(key.split("_")).title(),format_header)
-            col+=1
-        else:
-            _writeExcel(worksheet,row, col," ".join(key.split("_")).title()+"(Base)",format_header)
-            col+=1
-            _writeExcel(worksheet,row, col," ".join(key.split("_")).title()+"(Simulated)",format_header)
-            col+=1
+        _writeExcel(worksheet,row, col,key,format_header)
+        col+=1
 
     col = COL_CONST
     row+=1

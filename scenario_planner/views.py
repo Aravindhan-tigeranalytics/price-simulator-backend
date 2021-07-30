@@ -750,18 +750,12 @@ class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
         # value_dict = loads(dumps((get_serializer.to_internal_value(request.data))))
         # import pdb
         # pdb.set_trace()
-        # value_dict = request.data
-        get_serializer = sc.ModelMetaGetSerializer(request.data)
-        value_dict = loads(dumps((get_serializer.to_internal_value(request.data))))
-        print("---------------------------------")
-        print(value_dict , "value_dict data")
-        print("---------------------------------")
-        
-        
+
         try:
-            response = self.calculate_finacial_metrics_from_request(value_dict)
-            
             if 'download' in request.stream.path:
+                get_serializer = sc.ModelMetaGetSerializer(request.data)
+                dict_value = loads(dumps((get_serializer.to_internal_value(request.data))))
+                response = self.calculate_finacial_metrics_from_request(dict_value)
                 filename = 'promo_simulator.xlsx'
                 response = HttpResponse(
                     excel.download_excel_promo(response),
@@ -769,7 +763,9 @@ class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
                 )
                 response['Content-Disposition'] = 'attachment; filename=%s' % filename
                 return response
-                 
+            
+            value_dict = request.data
+            response = self.calculate_finacial_metrics_from_request(value_dict)
             return Response(response ,
                         status=status.HTTP_201_CREATED)
         except ObjectDoesNotExist as e:
