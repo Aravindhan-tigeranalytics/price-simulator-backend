@@ -1073,3 +1073,22 @@ class PromoSimulatorTestViewSet(viewsets.ModelViewSet):
                   product_group = value_dict['product_group'])
         serializer = sc.ModelMetaSerializer(query)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class CompareScenarioExcelDownloadView(APIView):
+    serializer_class = sc.CompareScenarioInputSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (perm.PromoPermission,)
+    
+    def post(self, request, format=None):
+        try:
+            if 'download' in request.stream.path:
+                filename = 'compare_scenario.xlsx'
+                response = HttpResponse(
+                    excel.download_excel_compare_scenario(request.data),
+                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
+                response['Content-Disposition'] = 'attachment; filename=%s' % filename
+                return response
+            
+        except ObjectDoesNotExist as e:
+            return Response({'error' : str(e)},status=status.HTTP_404_NOT_FOUND)

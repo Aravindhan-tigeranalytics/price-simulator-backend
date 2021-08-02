@@ -31,6 +31,27 @@ def format_value(val ,is_percent = False , is_currency= False , no_format = Fals
     
     return "{} {}".format("{:.2f}".format(final),curr)
 
+def format_promotions(motivation , n_plus_1, traffic , promo_depth , co_inv):
+    promo_name = "TPR"
+    promo_string = ""
+
+    if motivation:
+        promo_name = "Motivation"
+    elif n_plus_1:
+        promo_name = "N+1"
+    elif traffic:
+        promo_name = "Traffic"
+
+    if promo_depth:
+        promo_string+=promo_name + "-" + str(promo_depth) + "%"
+  
+    if co_inv:
+        promo_string+= " (Co-"+str(co_inv)+"%)"
+
+    if promo_string:
+        return promo_string
+
+    return '-'
 
 # def get_key(val):
 #     for key, value in my_dict.items():
