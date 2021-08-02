@@ -573,3 +573,559 @@ TypeError: 'QuerySet' object is not a mapping
 2021-07-30 11:13:13,786 django.request WARNING  Not Found: /api/scenario/promo-simulate/
 2021-07-30 11:13:38,110 django.request WARNING  Not Found: /api/scenario/promo-simulate/
 2021-07-30 12:19:23,824 django.request WARNING  Not Found: /favicon.ico
+2021-07-30 19:48:25,781 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\optimiser\optimizer.py changed, reloading.
+2021-07-30 19:48:28,616 asyncio      DEBUG    Using selector: SelectSelector
+2021-07-30 19:50:01,002 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\optimiser\views.py changed, reloading.
+2021-07-30 19:50:03,033 asyncio      DEBUG    Using selector: SelectSelector
+2021-07-30 19:50:35,618 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\optimiser\views.py changed, reloading.
+2021-07-30 19:50:37,636 asyncio      DEBUG    Using selector: SelectSelector
+2021-07-30 19:54:24,402 utils.app_exception_handler ERROR    When a serializer is passed a `data` keyword argument you must call `.is_valid()` before attempting to access the serialized `.data` representation.
+You should either call `.is_valid()` first, or access `.initial_data` instead.
+2021-07-30 19:54:24,457 django.request ERROR    Internal Server Error: /api/optimiser/calculate/
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\optimiser\views.py", line 342, in post
+    res = {"data" : serializer.data , "weekly" : tpr}
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\serializers.py", line 548, in data
+    ret = super().data
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\serializers.py", line 242, in data
+    raise AssertionError(msg)
+AssertionError: When a serializer is passed a `data` keyword argument you must call `.is_valid()` before attempting to access the serialized `.data` representation.
+You should either call `.is_valid()` first, or access `.initial_data` instead.
+2021-07-30 19:54:24,457 django.request ERROR    Internal Server Error: /api/optimiser/calculate/
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\optimiser\views.py", line 342, in post
+    res = {"data" : serializer.data , "weekly" : tpr}
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\serializers.py", line 548, in data
+    ret = super().data
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\serializers.py", line 242, in data
+    raise AssertionError(msg)
+AssertionError: When a serializer is passed a `data` keyword argument you must call `.is_valid()` before attempting to access the serialized `.data` representation.
+You should either call `.is_valid()` first, or access `.initial_data` instead.
+2021-07-30 19:55:13,750 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\optimiser\views.py changed, reloading.
+2021-07-30 19:55:15,709 asyncio      DEBUG    Using selector: SelectSelector
+2021-07-30 22:58:18,684 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 14:36:37,065 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 14:45:34,707 utils.app_exception_handler ERROR    unsupported operand type(s) for ** or pow(): 'decimal.Decimal' and 'float'
+2021-08-01 14:45:35,407 django.request ERROR    Internal Server Error: /api/scenario/promo-simulate/
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\views.py", line 760, in post
+    response = self.calculate_finacial_metrics_from_request(value_dict)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py", line 128, in calculate_finacial_metrics_from_request
+    simulated_incremental_split , 'simulated',value_dict['promo_elasticity'])
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\calculations.py", line 225, in calculate_financial_mertrics
+    co_investment = decimal.Decimal(data[data_values.index('co_investment')])
+  File "D:\projects\MARSBACKEND\price-simulator-backend\utils\models.py", line 68, in __init__
+    self.simulate_predicted_units = self.base_unit * (((1 - ((promo_depth + co_investment)/100))** promo_elasticity))
+TypeError: unsupported operand type(s) for ** or pow(): 'decimal.Decimal' and 'float'
+2021-08-01 14:45:35,407 django.request ERROR    Internal Server Error: /api/scenario/promo-simulate/
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\views.py", line 760, in post
+    response = self.calculate_finacial_metrics_from_request(value_dict)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py", line 128, in calculate_finacial_metrics_from_request
+    simulated_incremental_split , 'simulated',value_dict['promo_elasticity'])
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\calculations.py", line 225, in calculate_financial_mertrics
+    co_investment = decimal.Decimal(data[data_values.index('co_investment')])
+  File "D:\projects\MARSBACKEND\price-simulator-backend\utils\models.py", line 68, in __init__
+    self.simulate_predicted_units = self.base_unit * (((1 - ((promo_depth + co_investment)/100))** promo_elasticity))
+TypeError: unsupported operand type(s) for ** or pow(): 'decimal.Decimal' and 'float'
+2021-08-01 14:46:37,767 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\utils\models.py changed, reloading.
+2021-08-01 14:47:01,228 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 14:49:55,325 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\utils\models.py changed, reloading.
+2021-08-01 14:49:58,823 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 14:50:02,332 utils.app_exception_handler ERROR    unsupported operand type(s) for ** or pow(): 'decimal.Decimal' and 'float'
+2021-08-01 14:50:02,836 django.request ERROR    Internal Server Error: /api/scenario/promo-simulate/
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\views.py", line 760, in post
+    response = self.calculate_finacial_metrics_from_request(value_dict)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py", line 128, in calculate_finacial_metrics_from_request
+    simulated_incremental_split , 'simulated',value_dict['promo_elasticity'])
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\calculations.py", line 225, in calculate_financial_mertrics
+    co_investment = decimal.Decimal(data[data_values.index('co_investment')])
+  File "D:\projects\MARSBACKEND\price-simulator-backend\utils\models.py", line 68, in __init__
+    self.simulate_predicted_units = self.base_unit * (((1 - ((promo_depth + co_investment)/100))** promo_elasticity))
+TypeError: unsupported operand type(s) for ** or pow(): 'decimal.Decimal' and 'float'
+2021-08-01 14:50:02,836 django.request ERROR    Internal Server Error: /api/scenario/promo-simulate/
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\views.py", line 760, in post
+    response = self.calculate_finacial_metrics_from_request(value_dict)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py", line 128, in calculate_finacial_metrics_from_request
+    simulated_incremental_split , 'simulated',value_dict['promo_elasticity'])
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\calculations.py", line 225, in calculate_financial_mertrics
+    co_investment = decimal.Decimal(data[data_values.index('co_investment')])
+  File "D:\projects\MARSBACKEND\price-simulator-backend\utils\models.py", line 68, in __init__
+    self.simulate_predicted_units = self.base_unit * (((1 - ((promo_depth + co_investment)/100))** promo_elasticity))
+TypeError: unsupported operand type(s) for ** or pow(): 'decimal.Decimal' and 'float'
+2021-08-01 14:51:08,636 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\utils\models.py changed, reloading.
+2021-08-01 14:51:11,847 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 14:59:08,759 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\query.py changed, reloading.
+2021-08-01 14:59:12,727 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 14:59:17,668 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py changed, reloading.
+2021-08-01 14:59:21,119 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 15:02:22,588 utils.app_exception_handler ERROR    Cannot resolve keyword 'neilson_sku_name' into field. Choices are: coefficient_new, coefficient_old, id, model_meta, model_meta_id, value
+2021-08-01 15:02:23,222 django.request ERROR    Internal Server Error: /api/scenario/promo-simulate/
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1863, in add_fields
+    join_info = self.setup_joins(name.split(LOOKUP_SEP), opts, alias, allow_many=allow_m2m)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1566, in setup_joins
+    names[:pivot], opts, allow_many, fail_on_missing=True,
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1482, in names_to_path
+    "Choices are: %s" % (name, ", ".join(available)))
+django.core.exceptions.FieldError: Cannot resolve keyword 'neilson_sku_name' into field. Choices are: coefficient_new, coefficient_old, id, model_meta, model_meta_id, value
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\views.py", line 760, in post
+    response = self.calculate_finacial_metrics_from_request(value_dict)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py", line 114, in calculate_finacial_metrics_from_request
+    value_dict['product_group'] )
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\query.py", line 58, in get_list_value_from_query
+    ).values_list(*const.ROI_VALUES).order_by('week')
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\query.py", line 868, in values_list
+    clone = self._values(*_fields, **expressions)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\query.py", line 836, in _values
+    clone.query.set_values(fields)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 2174, in set_values
+    self.add_fields(field_names, True)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1886, in add_fields
+    "Choices are: %s" % (name, ", ".join(names)))
+django.core.exceptions.FieldError: Cannot resolve keyword 'neilson_sku_name' into field. Choices are: coefficient_new, coefficient_old, id, model_meta, model_meta_id, value
+2021-08-01 15:02:23,222 django.request ERROR    Internal Server Error: /api/scenario/promo-simulate/
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1863, in add_fields
+    join_info = self.setup_joins(name.split(LOOKUP_SEP), opts, alias, allow_many=allow_m2m)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1566, in setup_joins
+    names[:pivot], opts, allow_many, fail_on_missing=True,
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1482, in names_to_path
+    "Choices are: %s" % (name, ", ".join(available)))
+django.core.exceptions.FieldError: Cannot resolve keyword 'neilson_sku_name' into field. Choices are: coefficient_new, coefficient_old, id, model_meta, model_meta_id, value
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\views.py", line 760, in post
+    response = self.calculate_finacial_metrics_from_request(value_dict)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py", line 114, in calculate_finacial_metrics_from_request
+    value_dict['product_group'] )
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\query.py", line 58, in get_list_value_from_query
+    ).values_list(*const.ROI_VALUES).order_by('week')
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\query.py", line 868, in values_list
+    clone = self._values(*_fields, **expressions)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\query.py", line 836, in _values
+    clone.query.set_values(fields)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 2174, in set_values
+    self.add_fields(field_names, True)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1886, in add_fields
+    "Choices are: %s" % (name, ", ".join(names)))
+django.core.exceptions.FieldError: Cannot resolve keyword 'neilson_sku_name' into field. Choices are: coefficient_new, coefficient_old, id, model_meta, model_meta_id, value
+2021-08-01 16:16:51,526 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py changed, reloading.
+2021-08-01 16:16:55,126 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 16:17:02,449 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py changed, reloading.
+2021-08-01 16:17:06,758 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 16:17:38,653 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py changed, reloading.
+2021-08-01 16:17:42,728 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 16:17:58,203 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py changed, reloading.
+2021-08-01 16:18:02,582 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 16:19:35,959 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py changed, reloading.
+2021-08-01 16:19:39,911 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 16:21:30,807 utils.app_exception_handler ERROR    Cannot resolve keyword 'neilson_sku_name' into field. Choices are: coefficient_new, coefficient_old, id, model_meta, model_meta_id, value
+2021-08-01 16:21:31,737 django.request ERROR    Internal Server Error: /api/scenario/promo-simulate/
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1863, in add_fields
+    join_info = self.setup_joins(name.split(LOOKUP_SEP), opts, alias, allow_many=allow_m2m)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1566, in setup_joins
+    names[:pivot], opts, allow_many, fail_on_missing=True,
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1482, in names_to_path
+    "Choices are: %s" % (name, ", ".join(available)))
+django.core.exceptions.FieldError: Cannot resolve keyword 'neilson_sku_name' into field. Choices are: coefficient_new, coefficient_old, id, model_meta, model_meta_id, value
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\views.py", line 760, in post
+    response = self.calculate_finacial_metrics_from_request(value_dict)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py", line 114, in calculate_finacial_metrics_from_request
+    value_dict['product_group'] )
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\query.py", line 58, in get_list_value_from_query
+    ).values_list(*const.ROI_VALUES).order_by('week')
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\query.py", line 868, in values_list
+    clone = self._values(*_fields, **expressions)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\query.py", line 836, in _values
+    clone.query.set_values(fields)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 2174, in set_values
+    self.add_fields(field_names, True)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1886, in add_fields
+    "Choices are: %s" % (name, ", ".join(names)))
+django.core.exceptions.FieldError: Cannot resolve keyword 'neilson_sku_name' into field. Choices are: coefficient_new, coefficient_old, id, model_meta, model_meta_id, value
+2021-08-01 16:21:31,737 django.request ERROR    Internal Server Error: /api/scenario/promo-simulate/
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1863, in add_fields
+    join_info = self.setup_joins(name.split(LOOKUP_SEP), opts, alias, allow_many=allow_m2m)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1566, in setup_joins
+    names[:pivot], opts, allow_many, fail_on_missing=True,
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1482, in names_to_path
+    "Choices are: %s" % (name, ", ".join(available)))
+django.core.exceptions.FieldError: Cannot resolve keyword 'neilson_sku_name' into field. Choices are: coefficient_new, coefficient_old, id, model_meta, model_meta_id, value
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\views.py", line 760, in post
+    response = self.calculate_finacial_metrics_from_request(value_dict)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py", line 114, in calculate_finacial_metrics_from_request
+    value_dict['product_group'] )
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\query.py", line 58, in get_list_value_from_query
+    ).values_list(*const.ROI_VALUES).order_by('week')
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\query.py", line 868, in values_list
+    clone = self._values(*_fields, **expressions)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\query.py", line 836, in _values
+    clone.query.set_values(fields)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 2174, in set_values
+    self.add_fields(field_names, True)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1886, in add_fields
+    "Choices are: %s" % (name, ", ".join(names)))
+django.core.exceptions.FieldError: Cannot resolve keyword 'neilson_sku_name' into field. Choices are: coefficient_new, coefficient_old, id, model_meta, model_meta_id, value
+2021-08-01 16:22:43,916 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\query.py changed, reloading.
+2021-08-01 16:22:48,414 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 16:23:07,113 utils.app_exception_handler ERROR    Cannot resolve keyword 'week' into field. Choices are: coefficient_new, coefficient_old, id, model_meta, model_meta_id, value
+2021-08-01 16:23:07,445 django.request ERROR    Internal Server Error: /api/scenario/promo-simulate/
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\views.py", line 760, in post
+    response = self.calculate_finacial_metrics_from_request(value_dict)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py", line 114, in calculate_finacial_metrics_from_request
+    value_dict['product_group'] )
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\query.py", line 58, in get_list_value_from_query
+    ).values_list('coefficient_old' , 'coefficient_new').order_by('week')
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\query.py", line 1134, in order_by
+    obj.query.add_ordering(*field_names)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1919, in add_ordering
+    self.names_to_path(item.split(LOOKUP_SEP), self.model._meta)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1482, in names_to_path
+    "Choices are: %s" % (name, ", ".join(available)))
+django.core.exceptions.FieldError: Cannot resolve keyword 'week' into field. Choices are: coefficient_new, coefficient_old, id, model_meta, model_meta_id, value
+2021-08-01 16:23:07,445 django.request ERROR    Internal Server Error: /api/scenario/promo-simulate/
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\views.py", line 760, in post
+    response = self.calculate_finacial_metrics_from_request(value_dict)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py", line 114, in calculate_finacial_metrics_from_request
+    value_dict['product_group'] )
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\query.py", line 58, in get_list_value_from_query
+    ).values_list('coefficient_old' , 'coefficient_new').order_by('week')
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\query.py", line 1134, in order_by
+    obj.query.add_ordering(*field_names)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1919, in add_ordering
+    self.names_to_path(item.split(LOOKUP_SEP), self.model._meta)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\db\models\sql\query.py", line 1482, in names_to_path
+    "Choices are: %s" % (name, ", ".join(available)))
+django.core.exceptions.FieldError: Cannot resolve keyword 'week' into field. Choices are: coefficient_new, coefficient_old, id, model_meta, model_meta_id, value
+2021-08-01 16:23:40,661 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\query.py changed, reloading.
+2021-08-01 16:23:43,981 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 16:29:22,980 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\query.py changed, reloading.
+2021-08-01 16:29:26,745 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 16:38:01,849 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\calculations.py changed, reloading.
+2021-08-01 16:38:06,018 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 16:43:55,782 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\calculations.py changed, reloading.
+2021-08-01 16:44:00,248 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 16:46:02,963 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\calculations.py changed, reloading.
+2021-08-01 16:46:07,212 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 16:48:26,669 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py changed, reloading.
+2021-08-01 16:48:31,388 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 16:49:36,300 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py changed, reloading.
+2021-08-01 16:49:40,966 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 23:00:16,928 utils.app_exception_handler ERROR    No SavedScenario matches the given query.
+2021-08-01 23:00:16,928 utils.app_exception_handler ERROR    {'detail': ErrorDetail(string='Not found.', code='not_found')}
+2021-08-01 23:00:17,071 django.request WARNING  Not Found: /api/scenario/savedscenario/35/
+2021-08-01 23:00:17,071 django.request WARNING  Not Found: /api/scenario/savedscenario/35/
+2021-08-01 23:04:53,130 utils.app_exception_handler ERROR    too many values to unpack (expected 3)
+2021-08-01 23:04:53,427 django.request ERROR    Internal Server Error: /api/scenario/list-saved-promo/42/
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\views.py", line 558, in retrieve
+    return Response( self.calculate_finacial_metrics_pricing_promo(weeks,pricing_week ),
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py", line 214, in calculate_finacial_metrics_pricing_promo
+    product_group )
+ValueError: too many values to unpack (expected 3)
+2021-08-01 23:04:53,427 django.request ERROR    Internal Server Error: /api/scenario/list-saved-promo/42/
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\views.py", line 558, in retrieve
+    return Response( self.calculate_finacial_metrics_pricing_promo(weeks,pricing_week ),
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py", line 214, in calculate_finacial_metrics_pricing_promo
+    product_group )
+ValueError: too many values to unpack (expected 3)
+2021-08-01 23:06:33,818 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py changed, reloading.
+2021-08-01 23:06:39,892 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-01 23:08:19,133 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\calculations.py changed, reloading.
+2021-08-01 23:08:23,865 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-02 00:01:39,869 utils.app_exception_handler ERROR    too many values to unpack (expected 3)
+2021-08-02 00:01:40,082 django.request ERROR    Internal Server Error: /api/scenario/list-saved-promo/47/
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\views.py", line 563, in retrieve
+    return Response( self.calculate_finacial_metrics(weeks),
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py", line 166, in calculate_finacial_metrics
+    product_group )
+ValueError: too many values to unpack (expected 3)
+2021-08-02 00:01:40,082 django.request ERROR    Internal Server Error: /api/scenario/list-saved-promo/47/
+Traceback (most recent call last):
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\projects\MARSBACKEND\price-simulator-backend\env\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\views.py", line 563, in retrieve
+    return Response( self.calculate_finacial_metrics(weeks),
+  File "D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py", line 166, in calculate_finacial_metrics
+    product_group )
+ValueError: too many values to unpack (expected 3)
+2021-08-02 00:04:02,243 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\scenario_planner\mixins.py changed, reloading.
+2021-08-02 00:04:05,658 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-02 09:58:55,021 asyncio      DEBUG    Using selector: SelectSelector

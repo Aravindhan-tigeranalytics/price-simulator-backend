@@ -145,7 +145,7 @@ class ModelOptimizeBKP(viewsets.GenericViewSet):
         tpr = model.ModelData.objects.values_list('tpr_discount',flat=True).filter(model_meta__account_name = account_name, model_meta__product_group = product_group)
         
       
-        min_consecutive_promo,max_consecutive_promo,min_length_gap,tot_promo_min,tot_promo_max = optimizer.get_promo_wave_values(list(tpr))
+        min_consecutive_promo,max_consecutive_promo,min_length_gap,tot_promo_min,tot_promo_max,no_of_promo, no_of_waves  = optimizer.get_promo_wave_values(list(tpr))
 
     
         serializer = sc.OptimizerSerializer({'param_total_promo_min' : tot_promo_min,
@@ -326,7 +326,7 @@ class ModelOptimize(viewsets.GenericViewSet):
             
             
         
-        min_consecutive_promo,max_consecutive_promo,min_length_gap,tot_promo_min,tot_promo_max = optimizer.get_promo_wave_values([i['tpr_discount'] for i in tpr])
+        min_consecutive_promo,max_consecutive_promo,min_length_gap,tot_promo_min,tot_promo_max,no_of_promo, no_of_waves = optimizer.get_promo_wave_values([i['tpr_discount'] for i in tpr])
 
     
         serializer = sc.OptimizerSerializer({'param_total_promo_min' : tot_promo_min,
@@ -345,4 +345,7 @@ class ModelOptimize(viewsets.GenericViewSet):
             
             optimizer.process(dict(serializer))
             return Response(serializer.data,200)
-        return Response({"data" : serializer.data , "weekly" : tpr},200)
+        res = {"data" : serializer.data , "weekly" : tpr}
+        res["data"]["param_no_of_waves"] = no_of_waves
+        res["data"]["param_no_of_promo"] = no_of_promo
+        return Response(res,200)

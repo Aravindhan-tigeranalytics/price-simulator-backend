@@ -52,10 +52,14 @@ def get_list_value_from_query(coeff_model:model.ModelCoefficient,
                     model_meta__account_name__iexact = retailer,
                     model_meta__product_group__iexact = ppg
                 ).values_list(*const.ROI_VALUES).order_by('week')
+    coeff_map = model.CoeffMap.objects.select_related('model_meta').filter(
+        model_meta__account_name__iexact = retailer,
+                    model_meta__product_group__iexact = ppg
+    ).values('coefficient_old' , 'coefficient_new') 
     coeff_list = [list(i) for i in coefficient]
     data_list = [list(i) for i in data]
     roi_list = [list(i) for i in roi] 
-    return coeff_list , data_list, roi_list
+    return coeff_list , data_list, roi_list , coeff_map
 
 
 def get_list_value_from_query_all():
