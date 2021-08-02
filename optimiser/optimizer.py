@@ -658,7 +658,7 @@ def get_promo_wave_values(tpr_discount):
   print(duration_of_waves , "duration of waves")
   print(len(duration_of_waves) , "duration of waves length")
   print(no_of_promo , "no of promo")
-  return min_consecutive_promo,max_consecutive_promo,min_length_gap,tot_promo_min,tot_promo_max
+  return min_consecutive_promo,max_consecutive_promo,min_length_gap,tot_promo_min,tot_promo_max,no_of_promo,len(duration_of_waves)
 
 
 def update_data():
@@ -698,7 +698,7 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
     segment = pricing_week[0].pricing_save.corporate_segment
     model_data_all,ROI_data,model_coeff,coeff_mapping = pr.get_list_from_db(account_name,product_group , pricing_week = pricing_week)
   
-  min_consecutive_promo,max_consecutive_promo,min_promo_length_gap,tot_promo_min,tot_promo_max = get_promo_wave_values(model_data_all['TPR_Discount'])
+  min_consecutive_promo,max_consecutive_promo,min_promo_length_gap,tot_promo_min,tot_promo_max,no_of_promo, no_of_waves= get_promo_wave_values(model_data_all['TPR_Discount'])
 
   slct_retailer = account_name
   slct_ppg =product_group

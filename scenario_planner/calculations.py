@@ -182,6 +182,17 @@ def update_week_value(promo_data:db_model.ModelMeta , querydict):
                 promo_data.prefetched_data[week-1].tpr_discount = querydict['param_depth_all'] 
             else: 
                 promo_data.prefetched_data[week-1].tpr_discount = querydict[i]['promo_depth'] 
+                
+def get_holiday_information(data):
+    holidays = ['holiday_flag_1','holiday_flag_2','holiday_flag_3',
+    'holiday_flag_4','holiday_flag_5','holiday_flag_6','holiday_flag_7','holiday_flag_8','holiday_flag_9', 
+    'holiday_flag_10']
+    for i in holidays:
+        if(data[data_values.index(i)]):
+            return i
+    return None
+    
+
  
 def calculate_financial_mertrics( data_list ,roi_list,unit_info , flag,promo_elasticity = 0):
     '''
@@ -225,8 +236,12 @@ def calculate_financial_mertrics( data_list ,roi_list,unit_info , flag,promo_ela
             co_investment = decimal.Decimal(data[data_values.index('co_investment')])
             
         )
+        # import pdb
+        # pdb.set_trace()
         update_total(total_units , ob)
-        weekly_units.append(ob.__dict__)
+        ob_dict = ob.__dict__
+        ob_dict['holiday'] = get_holiday_information(data)
+        weekly_units.append(ob_dict)
     
     return {
         flag : {
@@ -279,7 +294,9 @@ def calculate_financial_mertrics_from_pricing( data_list ,roi_list,unit_info , f
             
         )
         update_total(total_units , ob)
-        weekly_units.append(ob.__dict__)
+        ob_dict = ob.__dict__
+        ob_dict['holiday'] = get_holiday_information(data)
+        weekly_units.append(ob_dict)
     print(weekly_units)
     return {
         flag : {
@@ -529,7 +546,9 @@ def calculate_financial_mertrics_from_pricing_promo(data_list ,roi_list,unit_inf
             
         )
         update_total(total_units , ob)
-        weekly_units.append(ob.__dict__)
+        ob_dict = ob.__dict__
+        ob_dict['holiday'] = get_holiday_information(data)
+        weekly_units.append(ob_dict)
     
     return {
         flag : {
