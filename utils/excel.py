@@ -1353,7 +1353,8 @@ def download_excel_compare_scenario(data):
 
     # from scenario_planner import test as t
     # compare_scenario_data = t.RESPONSE_PROMO
-
+    compare_scenario_data = data
+    
     workbook = xlsxwriter.Workbook(output)
 
     merge_format_date = workbook.add_format({
