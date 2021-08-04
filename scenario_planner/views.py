@@ -43,7 +43,7 @@ import math
 import openpyxl
 import pandas as pd
 from utils import constants as CONST
-
+import os
 
 class MyUploadView(viewsets.GenericViewSet):
     from rest_framework.exceptions import ParseError
@@ -752,16 +752,12 @@ class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
         # value_dict = loads(dumps((get_serializer.to_internal_value(request.data))))
         # import pdb
         # pdb.set_trace()
-        value_dict = request.data
-        print("---------------------------------")
-        print(value_dict , "value_dict data")
-        print("---------------------------------")
-        
-        
+
         try:
-            response = self.calculate_finacial_metrics_from_request(value_dict)
-            
             if 'download' in request.stream.path:
+                get_serializer = sc.ModelMetaGetSerializer(request.data)
+                dict_value = loads(dumps((get_serializer.to_internal_value(request.data))))
+                response = self.calculate_finacial_metrics_from_request(dict_value)
                 filename = 'promo_simulator.xlsx'
                 response = HttpResponse(
                     excel.download_excel_promo(response),
@@ -769,7 +765,9 @@ class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
                 )
                 response['Content-Disposition'] = 'attachment; filename=%s' % filename
                 return response
-                 
+            
+            value_dict = request.data
+            response = self.calculate_finacial_metrics_from_request(value_dict)
             return Response(response ,
                         status=status.HTTP_201_CREATED)
         except ObjectDoesNotExist as e:
@@ -1077,3 +1075,37 @@ class PromoSimulatorTestViewSet(viewsets.ModelViewSet):
                   product_group = value_dict['product_group'])
         serializer = sc.ModelMetaSerializer(query)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class CompareScenarioExcelDownloadView(APIView):
+    serializer_class = sc.CompareScenarioInputSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (perm.PromoPermission,)
+    
+    def post(self, request, format=None):
+        try:
+            if 'download' in request.stream.path:
+                filename = 'compare_scenario.xlsx'
+                response = HttpResponse(
+                    excel.download_excel_compare_scenario(request.data),
+                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
+                response['Content-Disposition'] = 'attachment; filename=%s' % filename
+                return response
+            
+        except ObjectDoesNotExist as e:
+            return Response({'error' : str(e)},status=status.HTTP_404_NOT_FOUND)
+
+class WeeklyInputTemplateDownload(APIView):
+
+    def get(self,request):
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        path = os.path.join(BASE_DIR + "/data/Templates/")
+        filepath = path+'Simulater_WeeklyInput_Template.xlsx'
+
+        with open(filepath, 'rb') as file:
+            file_data = file.read()
+            filename = 'WeeklyInputTemplate.xlsx'
+            response = HttpResponse(file_data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment;filename=%s' % filename
+        return response
+
