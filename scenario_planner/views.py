@@ -43,7 +43,7 @@ import math
 import openpyxl
 import pandas as pd
 from utils import constants as CONST
-
+import os
 
 class MyUploadView(viewsets.GenericViewSet):
     from rest_framework.exceptions import ParseError
@@ -1092,3 +1092,18 @@ class CompareScenarioExcelDownloadView(APIView):
             
         except ObjectDoesNotExist as e:
             return Response({'error' : str(e)},status=status.HTTP_404_NOT_FOUND)
+
+class WeeklyInputTemplateDownload(APIView):
+
+    def get(self,request):
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        path = os.path.join(BASE_DIR + "/data/Templates/")
+        filepath = path+'Simulater_WeeklyInput_Template.xlsx'
+
+        with open(filepath, 'rb') as file:
+            file_data = file.read()
+            filename = 'WeeklyInputTemplate.xlsx'
+            response = HttpResponse(file_data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment;filename=%s' % filename
+        return response
+
