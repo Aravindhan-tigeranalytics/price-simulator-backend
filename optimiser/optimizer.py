@@ -704,7 +704,7 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
   slct_ppg =product_group
 
 
-  financial_metrics = mixin.calculate_finacial_metrics_for_optimizer(account_name,product_group,value_dict.RESPONSE_OPTIMIZER['optimal'],model_coeff,model_data_all,ROI_data)
+  # financial_metrics = mixin.calculate_finacial_metrics_for_optimizer(account_name,product_group,value_dict.RESPONSE_OPTIMIZER['optimal'],model_coeff,model_data_all,ROI_data)
   
   # Get Holiday Columns Names
   coeff_mapping['Coefficient_Holiday'] = list(map(lambda x: x.startswith('Holiday'),coeff_mapping['Coefficient_new']))
@@ -813,16 +813,27 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
   # baseline_info['max_promo_gap']=promo_wave_summary['Promo_gap'].max()
 
   # baseline_info
-  config = {"Reatiler": account_name,"PPG":product_group,'Segment':segment,"MARS_TPRS":[],"Co_investment":[],
+  # config = {"Reatiler": account_name,"PPG":product_group,'Segment':segment,"MARS_TPRS":[],"Co_investment":[],
+  #         "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
+  #         "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
+  #                             ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
+  #                   'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
+  #         "constrain_params": {'MAC':1,'RP':1.0,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
+  #                               'min_consecutive_promo':min_consecutive_promo,'max_consecutive_promo':max_consecutive_promo,
+  #                   'promo_gap':min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':0}}
+  
+  
+  # if constraints:
+  #   _update_params(config , constraints)
+    
+  config = {"Reatiler": "Pyaterochka","PPG":'Orbit OTC','Segment':"GUM","MARS_TPRS":[15,20],"Co_investment":[10,10],
           "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
-          "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
+          "config_constrain":{'MAC':False,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
                               ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
                     'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
-          "constrain_params": {'MAC':1,'RP':1.0,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
-                                'min_consecutive_promo':min_consecutive_promo,'max_consecutive_promo':max_consecutive_promo,
-                    'promo_gap':min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':0}}
-  if constraints:
-    _update_params(config , constraints)
+          "constrain_params": {'MAC':1,'RP':1.5,'Trade_Expense':1.5,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
+                                'min_consecutive_promo':5,'max_consecutive_promo':11,
+                    'promo_gap':8,'tot_promo_min':10,'tot_promo_max':20,'compul_no_promo_weeks':[1,2,3],'compul_promo_weeks' :[4,5,6],'promo_price':0}}
 
   # financial metric preference order
   fin_pref_order = config['Fin_Pref_Order']
@@ -1063,6 +1074,9 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
   # import pdb
   # pdb.set_trace()
   logging.info('Main Funtion Ends')
+  logging.info(parsed_base)
+  logging.info("parsed_base result")
+  financial_metrics = mixin.calculate_finacial_metrics_for_optimizer(account_name,product_group,parsed_base,model_coeff,model_data_all,ROI_data)
   return {
     "holiday" : holiday_list,
     "summary" : parsed_summary,

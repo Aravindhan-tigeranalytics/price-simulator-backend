@@ -322,7 +322,7 @@ class ModelOptimize(viewsets.GenericViewSet):
             'flag_promotype_motivation' , 'flag_promotype_n_pls_1' , 'flag_promotype_traffic'
             ).filter(
             model_meta__account_name = account_name, model_meta__product_group = product_group
-            )
+            ).order_by('week')
             
             
         

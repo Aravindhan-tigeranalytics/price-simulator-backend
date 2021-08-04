@@ -352,11 +352,13 @@ def update_total(total_unit:model.TotalUnit ,unit_model : model.UnitModel ):
   
 def _get_promotion_flag(promo_from_req):
     print(promo_from_req , "promo from request")
+    if promo_from_req == "TPR":
+        return
     val ={"Motivation" : "flag_promotype_motivation", 
     "N+1": "flag_promotype_n_pls_1", 
         "Traffic": "flag_promotype_traffic", 
         }  
-    return val[promo_from_req]
+    return val.get(promo_from_req)
 
 def update_from_request(data_list , querydict):
     cloned_list = copy.deepcopy(data_list)
@@ -372,7 +374,7 @@ def update_from_request(data_list , querydict):
                 cataloge_average = util.average(cataloge_average , cat)
                 cloned_list[index][data_values.index('catalogue')] = 0
              
-            if querydict[i]['promo_mechanics']:
+            if querydict[i]['promo_mechanics'] and querydict[i]['promo_mechanics']!="TPR":
                 cloned_list[index][data_values.index(
                     _get_promotion_flag(querydict[i]['promo_mechanics']))] = 1
             cloned_list[index][data_values.index('co_investment')] = querydict[i]['co_investment']

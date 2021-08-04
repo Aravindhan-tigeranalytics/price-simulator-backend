@@ -237,7 +237,7 @@ def calculate_finacial_metrics_for_optimizer(account_name,product_group,value_di
     # data_list = data_list.to_dict('records')
     # roi_list = roi_list.to_dict('records')
     
-    coeff_list , data_list ,roi_list = pd_query.get_list_value_from_query(model.ModelCoefficient,
+    coeff_list , data_list ,roi_list,coeff_map = pd_query.get_list_value_from_query(model.ModelCoefficient,
                                                                             model.ModelData,
                                                                             model.ModelROI,
                                                                             account_name,product_group)

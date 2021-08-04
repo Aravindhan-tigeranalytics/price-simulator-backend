@@ -158,8 +158,10 @@ class SavePromo(viewsets.GenericViewSet):
                        pricing_save = pr_save,
                 )
                 bulk_pricing_week.append(pw)
-        model.PromoWeek.objects.bulk_create(bulk_pricing_week)    
-        return Response({"mess" : "saved"} , 200)    
+        model.PromoWeek.objects.bulk_create(bulk_pricing_week)  
+        # import pdb
+        # pdb.set_trace()  
+        return Response({"saved_id" : scenario.id} , 200)    
 
 
 def savePromo():
