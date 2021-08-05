@@ -92,33 +92,33 @@ WSGI_APPLICATION = 'app.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#         'NAME': os.getenv('DATABASE_NAME', ''),
-#         'USER': os.getenv('DATABASE_USER', ''),
-#         'PASSWORD': os.getenv('DATABASE_PASSWORD', ''),
-#         'HOST': os.getenv('DATABASE_HOST', ''),
-#         'PORT': os.getenv('DATABASE_PORT', ''),
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
-## local
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'localpricesimulatordb',
-        'USER':'postgres',
-        'PASSWORD': 'tiger@123',
-        'HOST': 'localhost',
-        'PORT':5432,
+        'NAME': os.getenv('DATABASE_NAME', ''),
+        'USER': os.getenv('DATABASE_USER', ''),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD', ''),
+        'HOST': os.getenv('DATABASE_HOST', ''),
+        'PORT': os.getenv('DATABASE_PORT', ''),
     }
 }
+## local
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'NAME': 'localpricesimulatordb',
+#         'USER':'postgres',
+#         'PASSWORD': 'tiger@123',
+#         'HOST': 'localhost',
+#         'PORT':5432,
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
