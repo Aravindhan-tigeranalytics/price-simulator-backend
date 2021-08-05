@@ -574,3 +574,14 @@ TypeError: 'QuerySet' object is not a mapping
 2021-07-30 11:13:38,110 django.request WARNING  Not Found: /api/scenario/promo-simulate/
 2021-07-30 12:19:23,824 django.request WARNING  Not Found: /favicon.ico
 2021-07-30 16:24:18,612 asyncio      DEBUG    Using proactor: IocpProactor
+2021-08-04 16:59:43,354 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-05 10:07:05,276 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-05 12:40:00,782 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\core\admin.py changed, reloading.
+2021-08-05 12:40:05,743 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-05 13:12:58,776 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-05 13:13:27,973 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\app\settings.py changed, reloading.
+2021-08-05 13:13:31,756 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-05 13:15:46,234 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\app\settings.py changed, reloading.
+2021-08-05 13:15:50,677 asyncio      DEBUG    Using selector: SelectSelector
+2021-08-05 13:15:57,321 django.utils.autoreload INFO     D:\projects\MARSBACKEND\price-simulator-backend\app\settings.py changed, reloading.
+2021-08-05 13:16:01,526 asyncio      DEBUG    Using selector: SelectSelector
