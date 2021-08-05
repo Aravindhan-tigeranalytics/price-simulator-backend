@@ -26,6 +26,8 @@ urlpatterns = [
     path('promo-simulate/',views.PromoSimulatorView.as_view({'get': 'get'})),
     path('promo-simulate-file-upload/',views.PromoSimulatorUploadView.as_view({'get': 'get'})),
     path('promo-download/',views.PromoSimulatorView.as_view({'get': 'get'})),
+    path('compare-scenario-download/',views.CompareScenarioExcelDownloadView.as_view()),
+    path('weekly-input-template-download/',views.WeeklyInputTemplateDownload.as_view()),
     path('save-promo/',views.savePromo),
     path('list-saved-promo-test/', views.LoadScenarioTest.as_view({'get' : 'list',})),
     path('list-saved-promo-test/<int:id>/', views.LoadScenarioTest.as_view({'get' : 'list',})),

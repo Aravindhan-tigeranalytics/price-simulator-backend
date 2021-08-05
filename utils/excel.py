@@ -15,6 +15,8 @@ from . import constants as const
 from utils.models import ScenarioPlannerMetricModel,PromoMeta
 from utils import util , roi
 
+import utils
+
 def _get_sheet_value(sheet , row , column):
     value = sheet.cell(row = row, column = column).value
     if(isinstance(value,float)):
@@ -153,14 +155,15 @@ def excel_summary(data , output):
 def download_excel_promo(data):
     output = io.BytesIO()
     no_format_header = ['date', 'week']
-    currency_header = ['asp', 'total_rsv_w_o_vat', 'promo_asp','total_lsv','mars_mac', 'total_weight_in_tons', 'trade_expense', 'retailer_margin','avg_promo_selling_price','lsv','mac','volume','te','rp']
-    percent_header = [ 'retailer_margin_percent_of_nsv','mars_mac_percent_of_nsv','te_per_unit','te_percent_of_lsv','te_per_units'
+    currency_header = ['asp', 'total_rsv_w_o_vat', 'promo_asp','total_lsv','total_nsv','mars_mac', 'trade_expense', 'retailer_margin','avg_promo_selling_price','lsv','nsv','mac','te','rp']
+    percent_header = [ 'retailer_margin_percent_of_nsv','mars_mac_percent_of_nsv','te_percent_of_lsv'
     ,'rp_percent','mac_percent','roi']
 
     ROW_CONST = 6
     COL_CONST = 1
-    # from . import test
-    # data = test.RESPONSE_PROMO
+
+    # from scenario_planner import test as t
+    # data = t.RESPONSE_PROMO[0]
     # import pdb
     # pdb.set_trace()
 
@@ -173,7 +176,6 @@ def download_excel_promo(data):
 
     merge_format_app = workbook.add_format({
         'bold': 1,
-        
         'align': 'center',
         'valign': 'vcenter'
         })
@@ -203,19 +205,33 @@ def download_excel_promo(data):
     'text_wrap': True,
     'valign': 'vcenter'})
     format_value_left.set_indent(6)
-    summary_value_format = workbook.add_format({
-        'border': 1,
-        'align': 'left',
-        'text_wrap': True,
-        'valign': 'vcenter'})
-    summary_value_format.set_font_size(14)
-    summary_value_format.set_indent(6)
+    # summary_value_format = workbook.add_format({
+    #     'border': 1,
+    #     'align': 'left',
+    #     'text_wrap': True,
+    #     'valign': 'vcenter'})
+    # summary_value_format.set_font_size(14)
+    # summary_value_format.set_indent(6)
     summary_value_bold = workbook.add_format({'bold': True})
     summary_value_bold.set_font_size(14)
 
     row = ROW_CONST
     col = COL_CONST
-    
+
+    format_value_percentage = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '0.00 %' })
+
+    format_value_currency = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K ₽";[<999950000]0.0,,"M ₽";0.0,,,"B ₽"' })
+
+    format_value_number = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K";[<999950000]0.0,,"M";0.0,,,"B"' })
+
+    summary_value_percentage = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '0.00 %' })
+    summary_value_percentage.set_font_size(14)
+
+    summary_value_currency = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K ₽";[<999950000]0.0,,"M ₽";0.0,,,"B ₽"' })
+    summary_value_currency.set_font_size(14)
+
+    summary_value_number = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K";[<999950000]0.0,,"M";0.0,,,"B"' })
+    summary_value_number.set_font_size(14)
     
     worksheet.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
     worksheet.merge_range('B3:D3', 'Promo Simulator Tool' , merge_format_app)
@@ -225,14 +241,19 @@ def download_excel_promo(data):
     
     # data_val = data['simulated']['weekly'][0]
 
-    header_key = ['date','week','base_unit','incremental_unit','predicted_units','asp','total_rsv_w_o_vat','promo_asp','total_lsv','total_nsv','te_per_units','roi','mars_mac','total_weight_in_tons','trade_expense','retailer_margin','retailer_margin_percent_of_nsv','mars_mac_percent_of_nsv',
-    'te_percent_of_lsv']
+    header_key =  ['date','week','promotions', 'predicted_units','base_unit','incremental_unit','total_weight_in_tons','total_lsv','total_nsv','mars_mac_percent_of_nsv','trade_expense','te_percent_of_lsv', 'te_per_units','roi','asp','promo_asp','total_rsv_w_o_vat', 'retailer_margin','retailer_margin_percent_of_nsv', 'mars_mac', ]
+
+    header_title = ['Date','Week','Promotions(Base)','Promotions(Simulated)','Units(Base)','Units(Simulated)','Base units(Base)','Base units(Simulated)','Incremental units(Base)',
+    'Incremental units(Simulated)','Volume(Base)','Volume(Simulated)','LSV(Base)','LSV(Simulated)','NSV(Base)','NSV(Simulated)',
+    'MAC, %NSV(Base)','MAC, %NSV(Simulated)','Trade expense(Base)','Trade expense(Simulated)','TE, % LSV(Base)','TE, % LSV(Simulated)',
+    'TE / Unit(Base)','TE / Unit(Simulated)','ROI(Base)','ROI(Simulated)','ASP(Base)','ASP(Simulated)','Promo ASP(Base)','Promo ASP(Simulated)',
+    'RSV w/o VAT(Base)','RSV w/o VAT(Simulated)','Customer Margin(Base)','Customer Margin(Simulated)','Customer Margin,%RSV(Base)',
+    'Customer Margin,%RSV(Simulated)','Mars MAC(Base)','Mars MAC(Simulated)']
 
     # for key in data_val.keys():
-    for key in header_key:
+    for key in header_title:
         # header_key.append(key)
-        _writeExcel(worksheet,row, col," ".join(key.split("_")).title(),format_header)
-        # _writeExcel(worksheet,row+1, col,data_val[key],format_value)
+        _writeExcel(worksheet,row, col,key,format_header)
         col+=1
 
     col = COL_CONST
@@ -244,37 +265,78 @@ def download_excel_promo(data):
     red = workbook.add_format({'color': 'red'})
     for base,simulated in zip(base_weekly,simulated_weekly):
         for k in header_key:
-            base_value = util.format_value(simulated[k].strftime("%b %d %Y") if k =='date' else base[k], k in percent_header , k in currency_header , k in no_format_header)
-
-            simulated_value = util.format_value(simulated[k].strftime("%b %d %Y") if k =='date' else simulated[k], k in percent_header , k in currency_header , k in no_format_header)
-
             if k == 'date' or k == 'week':
-                value = simulated_value
+                value = simulated[k]
                 _writeExcel(worksheet,row, col, value ,format_value)
+                col+=1
+            elif k == 'promotions':
+                promotion_value = util.format_promotions(
+                    base['flag_promotype_motivation'],
+                    base['flag_promotype_n_pls_1'],
+                    base['flag_promotype_traffic'],
+                    base['promo_depth'],
+                    base['co_investment']
+                )
+                promotion_value_simulated = util.format_promotions(
+                    simulated['flag_promotype_motivation'],
+                    simulated['flag_promotype_n_pls_1'],
+                    simulated['flag_promotype_traffic'],
+                    simulated['promo_depth'],
+                    simulated['co_investment']
+                )
+                _writeExcel(worksheet,row, col, promotion_value ,format_value)
+                col+=1
+                _writeExcel(worksheet,row, col, promotion_value_simulated ,format_value)
+                col+=1
+            elif k in percent_header:
+                _writeExcel(worksheet,row, col, base[k]/100, format_value_percentage)
+                col+=1
+                _writeExcel(worksheet,row, col, simulated[k]/100, format_value_percentage)
+                col+=1
+            elif k in currency_header:
+                _writeExcel(worksheet,row, col, base[k], format_value_currency)
+                col+=1
+                _writeExcel(worksheet,row, col, simulated[k], format_value_currency)
+                col+=1
             else:
-                # value = str(base_value)+ "\n" +str(simulated_value)
-                diff_value = util.format_value(base[k]-simulated[k], k in percent_header , k in currency_header , k in no_format_header)
-                segments = ["Base: " +str(base_value)+ "\n", bold, "Simulated: "+str(simulated_value) + " " ,red ,"("+diff_value+")" ]
-                worksheet.write_rich_string(row, col, *segments,format_value_left)
-            col+=1
+                # diff_value = util.format_value(base[k]-simulated[k], k in percent_header , k in currency_header , k in no_format_header)
+                # segments = ["Base: " +str(base_value)+ "\n", bold, "Simulated: "+str(simulated_value) + " " ,red ,"("+diff_value+")" ]
+                # worksheet.write_rich_string(row, col, *segments,format_value_left)
+                _writeExcel(worksheet,row, col, base[k], format_value_number)
+                col+=1
+                _writeExcel(worksheet,row, col, simulated[k], format_value_number)
+                col+=1
         row+=1
         col = COL_CONST
 
     simulated_total = data['simulated']['total']
     base_total = data['base']['total']
 
-    total_header = ['base_units','increment_units','units','asp','total_rsv_w_o_vat','avg_promo_selling_price','lsv','nsv',
-    'te_per_unit','roi','mac','volume','te','rp','rp_percent','mac_percent','te_percent_of_lsv']
-    worksheet.merge_range('B{}:C{}'.format(row+1,row+1), 'Total ' , format_header)
+    total_header = ['units','base_units','increment_units','volume','lsv','nsv','mac_percent','te','te_percent_of_lsv','te_per_unit','roi','asp','avg_promo_selling_price','total_rsv_w_o_vat','rp','rp_percent','mac']
+    worksheet.merge_range('B{}:E{}'.format(row+1,row+1), 'Total ' , format_header)
     col = 3
     for k in total_header:
-        base_total_value = util.format_value(base_total[k], k in percent_header , k in currency_header , k in no_format_header)
-        simulated_total_value = util.format_value(simulated_total[k], k in percent_header , k in currency_header , k in no_format_header)
-        diff_total_value = util.format_value(base_total[k]-simulated_total[k], k in percent_header , k in currency_header , k in no_format_header)
-        segments = ["Base: " +str(base_total_value)+ "    " + "\n", summary_value_bold, "Simulated: "+str(simulated_total_value)+ " " ,red ,"("+diff_total_value+")"]
-        worksheet.write_rich_string(row, col, *segments,summary_value_format)
+        # base_total_value = util.format_value(base_total[k], k in percent_header , k in currency_header , k in no_format_header)
+        # simulated_total_value = util.format_value(simulated_total[k], k in percent_header , k in currency_header , k in no_format_header)
+        # diff_total_value = util.format_value(base_total[k]-simulated_total[k], k in percent_header , k in currency_header , k in no_format_header)
+        # segments = ["Base: " +str(base_total_value)+ "    " + "\n", summary_value_bold, "Simulated: "+str(simulated_total_value)+ " " ,red ,"("+diff_total_value+")"]
+        # worksheet.write_rich_string(row, col, *segments,summary_value_format)
         # _writeExcel(worksheet,row, col,util.format_value(total[k], k in percent_header , k in currency_header , k in no_format_header),format_header)
-        col+=1
+        if k in percent_header:
+            _writeExcel(worksheet,row, col,base_total[k]/100,summary_value_percentage)
+            col+=1
+            _writeExcel(worksheet,row, col,simulated_total[k]/100,summary_value_percentage)
+            col+=1
+        elif k in currency_header:
+            _writeExcel(worksheet,row, col,base_total[k],summary_value_currency)
+            col+=1
+            _writeExcel(worksheet,row, col,simulated_total[k],summary_value_currency)
+            col+=1
+        else:
+            _writeExcel(worksheet,row, col,base_total[k],summary_value_number)
+            col+=1
+            _writeExcel(worksheet,row, col,simulated_total[k],summary_value_number)
+            col+=1
     col = COL_CONST
     
     workbook.close()
@@ -397,12 +459,19 @@ def download_excel_optimizer(account_name , product_group,data):
     currency_header = ['Avg_PromoSellingPrice','Trade_Expense','MAC','RP','AvgSellingPrice','Sales','GSV', 'NSV']
     percent_header = ['RP_Perc', 'Mac_Perc']
 
+    currency_header_weekly = ['asp', 'total_rsv_w_o_vat', 'promo_asp','total_lsv','total_nsv','mars_mac', 'trade_expense', 'retailer_margin','avg_promo_selling_price','lsv','nsv','mac','te','rp']
+    percent_header_weekly = [ 'retailer_margin_percent_of_nsv','mars_mac_percent_of_nsv','te_percent_of_lsv'
+    ,'rp_percent','mac_percent','roi']
+
     # from optimiser import testdata as test
     # data = test.RESPONSE_OPTIMIZER
     
     summary_data = data['summary']
     optimal_data = data['optimal']
     holiday_data = data['holiday']
+
+    simulated_weekly = data['financial_metrics']['simulated']['weekly']
+    base_weekly = data['financial_metrics']['base']['weekly']
 
     workbook = xlsxwriter.Workbook(output)
     merge_format_date = workbook.add_format({
@@ -475,34 +544,121 @@ def download_excel_optimizer(account_name , product_group,data):
     weekly_worksheet.merge_range('A5:B5', "Product Group : {}".format(product_group),merge_format_app)
 
     row+=1
-    optimal_header = ['Date','SI','Baseline_Promo','Baseline_Units','Baseline_Base','Baseline_Incremental','Baseline_ROI','Baseline_Lift','Optimum_Promo','Optimum_Units','Optimum_Base','Optimum_Incremental','Optimum_ROI','Optimum_Lift']
-    if len(holiday_data) > 0:
-        optimal_header = optimal_header + holiday_data
+
+    format_value_percentage = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '0.00 %' })
+
+    format_value_currency = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K ₽";[<999950000]0.0,,"M ₽";0.0,,,"B ₽"' })
+
+    format_value_number = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K";[<999950000]0.0,,"M";0.0,,,"B"' })
+    
+    summary_value_percentage = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '0.00 %' })
+    summary_value_percentage.set_font_size(14)
+
+    summary_value_currency = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K ₽";[<999950000]0.0,,"M ₽";0.0,,,"B ₽"' })
+    summary_value_currency.set_font_size(14)
+
+    summary_value_number = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K";[<999950000]0.0,,"M";0.0,,,"B"' })
+    summary_value_number.set_font_size(14)
+    # optimal_header = ['Date','SI','Baseline_Promo','Baseline_Units','Baseline_Base','Baseline_Incremental','Baseline_ROI','Baseline_Lift','Optimum_Promo','Optimum_Units','Optimum_Base','Optimum_Incremental','Optimum_ROI','Optimum_Lift']
+    # if len(holiday_data) > 0:
+    #     optimal_header = optimal_header + holiday_data
+
+    header_key =  ['date','week', 'promotions','predicted_units','base_unit','incremental_unit','total_weight_in_tons','total_lsv','total_nsv','mars_mac_percent_of_nsv','trade_expense','te_percent_of_lsv', 'te_per_units','roi','asp','promo_asp','total_rsv_w_o_vat', 'retailer_margin','retailer_margin_percent_of_nsv', 'mars_mac', ]
+    optimal_header = ['Date','Week','Promotions(Base)','Promotions(Simulated)','Units(Base)','Units(Simulated)','Base units(Base)','Base units(Simulated)','Incremental units(Base)',
+    'Incremental units(Simulated)','Volume(Base)','Volume(Simulated)','LSV(Base)','LSV(Simulated)','NSV(Base)','NSV(Simulated)',
+    'MAC, %NSV(Base)','MAC, %NSV(Simulated)','Trade expense(Base)','Trade expense(Simulated)','TE, % LSV(Base)','TE, % LSV(Simulated)',
+    'TE / Unit(Base)','TE / Unit(Simulated)','ROI(Base)','ROI(Simulated)','ASP(Base)','ASP(Simulated)','Promo ASP(Base)','Promo ASP(Simulated)',
+    'RSV w/o VAT(Base)','RSV w/o VAT(Simulated)','Customer Margin(Base)','Customer Margin(Simulated)','Customer Margin,%RSV(Base)',
+    'Customer Margin,%RSV(Simulated)','Mars MAC(Base)','Mars MAC(Simulated)']
 
     for key in optimal_header:
-        _writeExcel(weekly_worksheet,row, col," ".join(key.split("_")).title(),format_header)
+        _writeExcel(weekly_worksheet,row, col,key,format_header)
         col+=1
     row+=1
     col = COL_CONST
 
-    number_format_header = ['Baseline_Units','Baseline_Base','Baseline_Incremental','Optimum_Units','Optimum_Base','Optimum_Incremental']
-    for data in optimal_data:
-        for k in optimal_header:
-            if k in number_format_header:
-                value = datetime.datetime.fromtimestamp(int(str(data[k])[0:10])).strftime('%Y-%m-%d') if k =='Date' else data[k]
-                _writeExcel(weekly_worksheet,row, col, util.format_value(value, k in percent_header , k in currency_header , k in no_format_header) ,format_value)
+    # number_format_header = ['Baseline_Units','Baseline_Base','Baseline_Incremental','Optimum_Units','Optimum_Base','Optimum_Incremental']
+    # for data in optimal_data:
+    #     for k in optimal_header:
+    #         if k in number_format_header:
+    #             value = datetime.datetime.fromtimestamp(int(str(data[k])[0:10])).strftime('%Y-%m-%d') if k =='Date' else data[k]
+    #             _writeExcel(weekly_worksheet,row, col, util.format_value(value, k in percent_header , k in currency_header , k in no_format_header) ,format_value)
+    #         else:
+    #             _writeExcel(weekly_worksheet,row, col, datetime.datetime.fromtimestamp(int(str(data[k])[0:10])).strftime('%Y-%m-%d') if k =='Date' else data[k],format_value)
+    #         col+=1
+    #     row+=1
+    #     col = COL_CONST
+    for base,simulated in zip(base_weekly,simulated_weekly):
+        for k in header_key:
+            if k == 'date' or k == 'week':
+                _writeExcel(weekly_worksheet,row, col, datetime.datetime.fromtimestamp(int(str(simulated[k])[0:10])).strftime('%Y-%m-%d') if k =='Date' else simulated[k] ,format_value)
+                col+=1
+            elif k == 'promotions':
+                promotion_value = util.format_promotions(
+                    base['flag_promotype_motivation'],
+                    base['flag_promotype_n_pls_1'],
+                    base['flag_promotype_traffic'],
+                    base['promo_depth'],
+                    base['co_investment']
+                )
+                promotion_value_simulated = util.format_promotions(
+                    simulated['flag_promotype_motivation'],
+                    simulated['flag_promotype_n_pls_1'],
+                    simulated['flag_promotype_traffic'],
+                    simulated['promo_depth'],
+                    simulated['co_investment']
+                )
+                _writeExcel(weekly_worksheet,row, col, promotion_value ,format_value)
+                col+=1
+                _writeExcel(weekly_worksheet,row, col, promotion_value_simulated ,format_value)
+                col+=1
+            elif k in percent_header_weekly:
+                _writeExcel(weekly_worksheet,row, col, base[k]/100, format_value_percentage)
+                col+=1
+                _writeExcel(weekly_worksheet,row, col, simulated[k]/100, format_value_percentage)
+                col+=1
+            elif k in currency_header_weekly:
+                _writeExcel(weekly_worksheet,row, col, base[k], format_value_currency)
+                col+=1
+                _writeExcel(weekly_worksheet,row, col, simulated[k], format_value_currency)
+                col+=1
             else:
-                _writeExcel(weekly_worksheet,row, col, datetime.datetime.fromtimestamp(int(str(data[k])[0:10])).strftime('%Y-%m-%d') if k =='Date' else data[k],format_value)
-            col+=1
+                _writeExcel(weekly_worksheet,row, col, base[k], format_value_number)
+                col+=1
+                _writeExcel(weekly_worksheet,row, col, simulated[k], format_value_number)
+                col+=1
         row+=1
         col = COL_CONST
-    
-    row = 7
-    weekly_worksheet.write('A{}'.format(row+1), "Week",format_header)
-    row+=1
-    for i in range(0,len(optimal_data)):
-        _writeExcel(weekly_worksheet,row, col-1, 'Week-{}'.format(i+1),format_value)
-        row+=1
+    # row = 7
+    # weekly_worksheet.write('A{}'.format(row+1), "Week",format_header)
+    # row+=1
+    # for i in range(0,len(optimal_data)):
+    #     _writeExcel(weekly_worksheet,row, col-1, 'Week-{}'.format(i+1),format_value)
+    #     row+=1
+
+    simulated_total = data['financial_metrics']['simulated']['total']
+    base_total = data['financial_metrics']['base']['total']
+
+    total_header = ['units','base_units','increment_units','volume','lsv','nsv','mac_percent','te','te_percent_of_lsv','te_per_unit','roi','asp','avg_promo_selling_price','total_rsv_w_o_vat','rp','rp_percent','mac']
+    weekly_worksheet.merge_range('B{}:E{}'.format(row+1,row+1), 'Total ' , format_header)
+    col = 3
+    for k in total_header:
+        if k in percent_header_weekly:
+            _writeExcel(weekly_worksheet,row, col,base_total[k]/100,summary_value_percentage)
+            col+=1
+            _writeExcel(weekly_worksheet,row, col,simulated_total[k]/100,summary_value_percentage)
+            col+=1
+        elif k in currency_header_weekly:
+            _writeExcel(weekly_worksheet,row, col,base_total[k],summary_value_currency)
+            col+=1
+            _writeExcel(weekly_worksheet,row, col,simulated_total[k],summary_value_currency)
+            col+=1
+        else:
+            _writeExcel(weekly_worksheet,row, col,base_total[k],summary_value_number)
+            col+=1
+            _writeExcel(weekly_worksheet,row, col,simulated_total[k],summary_value_number)
+            col+=1
+    col = COL_CONST
 
     workbook.close()
     output.seek(0)
@@ -512,7 +668,7 @@ def download_excel_optimizer(account_name , product_group,data):
 def _writeExcel(worksheet , row , col , val , _format):
     worksheet.write(row, col,val,_format)
     worksheet.set_row(row, 30)
-    worksheet.set_column(col,col, 40)
+    worksheet.set_column(col,col, 45)
 
 
 def dateformat():
@@ -1182,4 +1338,181 @@ def lift_test():
     print(no_of_weeks , "mo of weeks ")
     print(max_promo , "max promo")
     print(min_promo , "min promo")
+
+
+def download_excel_compare_scenario(data):
+    output = io.BytesIO()
+    no_format_header = ['date', 'week']
+    currency_header = ['asp', 'total_rsv_w_o_vat', 'promo_asp','total_lsv','total_nsv','mars_mac', 'trade_expense',
+     'retailer_margin','avg_promo_selling_price','lsv','nsv','mac','te','rp']
+    percent_header = [ 'retailer_margin_percent_of_nsv','mars_mac_percent_of_nsv','te_percent_of_lsv'
+    ,'rp_percent','mac_percent','roi']
+
+    ROW_CONST = 6
+    COL_CONST = 1
+
+    # from scenario_planner import test as t
+    # compare_scenario_data = t.RESPONSE_PROMO
+    compare_scenario_data = data
     
+    workbook = xlsxwriter.Workbook(output)
+
+    merge_format_date = workbook.add_format({
+        'bold': 1,
+        'align': 'center',
+        'valign': 'vcenter',
+         })
+
+    merge_format_app = workbook.add_format({
+        'bold': 1,
+        'align': 'center',
+        'valign': 'vcenter'
+    })
+    merge_format_app.set_font_size(20)
+
+    format_header = workbook.add_format({'bold': 1,
+        'border': 1,
+        'align': 'center',
+        'valign': 'vcenter'})
+    format_header.set_font_size(14)
+    
+    format_name = workbook.add_format({'bold': 1,
+        'border': 1,
+        'align': 'center',
+        'valign': 'vcenter'})
+    format_name.set_font_size(20)
+    format_value = workbook.add_format({
+        'border': 1,
+        'align': 'center',
+        'text_wrap': True,
+        'valign': 'vcenter'})
+    format_value_left = workbook.add_format({
+    'border': 1,
+    'align': 'left',
+    'text_wrap': True,
+    'valign': 'vcenter'})
+    format_value_left.set_indent(6)
+
+    summary_value_bold = workbook.add_format({'bold': True})
+    summary_value_bold.set_font_size(14)
+
+    format_value_percentage = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '0.00 %' })
+
+    format_value_currency = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K ₽";[<999950000]0.0,,"M ₽";0.0,,,"B ₽"' })
+
+    format_value_number = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K";[<999950000]0.0,,"M";0.0,,,"B"' })
+
+    summary_value_percentage = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '0.00 %' })
+    summary_value_percentage.set_font_size(14)
+
+    summary_value_currency = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K ₽";[<999950000]0.0,,"M ₽";0.0,,,"B ₽"' })
+    summary_value_currency.set_font_size(14)
+
+    summary_value_number = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K";[<999950000]0.0,,"M";0.0,,,"B"' })
+    summary_value_number.set_font_size(14)
+
+    header_key =  ['date','week', 'promotions','predicted_units','base_unit','incremental_unit','total_weight_in_tons','total_lsv','total_nsv','mars_mac_percent_of_nsv','trade_expense','te_percent_of_lsv', 'te_per_units','roi','asp','promo_asp','total_rsv_w_o_vat', 'retailer_margin','retailer_margin_percent_of_nsv', 'mars_mac', ]
+
+    header_title = ['Date','Week','Promotion(Base)','Promotion(Simulated)','Units(Base)','Units(Simulated)','Base units(Base)','Base units(Simulated)','Incremental units(Base)',
+    'Incremental units(Simulated)','Volume(Base)','Volume(Simulated)','LSV(Base)','LSV(Simulated)','NSV(Base)','NSV(Simulated)',
+    'MAC, %NSV(Base)','MAC, %NSV(Simulated)','Trade expense(Base)','Trade expense(Simulated)','TE, % LSV(Base)','TE, % LSV(Simulated)',
+    'TE / Unit(Base)','TE / Unit(Simulated)','ROI(Base)','ROI(Simulated)','ASP(Base)','ASP(Simulated)','Promo ASP(Base)','Promo ASP(Simulated)',
+    'RSV w/o VAT(Base)','RSV w/o VAT(Simulated)','Customer Margin(Base)','Customer Margin(Simulated)','Customer Margin,%RSV(Base)',
+    'Customer Margin,%RSV(Simulated)','Mars MAC(Base)','Mars MAC(Simulated)']
+
+    if len(compare_scenario_data) > 0:
+        for data in compare_scenario_data:
+            row = ROW_CONST
+            col = COL_CONST
+
+            scenario_name = (data['scenario_name'][:29] + '..') if len(data['scenario_name']) > 31 else data['scenario_name']
+            worksheet = workbook.add_worksheet(scenario_name)
+            worksheet.hide_gridlines(2)
+
+            worksheet.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
+            worksheet.merge_range('B3:D3', 'Promo Simulator Tool' , merge_format_app)
+            worksheet.set_column('B:D', 20)
+            worksheet.merge_range('B4:D4', "Account Name : {}".format(data['account_name']),merge_format_app)
+            worksheet.merge_range('B5:D5', "Product Group : {}".format(data['product_group']),merge_format_app)
+
+
+            for key in header_title:
+                _writeExcel(worksheet,row, col,key,format_header)
+                col+=1
+
+            col = COL_CONST
+            row+=1
+
+            simulated_weekly = data['simulated']['weekly']
+            base_weekly = data['base']['weekly']
+
+            for base,simulated in zip(base_weekly,simulated_weekly):
+                for k in header_key:
+                    if k == 'date' or k == 'week':
+                        value = simulated[k]
+                        _writeExcel(worksheet,row, col, value ,format_value)
+                        col+=1
+                    elif k == 'promotions':
+                        promotion_value = util.format_promotions(
+                            base['flag_promotype_motivation'],
+                            base['flag_promotype_n_pls_1'],
+                            base['flag_promotype_traffic'],
+                            base['promo_depth'],
+                            base['co_investment']
+                        )
+                        promotion_value_simulated = util.format_promotions(
+                            simulated['flag_promotype_motivation'],
+                            simulated['flag_promotype_n_pls_1'],
+                            simulated['flag_promotype_traffic'],
+                            simulated['promo_depth'],
+                            simulated['co_investment']
+                        )
+                        _writeExcel(worksheet,row, col, promotion_value ,format_value)
+                        col+=1
+                        _writeExcel(worksheet,row, col, promotion_value_simulated ,format_value)
+                        col+=1
+                    elif k in percent_header:
+                        _writeExcel(worksheet,row, col, base[k]/100, format_value_percentage)
+                        col+=1
+                        _writeExcel(worksheet,row, col, simulated[k]/100, format_value_percentage)
+                        col+=1
+                    elif k in currency_header:
+                        _writeExcel(worksheet,row, col, base[k], format_value_currency)
+                        col+=1
+                        _writeExcel(worksheet,row, col, simulated[k], format_value_currency)
+                        col+=1
+                    else:
+                        _writeExcel(worksheet,row, col, base[k], format_value_number)
+                        col+=1
+                        _writeExcel(worksheet,row, col, simulated[k], format_value_number)
+                        col+=1
+                row+=1
+                col = COL_CONST
+
+            simulated_total = data['simulated']['total']
+            base_total = data['base']['total']
+
+            total_header = ['units','base_units','increment_units','volume','lsv','nsv','mac_percent','te','te_percent_of_lsv','te_per_unit','roi','asp','avg_promo_selling_price','total_rsv_w_o_vat','rp','rp_percent','mac']
+            worksheet.merge_range('B{}:E{}'.format(row+1,row+1), 'Total ' , format_header)
+            col = 3
+            for k in total_header:
+                if k in percent_header:
+                    _writeExcel(worksheet,row, col,base_total[k]/100,summary_value_percentage)
+                    col+=1
+                    _writeExcel(worksheet,row, col,simulated_total[k]/100,summary_value_percentage)
+                    col+=1
+                elif k in currency_header:
+                    _writeExcel(worksheet,row, col,base_total[k],summary_value_currency)
+                    col+=1
+                    _writeExcel(worksheet,row, col,simulated_total[k],summary_value_currency)
+                    col+=1
+                else:
+                    _writeExcel(worksheet,row, col,base_total[k],summary_value_number)
+                    col+=1
+                    _writeExcel(worksheet,row, col,simulated_total[k],summary_value_number)
+                    col+=1
+            col = COL_CONST
+    
+    workbook.close()
+    output.seek(0)
+    return output

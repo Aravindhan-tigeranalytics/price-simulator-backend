@@ -379,3 +379,6 @@ class MapPricingPromoSerializer(serializers.Serializer):
     # scenario_id = serializers.IntegerField()
     pricing_id = serializers.IntegerField()
     promo_details = serializers.CharField()
+
+class CompareScenarioInputSerializer(serializers.Serializer):
+    compare_scenario_data = serializers.CharField()
