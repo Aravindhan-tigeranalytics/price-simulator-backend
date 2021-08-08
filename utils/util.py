@@ -43,10 +43,10 @@ def format_promotions(motivation , n_plus_1, traffic , promo_depth , co_inv):
         promo_name = "Traffic"
 
     if promo_depth:
-        promo_string+=promo_name + "-" + str(promo_depth) + "%"
+        promo_string+=promo_name + "-" + str(round(promo_depth,2)) + "%"
   
     if co_inv:
-        promo_string+= " (Co-"+str(co_inv)+"%)"
+        promo_string+= " (Co-"+str(round(co_inv,2))+"%)"
 
     if promo_string:
         return promo_string
