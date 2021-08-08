@@ -125,6 +125,9 @@ class SavePromo(viewsets.GenericViewSet):
         # import pdb
         # pdb.set_trace()
         # value = savePromo()
+        if model.SavedScenario.objects.filter(name =  value['name']).exists():
+            # return Response({"error" : scenario.id} , status=status.HTTP_409_CONFLICT)
+            raise exception.AlredyExistsException("{} already exists".format(value['name']))
         scenario = model.SavedScenario(
             scenario_type = 'promo',
             name =  value['name'],
