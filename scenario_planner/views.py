@@ -20,6 +20,7 @@ from scenario_planner import permissions as perm
 from rest_framework import serializers
 from utils import excel as excel
 from scenario_planner import query as pd_query
+import utils
 from . import mixins as mixin
 
 from utils import exceptions as exception
@@ -1099,16 +1100,27 @@ class CompareScenarioExcelDownloadView(APIView):
             return Response({'error' : str(e)},status=status.HTTP_404_NOT_FOUND)
 
 class WeeklyInputTemplateDownload(APIView):
-
+    
     def get(self,request):
-        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        path = os.path.join(BASE_DIR + "/data/Templates/")
-        filepath = path+'Simulater_WeeklyInput_Template.xlsx'
+        # import pdb
+        # pdb.set_trace()
+        
 
-        with open(filepath, 'rb') as file:
-            file_data = file.read()
-            filename = 'WeeklyInputTemplate.xlsx'
-            response = HttpResponse(file_data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            response['Content-Disposition'] = 'attachment;filename=%s' % filename
+        filename = 'WeeklyInputTemplate.xlsx'
+        response = HttpResponse(excel.excel_download_input(request.GET['account_name'],request.GET['product_group']), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment;filename=%s' % filename
         return response
+
+
+    # def get(self,request):
+    #     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    #     path = os.path.join(BASE_DIR + "/data/Templates/")
+    #     filepath = path+'Simulater_WeeklyInput_Template.xlsx'
+
+    #     with open(filepath, 'rb') as file:
+    #         file_data = file.read()
+    #         filename = 'WeeklyInputTemplate.xlsx'
+    #         response = HttpResponse(file_data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    #         response['Content-Disposition'] = 'attachment;filename=%s' % filename
+    #     return response
 

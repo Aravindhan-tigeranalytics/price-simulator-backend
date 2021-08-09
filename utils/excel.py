@@ -2,6 +2,7 @@ from numpy import save
 from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 from rest_framework import response
+from xlsxwriter.utility import xl_rowcol_to_cell
 import xlsxwriter
 import datetime
 import openpyxl
@@ -1516,3 +1517,89 @@ def download_excel_compare_scenario(data):
     workbook.close()
     output.seek(0)
     return output
+
+
+def excel_download_input(account_name , product_group):
+    output = io.BytesIO()
+    # x = datetime.datetime.now()
+    # x.strftime("%b-%d-%Y-%H-%M-%S")
+    # filename = '{}-data_validate.xlsx'.format(x.strftime("%b-%d-%Y-%H-%M-%S"))
+    workbook = xlsxwriter.Workbook(output)
+    worksheet = workbook.add_worksheet()
+    header_format = workbook.add_format({
+    'border': 1,
+    'bg_color': '#C6EFCE',
+    'bold': True,
+    'text_wrap': True,
+    'valign': 'vcenter',
+    'indent': 1,
+    })
+    worksheet.set_column('A:A', 25)
+    worksheet.set_column('B:B', 25)
+    worksheet.set_column('C:C', 25)
+    worksheet.set_column('D:D', 25)
+    worksheet.set_column('E:E', 25)
+    worksheet.set_column('F:F', 25)
+    worksheet.set_column('G:G', 25)
+    worksheet.set_column('H:H', 25)
+    worksheet.write('A1', "Retailer", header_format)
+    worksheet.write('B1', "Corporate segment", header_format)
+    worksheet.write('C1', "Product group", header_format)
+    worksheet.write('D1', "Promo elasticity", header_format)
+    worksheet.write('E1', "Week", header_format)
+    worksheet.write('F1', "Promo depth", header_format)
+    worksheet.write('G1', "Promo mechanics", header_format)
+    worksheet.write('H1', "Co investment", header_format)
+    product_name = product_group
+    account_name = account_name
+    corporate_segment = ''
+    col =0
+    for i in range(0,52):
+        worksheet.write(i+1, col,account_name)
+        worksheet.data_validation(i+1, col,i+1, col, {'validate': 'custom',
+                                                    'value': '={}'.format(xl_rowcol_to_cell(i+1, col)),
+                                    })
+        worksheet.write(i+1, col+1,corporate_segment)
+        worksheet.data_validation(i+1, col+1,i+1, col+1, {'validate': 'custom',
+                                                    'value': '={}'.format(xl_rowcol_to_cell(i+1, col+1)),
+                                    })
+        worksheet.write(i+1, col+2,product_name)
+        worksheet.write(i+1, col+3,'') # elasticity
+        if(i!=0):
+            # print(format(xl_rowcol_to_cell(1, col+3,)) , "row cvvalidation for row " ,xl_rowcol_to_cell(i+1, col+3,) )
+            worksheet.data_validation(i+1, col+3,i+1, col+3, {'validate': 'decimal',
+                                                            'criteria': '=',
+                                                    'value': '={}'.format(xl_rowcol_to_cell(1, col+3,)),
+                                    })
+            
+        # }
+        worksheet.write(i+1, col+4, "W{}".format(i+1)) #week
+        worksheet.write(i+1, col+5,'') #depth
+        worksheet.data_validation(i+1, col+5,i+1, col+5, {'validate': 'integer',
+                                    'criteria': 'between',
+                                    'minimum': 0,
+                                    'maximum': 100,
+                                    'input_title': 'Enter an integer:',
+                                    'input_message': 'between 1 and 100',
+                                    'error_title': 'Input value is not valid!',
+                                    'error_message':
+                                    'promo depth should be an integer between 1 and 100'})
+        worksheet.write(i+1, col+6, '') #mechanic
+        worksheet.data_validation(i+1, col+6,i+1, col+6, {'validate': 'list',
+                                    'source': ['Motivation', 'N+1', 'TPR']})
+        
+        worksheet.write(i+1, col+7,'') #co_inv
+        # ma = 100 - xl_rowcol_to_cell(i+1, col+5)
+        worksheet.data_validation(i+1, col+7,i+1, col+7, {'validate': 'integer',
+                                    'criteria': 'between',
+                                    'minimum': 0,
+                                    'maximum': 100,
+                                    'input_title': 'Enter an integer:',
+                                    'input_message': 'between 1 and 100',
+                                    'error_title': 'Input value is not valid!',
+                                    'error_message':
+                                    'co investment should be an integer between 1 and 100'})
+    workbook.close()
+    output.seek(0)
+    return output
+
