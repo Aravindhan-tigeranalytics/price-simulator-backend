@@ -45,6 +45,8 @@ def _update_params(config , request_value):
     '''
     update the optimizer parameter from request
     '''
+    # import pdb
+    # pdb.set_trace()
     MINIMIZE_PARAMS = ['Trade_Expense']
     # {'account_name': 'Tander', 'corporate_segment': 'LOOSE', 'product_group': 'A.Korkunov 192g',
     #  'strategic_cell': 'cell', 'objective_function': 'MAC', 'max_promotion': 23, 'min_promotion': 16, 
@@ -68,12 +70,12 @@ def _update_params(config , request_value):
  
     config['Reatiler'] = request_value['account_name']
     config['PPG'] = request_value['product_group']
-    config['MARS_TPRS'] =  [int(i) if i else 0 for i in request_value['mars_tpr'].split(",")] if request_value['mars_tpr'] else []
+    config['MARS_TPRS'] =  request_value['mars_tpr']
     config['Co_investment'] = request_value['co_investment']
     config['Objective_metric'] = request_value['objective_function']
     config['Objective'] = 'Minimize' if(request_value['objective_function'] in MINIMIZE_PARAMS) else 'Maximize'
     config['Segment'] = request_value['corporate_segment']
-   
+    # config['Fin_Pref_Order']=request_value['fin_pref_order']
     config['constrain_params']['MAC'] = request_value['param_mac']
     config['constrain_params']['RP'] = request_value['param_rp']
     config['constrain_params']['Trade_Expense'] = request_value['param_trade_expense']
@@ -91,15 +93,15 @@ def _update_params(config , request_value):
     config['constrain_params']['compul_no_promo_weeks'] = [int(i) if i else 0 for i in request_value['param_compulsory_no_promo_weeks'].split(",")] if request_value['param_compulsory_no_promo_weeks'] else []
     config['constrain_params']['compul_promo_weeks'] = [int(i) if i else 0 for i in request_value['param_compulsory_promo_weeks'].split(",")] if request_value['param_compulsory_promo_weeks'] else []
     
-    config['config_constrain']['MAC'] = config['config_constrain']['MAC'] + (request_value['config_mac']/100)
-    config['config_constrain']['RP'] =  config['config_constrain']['RP'] + (request_value['config_rp']/100)
-    config['config_constrain']['Trade_Expense'] = config['config_constrain']['Trade_Expense'] +  (request_value['config_trade_expense']/100)
-    config['config_constrain']['Units'] = config['config_constrain']['Units'] + (request_value['config_units']/100)
-    config['config_constrain']['NSV'] = config['config_constrain']['NSV'] + (request_value['config_nsv']/100)
-    config['config_constrain']['GSV'] = config['config_constrain']['GSV'] + (request_value['config_gsv']/100)
-    config['config_constrain']['Sales'] = config['config_constrain']['Sales'] + (request_value['config_sales']/100)
-    config['config_constrain']['MAC_Perc'] = config['config_constrain']['MAC_Perc'] + (request_value['config_mac_perc']/100)
-    config['config_constrain']['RP_Perc'] = config['config_constrain']['RP_Perc'] + (request_value['config_rp_perc']/100)
+    config['config_constrain']['MAC'] = request_value['config_mac']
+    config['config_constrain']['RP'] =  request_value['config_rp']
+    config['config_constrain']['Trade_Expense'] = request_value['config_trade_expense']
+    config['config_constrain']['Units'] = request_value['config_units']
+    config['config_constrain']['NSV'] =request_value['config_nsv']
+    config['config_constrain']['GSV'] = request_value['config_gsv']
+    config['config_constrain']['Sales'] =request_value['config_sales']
+    config['config_constrain']['MAC_Perc'] = request_value['config_mac_perc']
+    config['config_constrain']['RP_Perc'] = request_value['config_rp_perc']
     config['config_constrain']['min_consecutive_promo'] = request_value['config_min_consecutive_promo']
     config['config_constrain']['max_consecutive_promo'] = request_value['config_max_consecutive_promo']
     config['config_constrain']['promo_gap'] = request_value['config_promo_gap']
@@ -791,6 +793,9 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
   baseline_df =Final_Pred_Data[['Baseline_Prediction','Baseline_Sales',"Baseline_GSV","Baseline_Trade_Expense","Baseline_NSV","Baseline_MAC","Baseline_RP"]].sum().astype(int)
   baseline_df['Baseline_MAC']
   baseline_data = Final_Pred_Data.copy()
+  
+  # import pdb
+  # pdb.set_trace()
 
   # baseline_info ={}
   # baseline calendar metrics calculation
@@ -813,27 +818,27 @@ def process(constraints = None , optimizer_save = None ,promo_week = None , pric
   # baseline_info['max_promo_gap']=promo_wave_summary['Promo_gap'].max()
 
   # baseline_info
-  # config = {"Reatiler": account_name,"PPG":product_group,'Segment':segment,"MARS_TPRS":[],"Co_investment":[],
-  #         "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
-  #         "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
-  #                             ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
-  #                   'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
-  #         "constrain_params": {'MAC':1,'RP':1.0,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
-  #                               'min_consecutive_promo':min_consecutive_promo,'max_consecutive_promo':max_consecutive_promo,
-  #                   'promo_gap':min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':0}}
-  
-  
-  # if constraints:
-  #   _update_params(config , constraints)
-    
-  config = {"Reatiler": "Pyaterochka","PPG":'Orbit OTC','Segment':"GUM","MARS_TPRS":[15,20],"Co_investment":[10,10],
+  config = {"Reatiler": account_name,"PPG":product_group,'Segment':segment,"MARS_TPRS":[],"Co_investment":[],
           "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
-          "config_constrain":{'MAC':False,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
+          "config_constrain":{'MAC':True,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
                               ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
                     'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
-          "constrain_params": {'MAC':1,'RP':1.5,'Trade_Expense':1.5,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
-                                'min_consecutive_promo':5,'max_consecutive_promo':11,
-                    'promo_gap':8,'tot_promo_min':10,'tot_promo_max':20,'compul_no_promo_weeks':[1,2,3],'compul_promo_weeks' :[4,5,6],'promo_price':0}}
+          "constrain_params": {'MAC':1,'RP':1.0,'Trade_Expense':1,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
+                                'min_consecutive_promo':min_consecutive_promo,'max_consecutive_promo':max_consecutive_promo,
+                    'promo_gap':min_promo_length_gap,'tot_promo_min':tot_promo_min,'tot_promo_max':tot_promo_max,'compul_no_promo_weeks':[],'compul_promo_weeks' :[],'promo_price':0}}
+  
+  
+  if constraints:
+    _update_params(config , constraints)
+    
+  # config = {"Reatiler": "Pyaterochka","PPG":'Orbit OTC','Segment':"GUM","MARS_TPRS":[15,20],"Co_investment":[10,10],
+  #         "Objective_metric":"MAC","Objective":"Maximize", "Fin_Pref_Order":['Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC'],
+  #         "config_constrain":{'MAC':False,'RP':True,'Trade_Expense':True,'Units':False,"NSV":False,"GSV":False,"Sales":False
+  #                             ,'MAC_Perc':True,"RP_Perc":True,'min_consecutive_promo':True,'max_consecutive_promo':True,
+  #                   'promo_gap':True,'tot_promo_min':True,'tot_promo_max':True,'promo_price':False},
+  #         "constrain_params": {'MAC':1,'RP':1.5,'Trade_Expense':1.5,'Units':1,'NSV':1,'GSV':1,'Sales':1,'MAC_Perc':1,'RP_Perc':1,
+  #                               'min_consecutive_promo':5,'max_consecutive_promo':11,
+  #                   'promo_gap':8,'tot_promo_min':10,'tot_promo_max':20,'compul_no_promo_weeks':[1,2,3],'compul_promo_weeks' :[4,5,6],'promo_price':0}}
 
   # financial metric preference order
   fin_pref_order = config['Fin_Pref_Order']

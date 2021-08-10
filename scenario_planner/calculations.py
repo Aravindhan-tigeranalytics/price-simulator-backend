@@ -404,6 +404,8 @@ def update_for_optimizer(data_list , querydict):
         index = week -1
         cloned_list[index][data_values.index('promo_depth')] = querydict[i]['Optimum_Promo']
         cloned_list[index][data_values.index('co_investment')] = querydict[i]['Coinvestment']
+    # import pdb
+    # pdb.set_trace()
     return cloned_list
     # cloned_list = copy.deepcopy(data_list)
     # for i in range(0,len(querydict)):

@@ -106,8 +106,8 @@ class PromoSimulatorViewTest(viewsets.GenericViewSet,mixin.CalculationMixin):
 
 class DeleteScenario(mixins.DestroyModelMixin):
     def destroy(self, request, *args, **kwargs):
-        import pdb
-        pdb.set_trace()
+        # import pdb
+        # pdb.set_trace()
         return super().destroy(request, *args, **kwargs)
 
 

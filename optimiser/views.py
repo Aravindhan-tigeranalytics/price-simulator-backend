@@ -302,7 +302,9 @@ class ModelOptimize(viewsets.GenericViewSet):
     def get_queryset(self):
         return super().get_queryset()
     def post(self,request,format=None):
-        # print(request.data , "request data")
+        # import pdb
+        # pdb.set_trace()
+        # # print(request.data , "request data")
         account_name = request.data['account_name']
         product_group = request.data['product_group']
         corporate_segment = request.data['corporate_segment']
