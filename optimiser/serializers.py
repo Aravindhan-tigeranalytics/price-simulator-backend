@@ -152,6 +152,7 @@ class OptimizerSerializer(serializers.Serializer):
         
     )
     fin_pref_order = serializers.ListField()
+    promo_mech = serializers.ListField()
     # co_investment = serializers.IntegerField(max_value = 52 ,min_value=0,default=0,initial=0)
     # max_promotion = serializers.IntegerField(max_value = 53 ,min_value=0,default=23,initial=23)
     # min_promotion = serializers.IntegerField(max_value = 53 ,min_value=0,default=16,initial=16)
