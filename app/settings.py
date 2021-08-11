@@ -182,7 +182,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = None
 
-# try:
-#     from . import local_settings
-# except
-#     pass
+try:
+    from . import local_settings
+except:
+    pass

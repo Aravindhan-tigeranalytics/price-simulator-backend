@@ -122,15 +122,50 @@ class ScenarioSavedList(serializers.ModelSerializer):
         if obj.scenario_type == 'optimizer':
             # import pdb
             # pdb.set_trace()
+            print(obj.name , "name have problem with id " , obj.id)
             optimizer_saved = obj.optimizer_saved.first()
+            obj = {
+                "retailer" : optimizer_saved.model_meta.account_name,
+                "product_group" : optimizer_saved.model_meta.product_group,
+                "pricing" : False
+            }
             promo_save = optimizer_saved.promo_save
             pricing_save = optimizer_saved.pricing_save
             if promo_save:
-                return bool(promo_save.saved_pricing)
+                # return bool(promo_save.saved_pricing)
+                pricing = model.PricingWeek.objects.filter(pricing_save = promo_save.saved_pricing).first()
+                obj['pricing'] = {
+                    "lpi" : pricing.lp_increase,
+                    "rsp" : pricing.rsp_increase,
+                    "cogs" : pricing.cogs_increase,
+                    "elasticity" : pricing.base_price_elasticity
+                }
             if pricing_save:
-                return True
+                pricing = model.PricingWeek.objects.filter(pricing_save = pricing_save).first()
+                obj['pricing'] = {
+                "lpi" : pricing.lp_increase,
+                "rsp" : pricing.rsp_increase,
+                "cogs" : pricing.cogs_increase,
+                "elasticity" : pricing.base_price_elasticity
+                }
+            return obj
+        pricing_save = obj.pricing_saved.first()
+        obj = {
+                "retailer" : pricing_save.account_name,
+                "product_group" : pricing_save.product_group,
+                "pricing" : False
+            }
+        pricing = model.PricingWeek.objects.filter(pricing_save = pricing_save).first()
+        obj['pricing'] = {
+                "lpi" : pricing.lp_increase,
+                "rsp" : pricing.rsp_increase,
+                "cogs" : pricing.cogs_increase,
+                "elasticity" : pricing.base_price_elasticity
+                }
+        # import pdb
+        # pdb.set_trace()
             
-        return False
+        return obj
     def __init__(self, *args, **kwargs):
         # if 'context' in kwargs:
         # import pdb

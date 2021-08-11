@@ -1542,14 +1542,17 @@ def excel_download_input(account_name , product_group):
     worksheet.set_column('F:F', 25)
     worksheet.set_column('G:G', 25)
     worksheet.set_column('H:H', 25)
-    worksheet.write('A1', "Retailer", header_format)
+    worksheet.write('A1', "Account name", header_format)
     worksheet.write('B1', "Corporate segment", header_format)
-    worksheet.write('C1', "Product group", header_format)
-    worksheet.write('D1', "Promo elasticity", header_format)
-    worksheet.write('E1', "Week", header_format)
-    worksheet.write('F1', "Promo depth", header_format)
-    worksheet.write('G1', "Promo mechanics", header_format)
-    worksheet.write('H1', "Co investment", header_format)
+    worksheet.write('C1', "Strategic cell", header_format)
+    worksheet.write('D1', "Brand", header_format)
+    worksheet.write('E1', "Brand format", header_format)
+    worksheet.write('F1', "Product group", header_format)
+    worksheet.write('G1', "Promo elasticity", header_format)
+    worksheet.write('H1', "Week", header_format)
+    worksheet.write('I1', "Promo depth", header_format)
+    worksheet.write('J1', "Promo mechanics", header_format)
+    worksheet.write('K1', "Co investment", header_format)
     product_name = product_group
     account_name = account_name
     corporate_segment = ''
@@ -1563,19 +1566,31 @@ def excel_download_input(account_name , product_group):
         worksheet.data_validation(i+1, col+1,i+1, col+1, {'validate': 'custom',
                                                     'value': '={}'.format(xl_rowcol_to_cell(i+1, col+1)),
                                     })
-        worksheet.write(i+1, col+2,product_name)
-        worksheet.write(i+1, col+3,'') # elasticity
+        worksheet.write(i+1, col+2,corporate_segment)
+        worksheet.data_validation(i+1, col+2,i+1, col+2, {'validate': 'custom',
+                                                    'value': '={}'.format(xl_rowcol_to_cell(i+1, col+2)),
+                                    })
+        worksheet.write(i+1, col+3,corporate_segment)
+        worksheet.data_validation(i+1, col+3,i+1, col+3, {'validate': 'custom',
+                                                    'value': '={}'.format(xl_rowcol_to_cell(i+1, col+3)),
+                                    })
+        worksheet.write(i+1, col+4,corporate_segment)
+        worksheet.data_validation(i+1, col+4,i+1, col+4, {'validate': 'custom',
+                                                    'value': '={}'.format(xl_rowcol_to_cell(i+1, col+4)),
+                                    })
+        worksheet.write(i+1, col+5,product_name)
+        worksheet.write(i+1, col+6,0) # elasticity
         if(i!=0):
             # print(format(xl_rowcol_to_cell(1, col+3,)) , "row cvvalidation for row " ,xl_rowcol_to_cell(i+1, col+3,) )
-            worksheet.data_validation(i+1, col+3,i+1, col+3, {'validate': 'decimal',
+            worksheet.data_validation(i+1, col+6,i+1, col+6, {'validate': 'decimal',
                                                             'criteria': '=',
-                                                    'value': '={}'.format(xl_rowcol_to_cell(1, col+3,)),
+                                                    'value': '={}'.format(xl_rowcol_to_cell(1, col+6,)),
                                     })
             
         # }
-        worksheet.write(i+1, col+4, "W{}".format(i+1)) #week
-        worksheet.write(i+1, col+5,'') #depth
-        worksheet.data_validation(i+1, col+5,i+1, col+5, {'validate': 'integer',
+        worksheet.write(i+1, col+7, "W{}".format(i+1)) #week
+        worksheet.write(i+1, col+8,0) #depth
+        worksheet.data_validation(i+1, col+8,i+1, col+8, {'validate': 'integer',
                                     'criteria': 'between',
                                     'minimum': 0,
                                     'maximum': 100,
@@ -1584,13 +1599,13 @@ def excel_download_input(account_name , product_group):
                                     'error_title': 'Input value is not valid!',
                                     'error_message':
                                     'promo depth should be an integer between 1 and 100'})
-        worksheet.write(i+1, col+6, '') #mechanic
-        worksheet.data_validation(i+1, col+6,i+1, col+6, {'validate': 'list',
+        worksheet.write(i+1, col+9, '') #mechanic
+        worksheet.data_validation(i+1, col+9,i+1, col+9, {'validate': 'list',
                                     'source': ['Motivation', 'N+1', 'TPR']})
         
-        worksheet.write(i+1, col+7,'') #co_inv
+        worksheet.write(i+1, col+10,0) #co_inv
         # ma = 100 - xl_rowcol_to_cell(i+1, col+5)
-        worksheet.data_validation(i+1, col+7,i+1, col+7, {'validate': 'integer',
+        worksheet.data_validation(i+1, col+10,i+1, col+10, {'validate': 'integer',
                                     'criteria': 'between',
                                     'minimum': 0,
                                     'maximum': 100,

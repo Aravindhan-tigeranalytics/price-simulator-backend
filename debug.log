@@ -3110,3 +3110,4 @@ core.models.PromoSave.DoesNotExist: PromoSave matching query does not exist.
 2021-08-11 18:17:24,428 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
 2021-08-11 18:19:56,737 django.utils.autoreload INFO     D:\MARS-RUSSIA\price-simulator-backend\app\settings.py changed, reloading.
 2021-08-11 18:19:58,767 asyncio      DEBUG    Using proactor: IocpProactor
+2021-08-11 18:27:41,161 asyncio      DEBUG    Using proactor: IocpProactor
