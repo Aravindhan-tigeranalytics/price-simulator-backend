@@ -145,8 +145,15 @@ class OptimizerSerializer(serializers.Serializer):
 
     objective_function = serializers.ChoiceField(
                         choices = OBJ_CHOICES)
-    mars_tpr = serializers.CharField(allow_blank = True,default='' , initial = '')
-    co_investment = serializers.IntegerField(max_value = 52 ,min_value=0,default=0,initial=0)
+    mars_tpr = serializers.ListField(
+        
+    )
+    co_investment = serializers.ListField(
+        
+    )
+    fin_pref_order = serializers.ListField()
+    promo_mech = serializers.ListField()
+    # co_investment = serializers.IntegerField(max_value = 52 ,min_value=0,default=0,initial=0)
     # max_promotion = serializers.IntegerField(max_value = 53 ,min_value=0,default=23,initial=23)
     # min_promotion = serializers.IntegerField(max_value = 53 ,min_value=0,default=16,initial=16)
     

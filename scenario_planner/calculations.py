@@ -402,8 +402,18 @@ def update_for_optimizer(data_list , querydict):
     for i in range(0,len(querydict)):
         week = querydict[i]['week']
         index = week -1
+        # import pdb
+        # pdb.set_trace()
+        if(querydict[i]['Mechanic'] in ['N + 1', 'N+1', '2 + 1 free',
+                    '1 + 1 free', '3 + 1 free']):
+            cloned_list[index][data_values.index('flag_promotype_n_pls_1')] = 1
+        if(querydict[i]['Mechanic'] in ['Motivation', 'motivation',
+                    'Motivational']):
+            cloned_list[index][data_values.index('flag_promotype_motivation')] = 1
         cloned_list[index][data_values.index('promo_depth')] = querydict[i]['Optimum_Promo']
         cloned_list[index][data_values.index('co_investment')] = querydict[i]['Coinvestment']
+    # import pdb
+    # pdb.set_trace()
     return cloned_list
     # cloned_list = copy.deepcopy(data_list)
     # for i in range(0,len(querydict)):
