@@ -399,6 +399,7 @@ class OptimizerSave(models.Model):
     week = models.IntegerField(verbose_name="week" , default=1 , null=True)
     optimum_promo = models.DecimalField(max_digits=30 , decimal_places=15,null=True)
     optimum_co_investment = models.DecimalField(max_digits=30 , decimal_places=15,null=True)
+    mechanic = models.CharField(max_length=500,null=True,blank=True , default="")
     
     class Meta:
         db_table = 'optimizer_save'

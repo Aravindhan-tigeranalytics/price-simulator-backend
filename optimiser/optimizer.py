@@ -122,7 +122,7 @@ def _update_params(config , request_value):
 
     MINIMIZE_PARAMS = ['Trade_Expense']
 
-    config['Reatiler'] = request_value['account_name']
+    config['Retailer'] = request_value['account_name']
     config['PPG'] = request_value['product_group']
     config['MARS_TPRS'] =  request_value['mars_tpr']
     config['Co_investment'] = request_value['co_investment']
@@ -145,8 +145,8 @@ def _update_params(config , request_value):
     config['constrain_params']['promo_gap'] = request_value['param_promo_gap']
     config['constrain_params']['tot_promo_min'] = request_value['param_total_promo_min']
     config['constrain_params']['tot_promo_max'] = request_value['param_total_promo_max']
-    config['constrain_params']['compul_no_promo_weeks'] = [int(i) if i else 0 for i in request_value['param_compulsory_no_promo_weeks'].split(",")] if request_value['param_compulsory_no_promo_weeks'] else []
-    config['constrain_params']['compul_promo_weeks'] = [int(i) if i else 0 for i in request_value['param_compulsory_promo_weeks'].split(",")] if request_value['param_compulsory_promo_weeks'] else []
+    config['constrain_params']['compul_no_promo_weeks'] = request_value['param_compulsory_no_promo_weeks']
+    config['constrain_params']['compul_promo_weeks'] =request_value['param_compulsory_promo_weeks']
     
     config['config_constrain']['MAC'] = request_value['config_mac']
     config['config_constrain']['RP'] =  request_value['config_rp']
@@ -2254,6 +2254,8 @@ def process(
 
     if constraints:
         _update_params(config, constraints)
+    # import pdb
+    # pdb.set_trace()
     print(config , "after update")
     # import pdb
     # pdb.set_trace()
@@ -2907,6 +2909,9 @@ def process(
           opt_base[value] = Optimal_data[value]
     opt_base['week'] = opt_base.sort_values("Date").index + 1
     opt_base['Coinvestment']  = Optimal_data.sort_values("Date")['Coinvestment']
+    opt_base["Optimum_Promo"] = opt_base["Optimum_Promo"] - opt_base['Coinvestment']
+    # import pdb
+    # pdb.set_trace()
     opt_base['Mechanic']  = Optimal_data.sort_values("Date")['Mechanic']
     parsed_summary = json.loads(summary.to_json(orient="records"))
     parsed_base = json.loads(opt_base.to_json(orient="records"))
