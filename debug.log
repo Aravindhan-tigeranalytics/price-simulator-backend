@@ -3111,3 +3111,153 @@ core.models.PromoSave.DoesNotExist: PromoSave matching query does not exist.
 2021-08-11 18:19:56,737 django.utils.autoreload INFO     D:\MARS-RUSSIA\price-simulator-backend\app\settings.py changed, reloading.
 2021-08-11 18:19:58,767 asyncio      DEBUG    Using proactor: IocpProactor
 2021-08-11 18:27:41,161 asyncio      DEBUG    Using proactor: IocpProactor
+2021-08-11 18:30:34,824 django.utils.autoreload INFO     D:\MARS-RUSSIA\price-simulator-backend\app\settings.py changed, reloading.
+2021-08-11 18:30:36,765 asyncio      DEBUG    Using proactor: IocpProactor
+2021-08-11 18:30:43,019 django.request WARNING  Not Found: /favicon.ico
+2021-08-11 18:34:10,096 utils.app_exception_handler ERROR    Method "GET" not allowed.
+2021-08-11 18:34:10,096 utils.app_exception_handler ERROR    {'detail': ErrorDetail(string='Method "GET" not allowed.', code='method_not_allowed')}
+2021-08-11 18:34:10,234 django.request WARNING  Method Not Allowed: /api/optimiser/optimizer-download/
+2021-08-11 18:34:10,234 django.request WARNING  Method Not Allowed: /api/optimiser/optimizer-download/
+2021-08-11 18:35:26,838 utils.app_exception_handler ERROR    list indices must be integers or slices, not str
+2021-08-11 18:35:26,897 django.request ERROR    Internal Server Error: /api/optimiser/optimizer-download/
+Traceback (most recent call last):
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\MARS-RUSSIA\price-simulator-backend\optimiser\views.py", line 36, in post
+    excel.download_excel_optimizer(
+  File "D:\MARS-RUSSIA\price-simulator-backend\utils\excel.py", line 470, in download_excel_optimizer
+    summary_data = data['summary']
+TypeError: list indices must be integers or slices, not str
+2021-08-11 18:35:26,897 django.request ERROR    Internal Server Error: /api/optimiser/optimizer-download/
+Traceback (most recent call last):
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\MARS-RUSSIA\price-simulator-backend\optimiser\views.py", line 36, in post
+    excel.download_excel_optimizer(
+  File "D:\MARS-RUSSIA\price-simulator-backend\utils\excel.py", line 470, in download_excel_optimizer
+    summary_data = data['summary']
+TypeError: list indices must be integers or slices, not str
+2021-08-11 18:38:46,093 utils.app_exception_handler ERROR    Invalid token.
+2021-08-11 18:38:46,093 utils.app_exception_handler ERROR    {'detail': ErrorDetail(string='Invalid token.', code='authentication_failed')}
+2021-08-11 18:38:46,129 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:38:46,129 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:41:00,429 utils.app_exception_handler ERROR    Invalid token.
+2021-08-11 18:41:00,430 utils.app_exception_handler ERROR    {'detail': ErrorDetail(string='Invalid token.', code='authentication_failed')}
+2021-08-11 18:41:00,453 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:41:00,453 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:41:16,365 utils.app_exception_handler ERROR    Invalid token.
+2021-08-11 18:41:16,365 utils.app_exception_handler ERROR    {'detail': ErrorDetail(string='Invalid token.', code='authentication_failed')}
+2021-08-11 18:41:16,424 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:41:16,424 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:44:45,630 utils.app_exception_handler ERROR    Invalid token.
+2021-08-11 18:44:45,630 utils.app_exception_handler ERROR    {'detail': ErrorDetail(string='Invalid token.', code='authentication_failed')}
+2021-08-11 18:44:45,660 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:44:45,660 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:44:53,775 utils.app_exception_handler ERROR    Invalid token.
+2021-08-11 18:44:53,776 utils.app_exception_handler ERROR    {'detail': ErrorDetail(string='Invalid token.', code='authentication_failed')}
+2021-08-11 18:44:53,804 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:44:53,804 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:45:28,660 utils.app_exception_handler ERROR    Invalid token.
+2021-08-11 18:45:28,661 utils.app_exception_handler ERROR    {'detail': ErrorDetail(string='Invalid token.', code='authentication_failed')}
+2021-08-11 18:45:28,685 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:45:28,685 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:50:13,425 utils.app_exception_handler ERROR    Invalid token.
+2021-08-11 18:50:13,425 utils.app_exception_handler ERROR    {'detail': ErrorDetail(string='Invalid token.', code='authentication_failed')}
+2021-08-11 18:50:13,458 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:50:13,458 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:54:13,664 utils.app_exception_handler ERROR    Invalid token.
+2021-08-11 18:54:13,665 utils.app_exception_handler ERROR    {'detail': ErrorDetail(string='Invalid token.', code='authentication_failed')}
+2021-08-11 18:54:13,691 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:54:13,691 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:54:20,616 utils.app_exception_handler ERROR    Invalid token.
+2021-08-11 18:54:20,617 utils.app_exception_handler ERROR    {'detail': ErrorDetail(string='Invalid token.', code='authentication_failed')}
+2021-08-11 18:54:20,646 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:54:20,646 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:54:31,255 utils.app_exception_handler ERROR    Invalid token.
+2021-08-11 18:54:31,255 utils.app_exception_handler ERROR    {'detail': ErrorDetail(string='Invalid token.', code='authentication_failed')}
+2021-08-11 18:54:31,282 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:54:31,282 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:54:45,829 utils.app_exception_handler ERROR    Invalid token.
+2021-08-11 18:54:45,829 utils.app_exception_handler ERROR    {'detail': ErrorDetail(string='Invalid token.', code='authentication_failed')}
+2021-08-11 18:54:45,858 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:54:45,858 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:58:31,992 utils.app_exception_handler ERROR    Invalid token.
+2021-08-11 18:58:31,992 utils.app_exception_handler ERROR    {'detail': ErrorDetail(string='Invalid token.', code='authentication_failed')}
+2021-08-11 18:58:32,024 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-11 18:58:32,024 django.request WARNING  Unauthorized: /api/scenario/promo-simulate-test/
+2021-08-12 10:29:15,734 asyncio      DEBUG    Using proactor: IocpProactor
+2021-08-12 10:34:19,677 utils.app_exception_handler ERROR    local variable 'Optimal_data' referenced before assignment
+2021-08-12 10:34:20,153 django.request ERROR    Internal Server Error: /api/optimiser/calculate/
+Traceback (most recent call last):
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\MARS-RUSSIA\price-simulator-backend\optimiser\views.py", line 394, in post
+    return Response(optimizer.process(dict(ser.validated_data)) , 200)
+  File "D:\MARS-RUSSIA\price-simulator-backend\optimiser\optimizer.py", line 2907, in process
+    opt_base[value] = Optimal_data[value]
+UnboundLocalError: local variable 'Optimal_data' referenced before assignment
+2021-08-12 10:34:20,153 django.request ERROR    Internal Server Error: /api/optimiser/calculate/
+Traceback (most recent call last):
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\django\core\handlers\base.py", line 179, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "D:\MARS-RUSSIA\price-simulator-backend\.venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\MARS-RUSSIA\price-simulator-backend\optimiser\views.py", line 394, in post
+    return Response(optimizer.process(dict(ser.validated_data)) , 200)
+  File "D:\MARS-RUSSIA\price-simulator-backend\optimiser\optimizer.py", line 2907, in process
+    opt_base[value] = Optimal_data[value]
+UnboundLocalError: local variable 'Optimal_data' referenced before assignment
