@@ -122,7 +122,7 @@ def _update_params(config , request_value):
 
     MINIMIZE_PARAMS = ['Trade_Expense']
 
-    config['Reatiler'] = request_value['account_name']
+    config['Retailer'] = request_value['account_name']
     config['PPG'] = request_value['product_group']
     config['MARS_TPRS'] =  request_value['mars_tpr']
     config['Co_investment'] = request_value['co_investment']
@@ -2907,6 +2907,9 @@ def process(
           opt_base[value] = Optimal_data[value]
     opt_base['week'] = opt_base.sort_values("Date").index + 1
     opt_base['Coinvestment']  = Optimal_data.sort_values("Date")['Coinvestment']
+    opt_base["Optimum_Promo"] = opt_base["Optimum_Promo"] - opt_base['Coinvestment']
+    # import pdb
+    # pdb.set_trace()
     opt_base['Mechanic']  = Optimal_data.sort_values("Date")['Mechanic']
     parsed_summary = json.loads(summary.to_json(orient="records"))
     parsed_base = json.loads(opt_base.to_json(orient="records"))

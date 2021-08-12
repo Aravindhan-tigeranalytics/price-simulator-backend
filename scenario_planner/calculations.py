@@ -482,6 +482,10 @@ def update_from_optimizer(data_list , optimizer_week:List[db_model.OptimizerSave
             catalogue_index.append(index)
         cloned_list[index][data_values.index('co_investment')]= week.optimum_co_investment
         cloned_list[index][data_values.index('promo_depth')] = week.optimum_promo
+        if week.mechanic in (['N + 1', 'N+1', '2 + 1 free','1 + 1 free', '3 + 1 free']):
+            cloned_list[index][data_values.index('flag_promotype_n_pls_1')] = 1
+        if week.mechanic in (['Motivation', 'motivation','Motivational']):
+            cloned_list[index][data_values.index('flag_promotype_motivation')] = 1
         if index + 1 < len(optimizer_week):
             cloned_list[index+1][data_values.index('tpr_discount_lag1')] = week.optimum_promo
         if index + 2 < len(optimizer_week):

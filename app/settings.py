@@ -108,17 +108,17 @@ DATABASES = {
         'PORT': os.getenv('DATABASE_PORT', ''),
     }
 }
-## local
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#         'NAME': 'localpricesimulatordb',
-#         'USER':'postgres',
-#         'PASSWORD': 'tiger@123',
-#         'HOST': 'localhost',
-#         'PORT':5432,
-#     }
-# }
+# local
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'localpricesimulatordb',
+        'USER':'postgres',
+        'PASSWORD': 'tiger@123',
+        'HOST': 'localhost',
+        'PORT':5432,
+    }
+}
 # AZURE
 # DATABASES = {
 #     'default': {

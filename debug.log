@@ -3262,3 +3262,4 @@ Traceback (most recent call last):
     opt_base[value] = Optimal_data[value]
 UnboundLocalError: local variable 'Optimal_data' referenced before assignment
 2021-08-12 10:48:49,163 asyncio      DEBUG    Using proactor: IocpProactor
+2021-08-12 10:49:19,116 asyncio      DEBUG    Using proactor: IocpProactor
