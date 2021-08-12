@@ -3261,3 +3261,4 @@ Traceback (most recent call last):
   File "D:\MARS-RUSSIA\price-simulator-backend\optimiser\optimizer.py", line 2907, in process
     opt_base[value] = Optimal_data[value]
 UnboundLocalError: local variable 'Optimal_data' referenced before assignment
+2021-08-12 10:48:49,163 asyncio      DEBUG    Using proactor: IocpProactor
