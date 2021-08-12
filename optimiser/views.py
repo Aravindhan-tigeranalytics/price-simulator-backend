@@ -36,7 +36,7 @@ class DownloadOptimizer(APIView):
             excel.download_excel_optimizer(
                 request.data['account_name'],
                 request.data['product_group'],
-                ast.literal_eval(request.data['optimizer_data'])),
+                request.data['optimizer_data']),
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
         response['Content-Disposition'] = 'attachment; filename=%s' % filename
