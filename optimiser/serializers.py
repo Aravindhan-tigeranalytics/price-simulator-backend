@@ -186,8 +186,12 @@ class OptimizerSerializer(serializers.Serializer):
     param_total_promo_min = serializers.IntegerField(max_value = 52 ,min_value=0,default=10,initial=10)
     param_total_promo_max  = serializers.IntegerField(max_value = 52 ,min_value=0,default=26,initial=26)
     
-    param_compulsory_no_promo_weeks =serializers.CharField(allow_blank = True,default='' , initial = '')
-    param_compulsory_promo_weeks = serializers.CharField(allow_blank = True,default='' , initial = '')
+    param_compulsory_no_promo_weeks =serializers.ListField(
+        
+    )
+    param_compulsory_promo_weeks = serializers.ListField(
+        
+    )
     # param_total_promo_min = serializers.IntegerField(max_value = 52 ,min_value=0,default=10,initial=10)
     
     # result = serializers.SerializerMethodField('obj')

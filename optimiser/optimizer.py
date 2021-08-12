@@ -145,8 +145,8 @@ def _update_params(config , request_value):
     config['constrain_params']['promo_gap'] = request_value['param_promo_gap']
     config['constrain_params']['tot_promo_min'] = request_value['param_total_promo_min']
     config['constrain_params']['tot_promo_max'] = request_value['param_total_promo_max']
-    config['constrain_params']['compul_no_promo_weeks'] = [int(i) if i else 0 for i in request_value['param_compulsory_no_promo_weeks'].split(",")] if request_value['param_compulsory_no_promo_weeks'] else []
-    config['constrain_params']['compul_promo_weeks'] = [int(i) if i else 0 for i in request_value['param_compulsory_promo_weeks'].split(",")] if request_value['param_compulsory_promo_weeks'] else []
+    config['constrain_params']['compul_no_promo_weeks'] = request_value['param_compulsory_no_promo_weeks']
+    config['constrain_params']['compul_promo_weeks'] =request_value['param_compulsory_promo_weeks']
     
     config['config_constrain']['MAC'] = request_value['config_mac']
     config['config_constrain']['RP'] =  request_value['config_rp']
@@ -2254,6 +2254,8 @@ def process(
 
     if constraints:
         _update_params(config, constraints)
+    # import pdb
+    # pdb.set_trace()
     print(config , "after update")
     # import pdb
     # pdb.set_trace()

@@ -759,8 +759,8 @@ class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
 
         try:
             if 'download' in request.stream.path:
-                get_serializer = sc.ModelMetaGetSerializer(request.data)
-                dict_value = loads(dumps((get_serializer.to_internal_value(request.data))))
+                # get_serializer = sc.ModelMetaGetSerializer(request.data)
+                dict_value = request.data
                 response = self.calculate_finacial_metrics_from_request(dict_value)
                 filename = 'promo_simulator.xlsx'
                 response = HttpResponse(
