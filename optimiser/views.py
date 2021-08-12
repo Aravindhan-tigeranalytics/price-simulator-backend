@@ -102,9 +102,23 @@ class LoadScenarioOptimizer(viewsets.ReadOnlyModelViewSet):
             ).filter(
             model_meta__account_name = account_name, model_meta__product_group = product_group
             ).order_by('week')
+            tpr_list = list(tpr)
+            
+           
           
-            for i in tpr:
+            for i in tpr_list:
+                # import pdb
+                # pdb.set_trace()
                 i['tpr_discount'] = opt_save[i['week']-1].optimum_promo
+                i['co_investment'] = opt_save[i['week']-1].optimum_co_investment
+                i['promo_depth'] = opt_save[i['week']-1].optimum_promo
+                if (opt_save[i['week']-1].mechanic == 'N+1'):
+                    i['flag_promotype_n_pls_1'] = 1
+                if (opt_save[i['week']-1].mechanic == 'Motivation'):
+                    i['flag_promotype_motivation'] = 1
+                    
+                    
+                    
            
             min_consecutive_promo,max_consecutive_promo,min_length_gap,tot_promo_min,tot_promo_max,no_of_promo, no_of_waves = optimizer.get_promo_wave_values([i['tpr_discount'] for i in tpr])
 
@@ -121,7 +135,7 @@ class LoadScenarioOptimizer(viewsets.ReadOnlyModelViewSet):
                                                 'product_group' : product_group,'strategic_cell':'','result' : ''} )
             if serializer.is_valid():
                 pass
-            res = {"data" : serializer.data , "weekly" : tpr}
+            res = {"data" : serializer.data , "weekly" : tpr_list}
             res["data"]["param_no_of_waves"] = no_of_waves
             res["data"]["param_no_of_promo"] = no_of_promo
             return Response(res,200)
@@ -272,7 +286,8 @@ class SaveOptimier(viewsets.GenericViewSet):
                   saved_scenario = scenario,
                   week = week['week'],
                   optimum_promo=week['Optimum_Promo'],
-                  optimum_co_investment = week['Coinvestment']
+                  optimum_co_investment = week['Coinvestment'],
+                  mechanic = week["Mechanic"]
              ))
         model.OptimizerSave.objects.bulk_create(bulk_obj)   
         return Response({"message" : scenario.id} ,status=status.HTTP_201_CREATED)
