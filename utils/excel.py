@@ -511,9 +511,11 @@ def download_excel_optimizer(account_name , product_group,data):
     format_value_percentage = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '0.00 %' })
 
     format_value_currency = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K ₽";[<999950000]0.0,,"M ₽";0.0,,,"B ₽"' })
+    ng_format_value_currency = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[>-999950]0.0,"K ₽";[>-999950000]0.0,,"M ₽";0.0,,,"B ₽"' })
 
     format_value_number = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K";[<999950000]0.0,,"M";0.0,,,"B"' })
-    
+    ng_format_value_number = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[>-999950]0.0,"K";[>-999950000]0.0,,"M";0.0,,,"B"' })
+
     summary_value_percentage = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '0.00 %' })
     summary_value_percentage.set_font_size(14)
 
@@ -569,15 +571,23 @@ def download_excel_optimizer(account_name , product_group,data):
             change = simulated_total[k]-base_total[k]
             _writeExcel(worksheet,row, col,base_total[k],format_value_currency)
             _writeExcel(worksheet,row+1, col,simulated_total[k],format_value_currency)
-            _writeExcel(worksheet,row+2, col,change,format_value_currency)
-            _writeExcel(worksheet,row+3, col,change/base_total[k],format_value_currency)
+            if change < 0:
+                _writeExcel(worksheet,row+2, col,change,ng_format_value_currency)
+                _writeExcel(worksheet,row+3, col,change/base_total[k],ng_format_value_currency)
+            else:
+                _writeExcel(worksheet,row+2, col,change,format_value_currency)
+                _writeExcel(worksheet,row+3, col,change/base_total[k],format_value_currency)
             col+=1
         else:
             change = simulated_total[k]-base_total[k]
             _writeExcel(worksheet,row, col,base_total[k],format_value_number)
             _writeExcel(worksheet,row+1, col,simulated_total[k],format_value_number)
-            _writeExcel(worksheet,row+2, col,change,format_value_number)
-            _writeExcel(worksheet,row+3, col,change/base_total[k],format_value_number)
+            if change < 0:
+                _writeExcel(worksheet,row+2, col,change,ng_format_value_number)
+                _writeExcel(worksheet,row+3, col,change/base_total[k],ng_format_value_number)
+            else:
+                _writeExcel(worksheet,row+2, col,change,format_value_number)
+                _writeExcel(worksheet,row+3, col,change/base_total[k],format_value_number)
             col+=1
 
     row = ROW_CONST
