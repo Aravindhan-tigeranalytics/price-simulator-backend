@@ -315,7 +315,7 @@ def download_excel_promo(data):
 
     total_header = ['units','base_units','increment_units','volume','lsv','nsv','mac_percent','te','te_percent_of_lsv','te_per_unit','roi','asp','avg_promo_selling_price','total_rsv_w_o_vat','rp','rp_percent','mac']
     worksheet.merge_range('B{}:E{}'.format(row+1,row+1), 'Total ' , format_header)
-    col = 3
+    col = 5
     for k in total_header:
         # base_total_value = util.format_value(base_total[k], k in percent_header , k in currency_header , k in no_format_header)
         # simulated_total_value = util.format_value(simulated_total[k], k in percent_header , k in currency_header , k in no_format_header)

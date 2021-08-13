@@ -760,11 +760,11 @@ class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
         try:
             if 'download' in request.stream.path:
                 # get_serializer = sc.ModelMetaGetSerializer(request.data)
-                dict_value = request.data
-                response = self.calculate_finacial_metrics_from_request(dict_value)
+                # dict_value = request.data
+                # response = self.calculate_finacial_metrics_from_request(dict_value)
                 filename = 'promo_simulator.xlsx'
                 response = HttpResponse(
-                    excel.download_excel_promo(response),
+                    excel.download_excel_promo(request.data),
                     content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
                 response['Content-Disposition'] = 'attachment; filename=%s' % filename
