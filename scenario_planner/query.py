@@ -29,7 +29,13 @@ from utils import constants as const
 #                 'list_price','gmac'
 # ]
 
-
+def _get_calendar_values(retailer) : 
+    if(retailer.lower() == "x5"):
+        return "x5_flag"
+    elif(retailer.lower() == "tander" or retailer.lower() == 'magnit'):
+        return "magnit_flag"
+    else:
+        return "x5_magnit_flag"
 
 def get_list_value_from_query(coeff_model:model.ModelCoefficient,
                               data_model:model.ModelData,
@@ -56,10 +62,17 @@ def get_list_value_from_query(coeff_model:model.ModelCoefficient,
         model_meta__account_name__iexact = retailer,
                     model_meta__product_group__iexact = ppg
     ).values('coefficient_old' , 'coefficient_new') 
+    holiday_calendar = model.HolidayCalendar.objects.filter(year = 2022).values(
+       'week' ,  _get_calendar_values(retailer)
+        
+    )
+    # import pdb
+    # pdb.set_trace()
     coeff_list = [list(i) for i in coefficient]
     data_list = [list(i) for i in data]
     roi_list = [list(i) for i in roi] 
-    return coeff_list , data_list, roi_list , coeff_map
+    holiday_calendar_list = [{i['week']:i[ _get_calendar_values(retailer)]} for i in holiday_calendar ]
+    return coeff_list , data_list, roi_list , coeff_map,holiday_calendar_list
 
 
 def get_list_value_from_query_all():

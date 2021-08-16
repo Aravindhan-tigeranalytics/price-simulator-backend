@@ -403,3 +403,20 @@ class OptimizerSave(models.Model):
     
     class Meta:
         db_table = 'optimizer_save'
+        
+class HolidayCalendar(models.Model):
+    year = models.IntegerField(verbose_name="Year")
+    quater = models.IntegerField(verbose_name="Quater")
+    month = models.IntegerField(verbose_name="Month",null=True,
+                                validators=[MinValueValidator(1), MaxValueValidator(12)])
+    
+    week = models.IntegerField(verbose_name="Week",null=True,
+                               validators=[MinValueValidator(1), MaxValueValidator(52)])
+    date = models.DateField(verbose_name="Date")
+    x5_flag = models.CharField(max_length=500,null=True,blank=True , default="")
+    magnit_flag = models.CharField(max_length=500,null=True,blank=True , default="")
+    x5_magnit_flag = models.CharField(max_length=500,null=True,blank=True , default="")
+    # holiday_name = models.CharField(max_length=500,null=True,blank=True , default="")
+    # retailer = models.CharField(max_length=500,null=True,blank=True , default="")
+    class Meta:
+        db_table = 'holiday_calendar'

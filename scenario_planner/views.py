@@ -66,7 +66,7 @@ class MyUploadView(viewsets.GenericViewSet):
 class PromoSimulatorViewTest(viewsets.GenericViewSet,mixin.CalculationMixin):
     # queryset = model.ModelMeta.objects.all()
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (perm.OptimizerPermission,)
+    # permission_classes = (perm.OptimizerPermission,)
     serializer_class = sc.OptimizerMeta
     queryset =model.ModelMeta.objects.all()
     lookup_field = "id"
@@ -80,8 +80,10 @@ class PromoSimulatorViewTest(viewsets.GenericViewSet,mixin.CalculationMixin):
         
         return Response(ser.data , status=status.HTTP_200_OK)
     def get(self, request, format=None):
-        
-        serializer = sc.OptimizerMeta(self.queryset , many=True)
+        # import pdb
+        # pdb.set_trace()
+        # self.queryset.filter
+        serializer = sc.OptimizerMeta(self.queryset.filter(id__in = request.user.allowed_retailers.all())  , many=True)
         # serializer = sc.OptimizerMeta(self.queryset , many=True)
         return Response(serializer.data)
     
@@ -521,22 +523,8 @@ class LoadScenario(viewsets.ReadOnlyModelViewSet,mixin.CalculationMixin):
         # get_serializer = sc.ModelMetaGetSerializer()
         pricing_save_id = request.parser_context['kwargs']['_id']  # pricing save id
         pricing_week = model.PricingWeek.objects.select_related('pricing_save').filter(pricing_save__id = pricing_save_id )
-        # import pdb
-        # pdb.set_trace()
-        # self.calculate_finacial_metrics_from_pricing(pricing_week)
+    
         return Response(self.calculate_finacial_metrics_from_pricing(pricing_week), status = 200)
-    # def retrieve_bkp(self, request, *args, **kwargs):
-    #     self.get_object()
-        
-    #     weeks = model.PromoWeek.objects.select_related('pricing_save','pricing_save__saved_scenario').filter(
-    #      pricing_save__saved_scenario = self.get_object()
-    #     )
-    #     self.calculate_finacial_metrics(weeks)
-        
-    #     value_dict = ast.literal_eval(self.get_object().savedump)
-    #     return Response( self.calculate_finacial_metrics(value_dict),
-    #                     status=status.HTTP_201_CREATED)
-        
     def retrieve(self, request, *args, **kwargs):
         obj = self.get_object()
         

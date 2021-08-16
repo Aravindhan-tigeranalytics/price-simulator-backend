@@ -184,7 +184,7 @@ def get_list_from_db(retailer,ppg , optimizer_save = None , promo_week = None , 
 
 
 
-def update_db(opt_base,retailer,ppg):
+def update_db(opt_base,retailer,ppg):   
     meta = model.ModelMeta.objects.get(
         account_name = retailer,
         product_group = ppg

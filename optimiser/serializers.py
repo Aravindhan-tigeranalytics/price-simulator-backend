@@ -1,4 +1,4 @@
-from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth import get_user_model, authenticate , logout , login
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.exceptions import server_error
 from core import models as model

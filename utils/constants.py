@@ -218,7 +218,9 @@ ROI_VALUES = [
     'activity_name','mechanic','discount_nrv','off_inv','on_inv','gmac','list_price'
     ]
 
-
+HOLIDAY_CALENDAR_HEADER = [
+    'Date' , 'Year' , 'Month' , 'Qtr' , 'Week' , 'X5_flag' , 'Magnit_flag' , 'X5+Magnit'
+]
 
 def get_key_from_value(dict_map , value):
     return list(dict_map.keys())[list(dict_map.values()).index(value)]
