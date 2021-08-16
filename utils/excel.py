@@ -709,6 +709,47 @@ def dateformat():
 
     x = datetime.datetime.now()
     return x.strftime("%b %d %Y %H:%M:%S")
+
+def read_holiday(file):
+    headers = const.HOLIDAY_CALENDAR_HEADER
+    book = openpyxl.load_workbook(file,data_only=True)
+    sheet = book['Holiday_info']
+    columns = sheet.max_column
+    rows = sheet.max_row
+    bulk_obj = []
+    row_ =0
+    for row in range(row_+2 , rows+1):
+        bulk_obj.append(model.HolidayCalendar(
+            date= _get_sheet_value(sheet , row , 1),
+            year = _get_sheet_value(sheet , row , 2),
+            month = _get_sheet_value(sheet , row , 3),
+            quater = _get_sheet_value(sheet , row , 4),
+            week = _get_sheet_value(sheet , row , 5),
+            x5_flag = _get_sheet_value(sheet , row , 6),
+            magnit_flag = _get_sheet_value(sheet , row , 7),
+            x5_magnit_flag = _get_sheet_value(sheet , row , 8),
+            
+        ))
+    model.HolidayCalendar.objects.bulk_create(bulk_obj) 
+    book.close()
+    return len(bulk_obj)
+    # for ind in opt_base.index:
+    #     bulk_obj.append(model.OptimizerSave(
+    #         model_meta =  meta,
+    #         date = opt_base['Date'][ind],
+    #         optimum_promo = opt_base['Optimum_Promo'][ind],
+    #         optimum_units = opt_base['Optimum_Units'][ind],
+    #         optimum_base = opt_base['Optimum_Base'][ind],
+    #         optimum_incremental = opt_base['Optimum_Incremental'][ind],
+    #         base_promo = opt_base['Baseline_Promo'][ind],
+    #         base_units = opt_base['Baseline_Units'][ind],
+    #         base_base = opt_base['Baseline_Base'][ind],
+    #         base_incremental = opt_base['Baseline_Incremental'][ind],
+            
+    #         ))
+        
+    
+    # pass
     
 def read_promo_coeff(file):
     headers = const.COEFF_HEADER

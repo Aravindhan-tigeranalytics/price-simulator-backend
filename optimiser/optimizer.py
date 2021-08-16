@@ -866,6 +866,7 @@ def base_var_cont(
     dt_dist['Comp'] = dt_dist[Comp].sum(axis=1)
 
   # ##Give tpr related Variables
+    
 
     Incremental = ['tpr_discount_byppg_contribution_impact'] + [i
             for i in aa if 'Catalogue' in i] + [i for i in aa
@@ -1269,7 +1270,7 @@ def optimizer_fun(baseline_data, Required_base, config):
    # constraint for compulsory promo weeks
 
     if len(constrain_params['compul_promo_weeks']) > 0:
-        promo_list = constrain_params['compul_promo_weeks']
+        promo_list = constrain_params['compul_promo_weeks'].copy()
         promo_list[:] = [i - 1 for i in promo_list]
         prob += lpSum([WK_vars[Required_base['WK_ID'][i + j * 52]]
                       for j in range(1, promo_loop) for i in
@@ -1580,8 +1581,7 @@ def optimizer_fun(baseline_data, Required_base, config):
 
   # returning if the change is insiginficant(<0.01%)
 
-    if LpStatus[prob.status] == 'Optimal' and obj_basevalue * 1.0001 \
-        >= optmized_value:
+    if ((LpStatus[prob.status]=='Optimal') and (((obj_basevalue*1.0001)>=optmized_value) or (optmized_value<=obj_basevalue*0.999))): ## change added new
         # print 'Getting optimal solution but value is same as baseline'
         df['Solution'] = 'Infeasible'
     return df
@@ -1597,7 +1597,8 @@ def optimal_summary_fun(
     ):
 
   # function for creating optimal calendar data
-
+    # import pdb
+    # pdb.set_trace()
     model_cols = Model_Coeff['names'].to_list()
     model_cols.remove('Intercept')
 
@@ -2257,8 +2258,7 @@ def process(
     # import pdb
     # pdb.set_trace()
     print(config , "after update")
-    # import pdb
-    # pdb.set_trace()
+   
 
       # retailer, ppg filter
 
@@ -2315,6 +2315,8 @@ def process(
     promo_list_PPG = ROI_data.reset_index(drop=True)
 
       # print promo_list_PPG.shape
+    # import pdb
+    # pdb.set_trace()
 
     Period_data = promo_list_PPG[[
         'Date',
@@ -2857,6 +2859,14 @@ def process(
             opt_pop_up_config = {}
             Optimal_calendar_fin['TPR'] = \
                 baseline_data['tpr_discount_byppg']
+            Financial_information1= baseline_data[['TE','tpr_discount_byppg']].drop_duplicates().reset_index(drop=True) ## change added new
+            promo_info1 = baseline_data[['Coinvestment','tpr_discount_byppg']].drop_duplicates().reset_index(drop=True) ## change added new
+            mech_info1 = baseline_data[['Mechanic','tpr_discount_byppg']].drop_duplicates().reset_index(drop=True) ## change added new
+            
+        
+            TE_dict= dict(zip(Financial_information1.tpr_discount_byppg, Financial_information1.TE)) ## change added new
+            ret_inv_dict = dict(zip(promo_info1.tpr_discount_byppg, promo_info1.Coinvestment)) ## change added new
+            ret_mech_dict = dict(zip(mech_info1.tpr_discount_byppg, mech_info1.Mechanic)) ## change added new
 
         # getting data with optimal calendar
 
@@ -2878,6 +2888,8 @@ def process(
 
         summary = get_calendar_summary(baseline_data, Optimal_data,
                 opt_base)
+        # import pdb
+        # pdb.set_trace()
 
       # Optmised Pop Up Final Message
 
@@ -2904,6 +2916,9 @@ def process(
       # Infeasible Soln
 
         opt_pop_up_flag_final = 0
+    print(opt_pop_up_flag , "opt_pop_up_flag")
+    print(opt_pop_up_flag_final , "opt_pop_up_flag_final")
+    print(opt_pop_up_config_final , "opt_pop_up_config_final")
     if len(holiday_list) > 0:
         for value in holiday_list:
           opt_base[value] = Optimal_data[value]
@@ -2913,10 +2928,12 @@ def process(
     # import pdb
     # pdb.set_trace()
     opt_base['Mechanic']  = Optimal_data.sort_values("Date")['Mechanic']
+    
     parsed_summary = json.loads(summary.to_json(orient="records"))
     parsed_base = json.loads(opt_base.to_json(orient="records"))
     # import pdb
     # pdb.set_trace()
+    
     financial_metrics = mixin.calculate_finacial_metrics_for_optimizer(account_name,product_group,parsed_base,model_coeff,model_data_all,ROI_data)
   #   print ('completed', opt_base)
   #   print ('completed', summary)

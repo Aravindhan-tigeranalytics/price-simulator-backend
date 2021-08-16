@@ -107,7 +107,7 @@ class CalculationMixin():
         'product_group' : value_dict['product_group']
         }
         
-        coeff_list , data_list ,roi_list , coeff_map = pd_query.get_list_value_from_query(model.ModelCoefficient,
+        coeff_list , data_list ,roi_list , coeff_map,holiday_calendar = pd_query.get_list_value_from_query(model.ModelCoefficient,
                                                                               model.ModelData,
                                                                               model.ModelROI,
                                                                               value_dict['account_name'],
@@ -126,13 +126,12 @@ class CalculationMixin():
                                                base_incremental_split , 'base')
         simulated_financial_metrics = cal.calculate_financial_mertrics(simulated_data_list ,roi_list,
                                                simulated_incremental_split , 'simulated',value_dict['promo_elasticity'])
-        print(coeff_map , "coeff map")
-        # import pdb
-        # pdb.set_trace()
+        # print(coeff_map , "coeff map")
+       
         
         return {**meta,**base_finalcial_metrics , **simulated_financial_metrics , **{
             "holiday_array":[i for i in coeff_map if 'Holiday_Flag1' in i['coefficient_new']] 
-        }}
+        },**{'holiday_calendar' : holiday_calendar}}
     
     
     def calculate_finacial_metrics_load(self,promo_week :QuerySet[model.PromoWeek]):
@@ -206,7 +205,7 @@ class CalculationMixin():
         
         
         
-        coeff_list , data_list ,roi_list,coeff_map = pd_query.get_list_value_from_query(model.ModelCoefficient,
+        coeff_list , data_list ,roi_list,coeff_map,holiday_calendar = pd_query.get_list_value_from_query(model.ModelCoefficient,
                                                                               model.ModelData,
                                                                               model.ModelROI,
                                                                               account_name,
@@ -226,6 +225,8 @@ class CalculationMixin():
                                                simulated_incremental_split , 'simulated',promo_elasticity)
         return {**meta,**base_finalcial_metrics , **simulated_financial_metrics,**{
             "holiday_array":[i for i in coeff_map if 'Holiday_Flag1' in i['coefficient_new']] 
+        },**{
+            'holiday_calendar' : holiday_calendar
         }}
     
     def calculate_finacial_metrics_pricing_promo(self,promo_week :QuerySet[model.PromoWeek] , pricing_week : QuerySet[model.PricingWeek]):
@@ -331,11 +332,7 @@ class CalculationMixin():
 
 
 def calculate_finacial_metrics_for_optimizer(account_name,product_group,value_dict,coeff_list,data_list,roi_list):
-    # coeff_list = coeff_list.to_dict('records')
-    # data_list = data_list.to_dict('records')
-    # roi_list = roi_list.to_dict('records')
-    
-    coeff_list , data_list ,roi_list,coeff_map = pd_query.get_list_value_from_query(model.ModelCoefficient,
+    coeff_list , data_list ,roi_list,coeff_map , holiday_calendar = pd_query.get_list_value_from_query(model.ModelCoefficient,
                                                                             model.ModelData,
                                                                             model.ModelROI,
                                                                             account_name,product_group)
@@ -344,9 +341,11 @@ def calculate_finacial_metrics_for_optimizer(account_name,product_group,value_di
     base_incremental_split = json.loads(uc.list_to_frame(coeff_list , data_list).to_json(orient="records"))
 
     simulated_incremental_split = json.loads(uc.list_to_frame(coeff_list , simulated_data_list).to_json(orient="records"))
+    # import pdb
+    # pdb.set_trace()
     base_finalcial_metrics = cal.calculate_financial_mertrics(data_list ,roi_list,
                                                base_incremental_split , 'base')
 
     simulated_financial_metrics = cal.calculate_financial_mertrics(simulated_data_list ,roi_list,
                                             simulated_incremental_split , 'simulated',0)
-    return {**base_finalcial_metrics,**simulated_financial_metrics}
+    return {**base_finalcial_metrics,**simulated_financial_metrics , }

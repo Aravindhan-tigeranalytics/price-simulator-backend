@@ -15,6 +15,41 @@ class CsvImportForm(forms.Form):
     # roi_file  = forms.FileField()
 # @admin.register(models.Scenario)
 
+
+class HolidayCalendarAdmin(admin.ModelAdmin):
+    list_display = [field.name for field in models.HolidayCalendar._meta.fields]
+    list_filter = ('x5_flag','magnit_flag','x5_magnit_flag')
+    change_list_template = "admin/promo_upload.html"
+    
+    def get_urls(self):
+        urls = super().get_urls()
+        my_urls = [
+            path('import-promo/', self.import_csv),
+        ]
+        return my_urls + urls
+    def import_csv(self, request):
+        if request.method == "POST":
+            try:
+                total_model = 0
+                csv_file = request.FILES["csv_file"]
+                # roi_file = request.FILES["roi_file"]
+                total_model= excel.read_holiday(csv_file)
+        
+                
+                self.message_user(request, "Total {} model data imported".format(total_model))
+                return redirect("..")
+            except Exception as e:
+                print(e , "Exception")
+                self.message_user(request , e , level=messages.ERROR)
+                return redirect("..")
+        form = CsvImportForm()
+        payload = {"form": form}
+        return render(
+            request, "admin/excel_form.html", payload
+        )
+    
+    
+
 class ModelMetaAdmin(admin.ModelAdmin):
     
     list_display = [field.name for field in models.ModelMeta._meta.fields]
@@ -27,6 +62,7 @@ class ModelMetaAdmin(admin.ModelAdmin):
             path('import-promo/', self.import_csv),
         ]
         return my_urls + urls
+
     def import_csv(self, request):
         if request.method == "POST":
             try:
@@ -193,6 +229,7 @@ admin.site.register(models.ModelCoefficient,ModelCoefficientAdmin)
 admin.site.register(models.ModelData,ModelDataAdmin)
 admin.site.register(models.ModelROI,ModelROIAdmin)
 admin.site.register(models.CoeffMap,CoeffMapAdmin)
+admin.site.register(models.HolidayCalendar,HolidayCalendarAdmin)
 
 admin.site.register(models.OptimizerSave,OptimizerSaveAdmin)
 
