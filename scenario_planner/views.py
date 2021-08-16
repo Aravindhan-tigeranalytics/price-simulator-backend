@@ -134,7 +134,6 @@ class SavePromo(viewsets.GenericViewSet):
             name =  value['name'],
             comments = value['comments'],
             user = request.user
-            
         )   
         scenario.save()
         pr_save = model.PromoSave(
@@ -167,6 +166,55 @@ class SavePromo(viewsets.GenericViewSet):
         # pdb.set_trace()  
         return Response({"saved_id" : scenario.id} , 200)    
 
+class UpdatePromo(viewsets.GenericViewSet):
+    authentication_classes = (TokenAuthentication,)
+    serializer_class = sc.SavePromo
+    def get(self, request, format=None):
+        serializer = sc.SavePromo()
+        return Response(serializer.data)
+    
+    def post(self, request, format=None):
+        value = request.data
+        if model.SavedScenario.objects.filter(name =  value['name']).exclude(id = value['scenario_id']).exists():
+            raise exception.AlredyExistsException("{} already exists".format(value['name']))
+        model.SavedScenario.objects.filter(id=value['scenario_id']).update(
+            scenario_type = 'promo',
+            name =  value['name'],
+            comments = value['comments'],
+            user = request.user
+        )   
+
+        model.PromoSave.objects.filter(saved_scenario_id=value['scenario_id']).update(
+                account_name = value['account_name'],
+                corporate_segment = value['corporate_segment'],
+                product_group =value['product_group'],
+                promo_elasticity = value['promo_elasticity'],
+                saved_scenario = value['scenario_id']
+        )
+
+        promo_save_id = model.PromoSave.objects.filter(saved_scenario_id=value['scenario_id']).first()
+        # print(promo_save_id,'promo_save_id')
+        model.PromoWeek.objects.filter(pricing_save_id=promo_save_id.id).delete()
+
+        bulk_pricing_week = []
+        for i in value.keys():
+            week_regex = util._regex(r'week-\d{1,2}',i)
+            # print(week_regex,"week_regex")
+            if week_regex:
+                week = int(util._regex(r'\d{1,2}',week_regex.group()).group())
+                # print(value[i]['promo_depth'],value[i]['co_investment'],value[i]['promo_mechanics'])
+                pw = model.PromoWeek(
+                    week = week,
+                    year = 2022,
+                    promo_depth = value[i]['promo_depth'],
+                    co_investment = value[i]['co_investment'],
+                    promo_mechanic =value[i]['promo_mechanics'],
+                    pricing_save_id = promo_save_id.id,
+                )
+                bulk_pricing_week.append(pw)
+        # print(bulk_pricing_week,"bulk_pricing_week")
+        model.PromoWeek.objects.bulk_create(bulk_pricing_week)  
+        return Response({"saved_id" : value['scenario_id']} , 200)
 
 def savePromo():
     return  {'account_name': 'Lenta', 'corporate_segment': 'BOXES', 'strategic_cell': 'cell', 'brand': 'brand', 'brand_format': 'format', 

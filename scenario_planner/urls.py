@@ -17,6 +17,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('download/', views.down),
     path('save/',views.SavePromo.as_view({'get':'get','post' : 'post'})),
+    path('update/',views.UpdatePromo.as_view({'get':'get','post' : 'post'})),
     path('list-saved-promo/', views.LoadScenario.as_view({'get' : 'list',})),
     path('list-saved-promo/<int:id>/', views.LoadScenario.as_view({'get' : 'retrieve'})),
     path('list-saved-promo/<int:id>/<int:_id>/', views.LoadScenario.as_view({'get' : 'retrieve_pricing_promo'})),
