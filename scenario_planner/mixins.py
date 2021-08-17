@@ -36,7 +36,7 @@ class CalculationMixin():
             "account_name" : account_name,
             "product_group" : product_group
         }
-        coeff_list , data_list ,roi_list , coeff_map = pd_query.get_list_value_from_query(model.ModelCoefficient,
+        coeff_list , data_list ,roi_list , coeff_map , holiday_calendar = pd_query.get_list_value_from_query(model.ModelCoefficient,
                                                                               model.ModelData,
                                                                               model.ModelROI,
                                                                               account_name,
@@ -51,7 +51,7 @@ class CalculationMixin():
         simulated_financial_metrics = cal.calculate_financial_mertrics(simulated_data_list ,roi_list,
                                                simulated_incremental_split , 'simulated')
        
-        return {**meta,**base_finalcial_metrics , **simulated_financial_metrics}
+        return {**meta,**base_finalcial_metrics , **simulated_financial_metrics,**{'holiday_calendar' : holiday_calendar}}
         
     
     def calculate_finacial_metrics_from_pricing(self,pricing_week:QuerySet[model.PricingWeek]):

@@ -2257,9 +2257,10 @@ def process(
 
     if constraints:
         _update_params(config, constraints)
+   
+    print(config , "after update")
     # import pdb
     # pdb.set_trace()
-    print(config , "after update")
    
 
       # retailer, ppg filter

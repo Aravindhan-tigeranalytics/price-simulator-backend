@@ -180,9 +180,9 @@ class OptimizerSerializer(serializers.Serializer):
     param_mac_perc = serializers.FloatField(max_value = 10 ,min_value=0,default=1.0,initial=1.0)
     param_rp_perc = serializers.FloatField(max_value = 10 ,min_value=0,default=1.0,initial=1.0)
     
-    param_min_consecutive_promo = serializers.IntegerField(max_value = 10 ,min_value=0,default=6,initial=6)
-    param_max_consecutive_promo = serializers.IntegerField(max_value = 10 ,min_value=0,default=6,initial=6)
-    param_promo_gap = serializers.IntegerField(max_value = 10 ,min_value=0,default=2,initial=2)
+    param_min_consecutive_promo = serializers.IntegerField(max_value = 52 ,min_value=0,default=6,initial=6)
+    param_max_consecutive_promo = serializers.IntegerField(max_value = 52 ,min_value=0,default=6,initial=6)
+    param_promo_gap = serializers.IntegerField(max_value = 52 ,min_value=0,default=2,initial=2)
     param_total_promo_min = serializers.IntegerField(max_value = 52 ,min_value=0,default=10,initial=10)
     param_total_promo_max  = serializers.IntegerField(max_value = 52 ,min_value=0,default=26,initial=26)
     
