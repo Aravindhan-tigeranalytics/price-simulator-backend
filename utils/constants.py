@@ -204,7 +204,7 @@ DATA_VALUES = [
     'flag_promo_1','flag_promo_2','flag_promo_3','holiday_flag_1','holiday_flag_2','holiday_flag_3',
     'holiday_flag_4','holiday_flag_5','holiday_flag_6','holiday_flag_7','holiday_flag_8','holiday_flag_9', 
     'holiday_flag_10', 'wk_sold_avg_price_byppg','average_weight_in_grams','weighted_weight_in_grams',
-    'promo_depth','co_investment','optimiser_flag'
+    'death_rate','promo_depth','co_investment','optimiser_flag'
     ]
 COEFFICIENT_MAP_VALUES = [
     'model_meta__account_name','model_meta__corporate_segment', 'model_meta__product_group','model_meta__brand_filter',

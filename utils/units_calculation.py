@@ -451,7 +451,7 @@ data_columns =  [
     'Flag_nonpromo_1', 'Flag_nonpromo_2', 'Flag_nonpromo_3', 'Flag_promo_1', 'Flag_promo_2', 'Flag_promo_3',
     'Holiday_Flag1', 'Holiday_Flag2', 'Holiday_Flag3', 'Holiday_Flag4', 'Holiday_Flag5', 'Holiday_Flag6', 'Holiday_Flag7', 
     'Holiday_Flag8', 'Holiday_Flag9','Holiday_Flag10', 'wk_sold_avg_price_byppg','Average Weight in grams',
-    'Weighted Weight in grams','promo_depth','co investment', 'optimiser_flag'
+    'Weighted Weight in grams','death_rate','promo_depth','co investment', 'optimiser_flag'
     ]
 
 roi_columns = [

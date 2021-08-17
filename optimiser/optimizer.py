@@ -163,12 +163,14 @@ def _update_params(config , request_value):
 
 
 def predict_sales(coeffs, data):
+    
     predict = 0
     for i in coeffs['names']:
         if i == 'Intercept':
             predict = predict + coeffs[coeffs['names']
                     == i]['model_coefficients'].values
         else:
+
             predict = predict + data[i] * coeffs[coeffs['names']
                     == i]['model_coefficients'].values
     data['pred_vol'] = predict
