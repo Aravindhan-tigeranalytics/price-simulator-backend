@@ -104,7 +104,7 @@ def get_list_from_db(retailer,ppg , optimizer_save = None , promo_week = None , 
        'Holiday_Flag4', 'Holiday_Flag5', 'Holiday_Flag6', 'Holiday_Flag7',     
        'Holiday_Flag8', 'Holiday_Flag9', 'Holiday_Flag10',
        'wk_sold_avg_price_byppg', 'Average Weight in grams',
-       'Weighted Weight in grams','Promo_Depth', 'Coinvestment','Optimiser_flag'])
+       'Weighted Weight in grams','death_rate','Promo_Depth', 'Coinvestment','Optimiser_flag'])
 
     data_dt['Date']= pd.to_datetime(data_dt['Date'])
     data_dt['Coinvestment'] = data_dt['Coinvestment'].astype(float)
@@ -143,7 +143,7 @@ def get_list_from_db(retailer,ppg , optimizer_save = None , promo_week = None , 
     model_data_to_float = ['wk_sold_avg_price_byppg','TPR_Discount_lag1','TPR_Discount_lag2','Catalogue','ACV','SI_month','SI_quarter',
     'C_1_crossretailer_discount','C_1_crossretailer_log_price','C_1_intra_discount','C_2_intra_discount','C_3_intra_discount','C_4_intra_discount',
     'C_1_intra_log_price','C_2_intra_log_price','C_3_intra_log_price','C_4_intra_log_price','C_5_intra_log_price','Category trend','Average Weight in grams',
-    'Weighted Weight in grams']
+    'Weighted Weight in grams','death_rate']
     for i in model_data_to_float: 
         data_dt[i] = data_dt[i].astype(float)
 
