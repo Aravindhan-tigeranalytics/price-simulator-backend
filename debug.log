@@ -798,3 +798,5 @@ UnboundLocalError: local variable 'Optimal_data' referenced before assignment
 2021-08-17 16:42:09,291 django.utils.autoreload INFO     D:\MARS-RUSSIA\price-simulator-backend\app\settings.py changed, reloading.
 2021-08-17 16:42:11,832 asyncio      DEBUG    Using proactor: IocpProactor
 2021-08-17 16:46:28,487 asyncio      DEBUG    Using proactor: IocpProactor
+2021-08-17 16:48:11,040 django.utils.autoreload INFO     D:\MARS-RUSSIA\price-simulator-backend\app\settings.py changed, reloading.
+2021-08-17 16:48:13,444 asyncio      DEBUG    Using proactor: IocpProactor
