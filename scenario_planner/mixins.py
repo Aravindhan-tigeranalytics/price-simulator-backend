@@ -348,4 +348,6 @@ def calculate_finacial_metrics_for_optimizer(account_name,product_group,value_di
 
     simulated_financial_metrics = cal.calculate_financial_mertrics(simulated_data_list ,roi_list,
                                             simulated_incremental_split , 'simulated',0)
-    return {**base_finalcial_metrics,**simulated_financial_metrics , }
+    return {**base_finalcial_metrics,**simulated_financial_metrics , **{
+        'holiday_calendar' : holiday_calendar
+    }}

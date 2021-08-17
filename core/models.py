@@ -199,6 +199,8 @@ class ModelData(ModelCalculationMetrics):
                                        validators=[MinValueValidator(Decimal(0.0)), MaxValueValidator(Decimal(100.0))])
     average_weight_in_grams = models.DecimalField(max_digits=30 , decimal_places=15,default=0.0)
     weighted_weight_in_grams = models.DecimalField(max_digits=30 , decimal_places=15,default=0.0)
+    death_rate = models.DecimalField(verbose_name="Death rate", max_digits=30 ,null=True, decimal_places=15,default=0.0,
+                                       validators=[MinValueValidator(Decimal(0.0)), MaxValueValidator(Decimal(100.0))])
     incremental_unit = models.DecimalField(max_digits=30 , decimal_places=15,default=0.0 , null=True)
     base_unit = models.DecimalField(max_digits=30 , decimal_places=15,default=0.0 , null=True)
     optimiser_flag = models.BooleanField(default=False)
