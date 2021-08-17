@@ -207,41 +207,45 @@ def calculate_financial_mertrics( data_list ,roi_list,unit_info , flag,promo_ela
         roi = roi_list[i]
         unit = unit_info[i]
         data = data_list[i]
-        
+        print(data[data_values.index('promo_depth')] , "promo depth value for iteration " ,i )
+        try:
 
-        ob = model.UnitModel(
-            data[data_values.index('date')],
-            week = int(data[data_values.index('week')]),
-            year = int(data[data_values.index('year')]),
-            quater = (data[data_values.index('quater')]),
-            month = (data[data_values.index('month')]),
-            period = (data[data_values.index('period')]),
-            flag_promotype_motivation = int(data[data_values.index('flag_promotype_motivation')]),
-            flag_promotype_n_pls_1 = int(data[data_values.index('flag_promotype_n_pls_1')]),
-            flag_promotype_traffic = int(data[data_values.index('flag_promotype_traffic')]),
-            si = data[data_values.index('si')],
-            predicted_units=decimal.Decimal(unit['Predicted_sales']),
-            on_inv_percent=roi[roi_values.index('on_inv')] * 100,
-            list_price = roi[roi_values.index('list_price')],
-            promo_depth=decimal.Decimal(data[data_values.index('promo_depth')]),
-            off_inv_percent = roi[roi_values.index('off_inv')] * 100, 
-            gmac_percent_lsv = roi[roi_values.index('gmac')] * 100,
+            ob = model.UnitModel(
+                data[data_values.index('date')],
+                week = int(data[data_values.index('week')]),
+                year = int(data[data_values.index('year')]),
+                quater = (data[data_values.index('quater')]),
+                month = (data[data_values.index('month')]),
+                period = (data[data_values.index('period')]),
+                flag_promotype_motivation = int(data[data_values.index('flag_promotype_motivation')]),
+                flag_promotype_n_pls_1 = int(data[data_values.index('flag_promotype_n_pls_1')]),
+                flag_promotype_traffic = int(data[data_values.index('flag_promotype_traffic')]),
+                si = data[data_values.index('si')],
+                predicted_units=decimal.Decimal(unit['Predicted_sales']),
+                on_inv_percent=roi[roi_values.index('on_inv')] * 100,
+                list_price = roi[roi_values.index('list_price')],
+                promo_depth=decimal.Decimal(data[data_values.index('promo_depth')]),
+                off_inv_percent = roi[roi_values.index('off_inv')] * 100, 
+                gmac_percent_lsv = roi[roi_values.index('gmac')] * 100,
 
-            # average_selling_price = data[data_values.index('wk_sold_avg_price_byppg')],
-            product_group_weight_in_grams = data[data_values.index('weighted_weight_in_grams')], 
-            median_base_price_log = data[data_values.index('median_base_price_log')],
-            incremental_unit = decimal.Decimal(unit['Incremental']),
-            base_unit = decimal.Decimal(unit['Base']),
-            promo_elasticity=promo_elasticity,
-            co_investment = decimal.Decimal(data[data_values.index('co_investment')])
-            
-        )
-        # import pdb
-        # pdb.set_trace()
-        update_total(total_units , ob)
-        ob_dict = ob.__dict__
-        ob_dict['holiday'] = get_holiday_information(data)
-        weekly_units.append(ob_dict)
+                # average_selling_price = data[data_values.index('wk_sold_avg_price_byppg')],
+                product_group_weight_in_grams = data[data_values.index('weighted_weight_in_grams')], 
+                median_base_price_log = data[data_values.index('median_base_price_log')],
+                incremental_unit = decimal.Decimal(unit['Incremental']),
+                base_unit = decimal.Decimal(unit['Base']),
+                promo_elasticity=promo_elasticity,
+                co_investment = decimal.Decimal(data[data_values.index('co_investment')])
+                
+            )
+            # import pdb
+            # pdb.set_trace()
+            update_total(total_units , ob)
+            ob_dict = ob.__dict__
+            ob_dict['holiday'] = get_holiday_information(data)
+            weekly_units.append(ob_dict)
+        except:
+            import pdb
+            pdb.set_trace()
     
     return {
         flag : {

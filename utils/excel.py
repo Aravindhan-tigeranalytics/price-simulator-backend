@@ -315,7 +315,7 @@ def download_excel_promo(data):
 
     total_header = ['units','base_units','increment_units','volume','lsv','nsv','mac_percent','te','te_percent_of_lsv','te_per_unit','roi','asp','avg_promo_selling_price','total_rsv_w_o_vat','rp','rp_percent','mac']
     worksheet.merge_range('B{}:E{}'.format(row+1,row+1), 'Total ' , format_header)
-    col = 3
+    col = 5
     for k in total_header:
         # base_total_value = util.format_value(base_total[k], k in percent_header , k in currency_header , k in no_format_header)
         # simulated_total_value = util.format_value(simulated_total[k], k in percent_header , k in currency_header , k in no_format_header)
@@ -467,9 +467,9 @@ def download_excel_optimizer(account_name , product_group,data):
     # from optimiser import testdata as test
     # data = test.RESPONSE_OPTIMIZER
     
-    summary_data = data['summary']
-    optimal_data = data['optimal']
-    holiday_data = data['holiday']
+    # summary_data = data['summary']
+    # optimal_data = data['optimal']
+    # holiday_data = data['holiday']
 
     simulated_weekly = data['financial_metrics']['simulated']['weekly']
     base_weekly = data['financial_metrics']['base']['weekly']
@@ -507,6 +507,23 @@ def download_excel_optimizer(account_name , product_group,data):
 
     row = ROW_CONST
     col = COL_CONST
+
+    format_value_percentage = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '0.00 %' })
+
+    format_value_currency = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K ₽";[<999950000]0.0,,"M ₽";0.0,,,"B ₽"' })
+    ng_format_value_currency = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[>-999950]0.0,"K ₽";[>-999950000]0.0,,"M ₽";0.0,,,"B ₽"' })
+
+    format_value_number = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K";[<999950000]0.0,,"M";0.0,,,"B"' })
+    ng_format_value_number = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[>-999950]0.0,"K";[>-999950000]0.0,,"M";0.0,,,"B"' })
+
+    summary_value_percentage = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '0.00 %' })
+    summary_value_percentage.set_font_size(14)
+
+    summary_value_currency = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K ₽";[<999950000]0.0,,"M ₽";0.0,,,"B ₽"' })
+    summary_value_currency.set_font_size(14)
+
+    summary_value_number = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K";[<999950000]0.0,,"M";0.0,,,"B"' })
+    summary_value_number.set_font_size(14)
     
     
     worksheet.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
@@ -515,12 +532,13 @@ def download_excel_optimizer(account_name , product_group,data):
     worksheet.merge_range('B4:D4', "Account Name : {}".format(account_name),merge_format_app)
     worksheet.merge_range('B5:D5', "Product Group : {}".format(product_group),merge_format_app)
     
-    data_val = [d['Metric'] for d in summary_data]
-    header_key = []
-    for val in data_val:
-        # header_key.append(key)
-        _writeExcel(worksheet,row, col," ".join(val.split("_")).title(),format_header)
-        # _writeExcel(worksheet,row+1, col,data_val[key],format_value)
+    # data_val = [d['Metric'] for d in summary_data]
+    header_key = ['Units','Base units','Incremental units','Volume','LSV','NSV','MAC, %NSV','Trade expense','TE, % LSV',
+    'TE / Unit','ROI','ASP','Promo ASP','RSV w/o VAT','Customer Margin','Customer Margin,%RSV','Mars MAC']
+
+    for val in header_key:
+        # _writeExcel(worksheet,row, col," ".join(val.split("_")).title(),format_header)
+        _writeExcel(worksheet,row, col,val,format_header)
         col+=1
     col = COL_CONST
     row+=1
@@ -528,13 +546,49 @@ def download_excel_optimizer(account_name , product_group,data):
     _writeExcel(worksheet,row+1, col-1,'Recommended Scenario',format_header)
     _writeExcel(worksheet,row+2, col-1,'Change',format_header)
     _writeExcel(worksheet,row+3, col-1,'Delta',format_header)
-    for kv in summary_data: 
-        _writeExcel(worksheet,row, col,util.format_value(kv['Base_Scenario'], kv['Metric'] in percent_header , kv['Metric'] in currency_header , kv['Metric'] in no_format_header),format_value)
-        _writeExcel(worksheet,row+1, col,util.format_value(kv['Recommended_Scenario'], kv['Metric'] in percent_header , kv['Metric'] in currency_header , kv['Metric'] in no_format_header),format_value)
-        _writeExcel(worksheet,row+2, col,util.format_value(kv['Change'], kv['Metric'] in percent_header , kv['Metric'] in currency_header , kv['Metric'] in no_format_header),format_value)
-        _writeExcel(worksheet,row+3, col,util.format_value(kv['Delta'], kv['Metric'] in percent_header , kv['Metric'] in currency_header , kv['Metric'] in no_format_header),format_value)
-        # row+=1
-        col+=1
+
+    # for kv in summary_data: 
+    #     _writeExcel(worksheet,row, col,util.format_value(kv['Base_Scenario'], kv['Metric'] in percent_header , kv['Metric'] in currency_header , kv['Metric'] in no_format_header),format_value)
+    #     _writeExcel(worksheet,row+1, col,util.format_value(kv['Recommended_Scenario'], kv['Metric'] in percent_header , kv['Metric'] in currency_header , kv['Metric'] in no_format_header),format_value)
+    #     _writeExcel(worksheet,row+2, col,util.format_value(kv['Change'], kv['Metric'] in percent_header , kv['Metric'] in currency_header , kv['Metric'] in no_format_header),format_value)
+    #     _writeExcel(worksheet,row+3, col,util.format_value(kv['Delta'], kv['Metric'] in percent_header , kv['Metric'] in currency_header , kv['Metric'] in no_format_header),format_value)
+    #     # row+=1
+    #     col+=1
+    simulated_total = data['financial_metrics']['simulated']['total']
+    base_total = data['financial_metrics']['base']['total']
+
+    total_header = ['units','base_units','increment_units','volume','lsv','nsv','mac_percent','te','te_percent_of_lsv','te_per_unit','roi','asp','avg_promo_selling_price','total_rsv_w_o_vat','rp','rp_percent','mac']
+    
+    for k in total_header:
+        if k in percent_header_weekly:
+            change = (simulated_total[k]/100)-(base_total[k]/100)
+            _writeExcel(worksheet,row, col,base_total[k]/100,format_value_percentage)
+            _writeExcel(worksheet,row+1, col,simulated_total[k]/100,format_value_percentage)
+            _writeExcel(worksheet,row+2, col,change,format_value_percentage)
+            _writeExcel(worksheet,row+3, col,change/base_total[k],format_value_percentage)
+            col+=1
+        elif k in currency_header_weekly:
+            change = simulated_total[k]-base_total[k]
+            _writeExcel(worksheet,row, col,base_total[k],format_value_currency)
+            _writeExcel(worksheet,row+1, col,simulated_total[k],format_value_currency)
+            if change < 0:
+                _writeExcel(worksheet,row+2, col,change,ng_format_value_currency)
+                _writeExcel(worksheet,row+3, col,change/base_total[k],ng_format_value_currency)
+            else:
+                _writeExcel(worksheet,row+2, col,change,format_value_currency)
+                _writeExcel(worksheet,row+3, col,change/base_total[k],format_value_currency)
+            col+=1
+        else:
+            change = simulated_total[k]-base_total[k]
+            _writeExcel(worksheet,row, col,base_total[k],format_value_number)
+            _writeExcel(worksheet,row+1, col,simulated_total[k],format_value_number)
+            if change < 0:
+                _writeExcel(worksheet,row+2, col,change,ng_format_value_number)
+                _writeExcel(worksheet,row+3, col,change/base_total[k],ng_format_value_number)
+            else:
+                _writeExcel(worksheet,row+2, col,change,format_value_number)
+                _writeExcel(worksheet,row+3, col,change/base_total[k],format_value_number)
+            col+=1
 
     row = ROW_CONST
     col = COL_CONST
@@ -545,24 +599,6 @@ def download_excel_optimizer(account_name , product_group,data):
     weekly_worksheet.merge_range('A5:B5', "Product Group : {}".format(product_group),merge_format_app)
 
     row+=1
-
-    format_value_percentage = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '0.00 %' })
-
-    format_value_currency = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K ₽";[<999950000]0.0,,"M ₽";0.0,,,"B ₽"' })
-
-    format_value_number = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K";[<999950000]0.0,,"M";0.0,,,"B"' })
-    
-    summary_value_percentage = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '0.00 %' })
-    summary_value_percentage.set_font_size(14)
-
-    summary_value_currency = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K ₽";[<999950000]0.0,,"M ₽";0.0,,,"B ₽"' })
-    summary_value_currency.set_font_size(14)
-
-    summary_value_number = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K";[<999950000]0.0,,"M";0.0,,,"B"' })
-    summary_value_number.set_font_size(14)
-    # optimal_header = ['Date','SI','Baseline_Promo','Baseline_Units','Baseline_Base','Baseline_Incremental','Baseline_ROI','Baseline_Lift','Optimum_Promo','Optimum_Units','Optimum_Base','Optimum_Incremental','Optimum_ROI','Optimum_Lift']
-    # if len(holiday_data) > 0:
-    #     optimal_header = optimal_header + holiday_data
 
     header_key =  ['date','week', 'promotions','predicted_units','base_unit','incremental_unit','total_weight_in_tons','total_lsv','total_nsv','mars_mac_percent_of_nsv','trade_expense','te_percent_of_lsv', 'te_per_units','roi','asp','promo_asp','total_rsv_w_o_vat', 'retailer_margin','retailer_margin_percent_of_nsv', 'mars_mac', ]
     optimal_header = ['Date','Week','Promotions(Base)','Promotions(Simulated)','Units(Base)','Units(Simulated)','Base units(Base)','Base units(Simulated)','Incremental units(Base)',
@@ -637,10 +673,7 @@ def download_excel_optimizer(account_name , product_group,data):
     #     _writeExcel(weekly_worksheet,row, col-1, 'Week-{}'.format(i+1),format_value)
     #     row+=1
 
-    simulated_total = data['financial_metrics']['simulated']['total']
-    base_total = data['financial_metrics']['base']['total']
 
-    total_header = ['units','base_units','increment_units','volume','lsv','nsv','mac_percent','te','te_percent_of_lsv','te_per_unit','roi','asp','avg_promo_selling_price','total_rsv_w_o_vat','rp','rp_percent','mac']
     weekly_worksheet.merge_range('B{}:E{}'.format(row+1,row+1), 'Total ' , format_header)
     col = 5
     for k in total_header:
@@ -676,6 +709,47 @@ def dateformat():
 
     x = datetime.datetime.now()
     return x.strftime("%b %d %Y %H:%M:%S")
+
+def read_holiday(file):
+    headers = const.HOLIDAY_CALENDAR_HEADER
+    book = openpyxl.load_workbook(file,data_only=True)
+    sheet = book['Holiday_info']
+    columns = sheet.max_column
+    rows = sheet.max_row
+    bulk_obj = []
+    row_ =0
+    for row in range(row_+2 , rows+1):
+        bulk_obj.append(model.HolidayCalendar(
+            date= _get_sheet_value(sheet , row , 1),
+            year = _get_sheet_value(sheet , row , 2),
+            month = _get_sheet_value(sheet , row , 3),
+            quater = _get_sheet_value(sheet , row , 4),
+            week = _get_sheet_value(sheet , row , 5),
+            x5_flag = _get_sheet_value(sheet , row , 6),
+            magnit_flag = _get_sheet_value(sheet , row , 7),
+            x5_magnit_flag = _get_sheet_value(sheet , row , 8),
+            
+        ))
+    model.HolidayCalendar.objects.bulk_create(bulk_obj) 
+    book.close()
+    return len(bulk_obj)
+    # for ind in opt_base.index:
+    #     bulk_obj.append(model.OptimizerSave(
+    #         model_meta =  meta,
+    #         date = opt_base['Date'][ind],
+    #         optimum_promo = opt_base['Optimum_Promo'][ind],
+    #         optimum_units = opt_base['Optimum_Units'][ind],
+    #         optimum_base = opt_base['Optimum_Base'][ind],
+    #         optimum_incremental = opt_base['Optimum_Incremental'][ind],
+    #         base_promo = opt_base['Baseline_Promo'][ind],
+    #         base_units = opt_base['Baseline_Units'][ind],
+    #         base_base = opt_base['Baseline_Base'][ind],
+    #         base_incremental = opt_base['Baseline_Incremental'][ind],
+            
+    #         ))
+        
+    
+    # pass
     
 def read_promo_coeff(file):
     headers = const.COEFF_HEADER

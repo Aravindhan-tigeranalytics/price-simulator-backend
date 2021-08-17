@@ -7,14 +7,10 @@ from decimal import Decimal
 import numpy as np
 import pandas as pd
 import re
+from optimiser import optimizer as opt
 
-
-def get_incremental_base_var_cont(var_name,li):
-    return [var_name]+[i for i in li if "Catalogue" in i]
 
 def predict_sales(coeffs,data):
-    # import pdb
-    # pdb.set_trace()
     predict = 0
     for i in coeffs['Variable']:
         if(i=="Intercept"):
@@ -26,25 +22,28 @@ def predict_sales(coeffs,data):
     data['Predicted_Volume'] = np.exp(data['pred_vol'])
     return(data['Predicted_Volume'])
 
+
 def promo_wave_cal(tpr_data):
-  tpr_data['Promo_wave']=0
-  c=1
-  i=0
-  while(i<=tpr_data.shape[0]-1):
-      if(tpr_data.loc[i,'TPR_Discount']>0):#####Also tpr ??since in validation consdered tpr
-          tpr_data.loc[i,'Promo_wave']=c
-          j=i+1
-          if(j==tpr_data.shape[0]):
-                  break
-          while((j<=tpr_data.shape[0]-1) & (tpr_data.loc[j,'TPR_Discount']>0)):
-              tpr_data.loc[j,'Promo_wave']=c
-              i = j+1
-              j = i
-              if(j==tpr_data.shape[0]):
-                  break
-          c=c+1
-      i=i+1
-  return tpr_data['Promo_wave']    
+    tpr_data['Promo_wave']=0
+    c=1
+    i=0
+    while(i<=tpr_data.shape[0]-1):
+        if(tpr_data.loc[i,'TPR_Discount']>0):#####Also tpr ??since in validation consdered tpr
+            tpr_data.loc[i,'Promo_wave']=c
+            j=i+1
+            if(j==tpr_data.shape[0]):
+                    break
+            while((j<=tpr_data.shape[0]-1) & (tpr_data.loc[j,'TPR_Discount']>0)):
+                tpr_data.loc[j,'Promo_wave']=c
+                i = j+1
+                j = i
+                if(j==tpr_data.shape[0]):
+                    break
+            c=c+1
+        i=i+1
+    return tpr_data['Promo_wave']    
+
+
 
 def _predict(pred_df, model_coef, var_col="model_coefficient_name", coef_col="model_coefficient_value", intercept_name="(Intercept)"):
     """Predict Sales.
@@ -75,6 +74,8 @@ def _predict(pred_df, model_coef, var_col="model_coefficient_name", coef_col="mo
     
     return prediction
 
+
+
 def get_var_contribution_wo_baseline_defined(df, model_coef, wk_sold_price,  all_df=None, var_col="model_coefficient_name", coef_col="model_coefficient_value", intercept_name="(Intercept)", base_var=None):
     """Get variable contribution without baseline defined.
 
@@ -102,7 +103,6 @@ def get_var_contribution_wo_baseline_defined(df, model_coef, wk_sold_price,  all
     tuple of pd.DataFrame
     """
     # Predict Sales
-    
     ppg_cols = ["PPG_Cat", "PPG_MFG", "PPG_Item_No", "PPG_Description"]
     ppg = df["PPG_Item_No"].to_list()[0]
     model_df = df.drop(columns=ppg_cols).copy()
@@ -192,6 +192,7 @@ def get_var_contribution_wo_baseline_defined(df, model_coef, wk_sold_price,  all
 
     return overall_dt_dist_df, overall_qtr_dist_df, overall_yr_dist_df
 
+
 def get_var_contribution_variants(dist_df, var_col_name, value_col_name):
     """Get variable contribution by different variants.
 
@@ -241,102 +242,102 @@ def get_var_contribution_variants(dist_df, var_col_name, value_col_name):
     
     return dist_df_1, dist_df_2, dist_df_3
 
+
 def base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef):
-  m=1
-  dt_dist = pd.DataFrame()
-  quar_dist = pd.DataFrame()
-  year_dist = pd.DataFrame()
-  year_dist1 = pd.DataFrame()
+      m=1
+      dt_dist = pd.DataFrame()
+      quar_dist = pd.DataFrame()
+      year_dist = pd.DataFrame()
+      year_dist1 = pd.DataFrame()
 
-  price = "wk_sold_avg_price_byppg"
-  price_val = model_df[[price]]
-  model_df[["PPG_Cat", "PPG_MFG", "PPG_Item_No", "PPG_Description"]] = pd.DataFrame([["TEMP"]*4], index=model_df.index)
-  base_var = baseline_var["Variable"].to_list()
-  overall_dt_dist_df, overall_qtr_dist_df, overall_yr_dist_df = get_var_contribution_wo_baseline_defined(model_df, model_coef, price_val, all_df=None, var_col="Variable", coef_col="Value", intercept_name="Intercept", base_var=base_var)
-  overall_dt_dist_df['Iteration'] = m
-  overall_qtr_dist_df['Iteration'] = m
-  overall_yr_dist_df['Iteration'] = m
+      price = "wk_sold_avg_price_byppg"
+      price_val = model_df[[price]]
+      model_df[["PPG_Cat", "PPG_MFG", "PPG_Item_No", "PPG_Description"]] = pd.DataFrame([["TEMP"]*4], index=model_df.index)
+      base_var = baseline_var["Variable"].to_list()
+      overall_dt_dist_df, overall_qtr_dist_df, overall_yr_dist_df = get_var_contribution_wo_baseline_defined(model_df, model_coef, price_val, all_df=None, var_col="Variable", coef_col="Value", intercept_name="Intercept", base_var=base_var)
+      overall_dt_dist_df['Iteration'] = m
+      overall_qtr_dist_df['Iteration'] = m
+      overall_yr_dist_df['Iteration'] = m
 
-  overall_yr_dist_df1 = overall_yr_dist_df[overall_yr_dist_df['model_coefficient_name']!= 'Predicted_sales']
-  yearly_1 = overall_yr_dist_df1[['Year','units']].groupby(by=["Year"], as_index=False).agg(np.sum).rename(columns = {'units':"Yearly_Units"})
-  overall_yr_dist_df1 = pd.merge(overall_yr_dist_df1,yearly_1,on = "Year",how = "left")
-  overall_yr_dist_df1['units%'] = overall_yr_dist_df1['units']/overall_yr_dist_df1['Yearly_Units']*100
-  dt_dist  = pd.concat([dt_dist,overall_dt_dist_df],ignore_index = False)
-  quar_dist  = pd.concat([quar_dist,overall_qtr_dist_df],ignore_index = False)
-  year_dist  = pd.concat([year_dist,overall_yr_dist_df],ignore_index = False)
-  year_dist1  = pd.concat([year_dist1,overall_yr_dist_df1],ignore_index = False)
-
-
-
-  #########Converting to Required Format
-  dt_dist = pd.pivot_table(dt_dist[['Date','model_coefficient_name','units','Iteration']],index = ["Date","Iteration"],columns = "model_coefficient_name")
-  dt_dist = pd.DataFrame(dt_dist).reset_index()
-  dt_dist.columns = dt_dist.columns.droplevel(0) 
-  print(dt_dist.columns)
-  a = ["Date","Iteration"]+list(dt_dist.columns[2:])
-  dt_dist.columns = a
-
-  year_dist = pd.pivot_table(year_dist[['Year','model_coefficient_name','units','Iteration']],index = ["model_coefficient_name","Iteration"],columns = "Year")
-  year_dist = pd.DataFrame(year_dist).reset_index()
-  year_dist.columns = year_dist.columns.droplevel(0) 
-  print(year_dist.columns)
-  a = ["model_coefficient_name","Iteration"]+list(year_dist.columns[2:])
-  year_dist.columns = a
-
-  year_dist1 = pd.pivot_table(year_dist1[['Year','model_coefficient_name','units%','Iteration']],index = ["model_coefficient_name","Iteration"],columns = "Year")
-  year_dist1 = pd.DataFrame(year_dist1).reset_index()
-  year_dist1.columns = year_dist1.columns.droplevel(0) 
-  print(year_dist1.columns)
-  a = ["model_coefficient_name","Iteration"]+list(year_dist1.columns[2:])
-  year_dist1.columns = a
-
-  aa = dt_dist.columns
-  print(aa)
-
-  ###Competitor Discounts
-  Comp = [i for i in aa if "_intra_discount" in i]
-  dt_dist['Comp'] = dt_dist[Comp].sum(axis = 1)
-  ###Give tpr related Variables
-  Incremental = ['TPR_Discount_contribution_impact']+[i for i in aa if "Catalogue" in i]
-  print('Incremental :',Incremental)
-  dt_dist['Incremental'] = dt_dist[Incremental].sum(axis = 1)
-  ###Give the remaining Base columns
-  
-  base_others = baseline_var_othr["Variable"].to_list()
-  base = [ 'Intercept_contribution_base']+[i+'_contribution_base' for i in base_var]+[i+'_contribution_impact' for i in base_others]
-  print("base :",base)
-  dt_dist['Base'] = dt_dist[base].sum(axis = 1)
-
-  model_df = model_df1.copy()
-#   req = model_df[['Date','Iteration','Promo_wave']]
-  req = model_df[['Date','Iteration']]
-  req['Date'] = pd.to_datetime(req['Date'], format='%Y-%m-%d')
-  dt_dist = pd.merge(dt_dist,req,how = "left")
-  
-  dt_dist['Base']=(dt_dist['Base']+dt_dist['Comp'])
+      overall_yr_dist_df1 = overall_yr_dist_df[overall_yr_dist_df['model_coefficient_name']!= 'Predicted_sales']
+      yearly_1 = overall_yr_dist_df1[['Year','units']].groupby(by=["Year"], as_index=False).agg(np.sum).rename(columns = {'units':"Yearly_Units"})
+      overall_yr_dist_df1 = pd.merge(overall_yr_dist_df1,yearly_1,on = "Year",how = "left")
+      overall_yr_dist_df1['units%'] = overall_yr_dist_df1['units']/overall_yr_dist_df1['Yearly_Units']*100
+      dt_dist  = pd.concat([dt_dist,overall_dt_dist_df],ignore_index = False)
+      quar_dist  = pd.concat([quar_dist,overall_qtr_dist_df],ignore_index = False)
+      year_dist  = pd.concat([year_dist,overall_yr_dist_df],ignore_index = False)
+      year_dist1  = pd.concat([year_dist1,overall_yr_dist_df1],ignore_index = False)
 
 
-#   dt_dist['Lift'] = dt_dist['Incremental']/(dt_dist['Base'])
-  return dt_dist
+
+      #########Converting to Required Format
+      dt_dist = pd.pivot_table(dt_dist[['Date','model_coefficient_name','units','Iteration']],index = ["Date","Iteration"],columns = "model_coefficient_name")
+      dt_dist = pd.DataFrame(dt_dist).reset_index()
+      dt_dist.columns = dt_dist.columns.droplevel(0) 
+      print(dt_dist.columns)
+      a = ["Date","Iteration"]+list(dt_dist.columns[2:])
+      dt_dist.columns = a
+
+      year_dist = pd.pivot_table(year_dist[['Year','model_coefficient_name','units','Iteration']],index = ["model_coefficient_name","Iteration"],columns = "Year")
+      year_dist = pd.DataFrame(year_dist).reset_index()
+      year_dist.columns = year_dist.columns.droplevel(0) 
+      print(year_dist.columns)
+      a = ["model_coefficient_name","Iteration"]+list(year_dist.columns[2:])
+      year_dist.columns = a
+
+      year_dist1 = pd.pivot_table(year_dist1[['Year','model_coefficient_name','units%','Iteration']],index = ["model_coefficient_name","Iteration"],columns = "Year")
+      year_dist1 = pd.DataFrame(year_dist1).reset_index()
+      year_dist1.columns = year_dist1.columns.droplevel(0) 
+      print(year_dist1.columns)
+      a = ["model_coefficient_name","Iteration"]+list(year_dist1.columns[2:])
+      year_dist1.columns = a
+
+      aa = dt_dist.columns
+      print(aa)
+
+      ###Competitor Discounts
+      Comp = [i for i in aa if "_intra_discount" in i]
+      dt_dist['Comp'] = dt_dist[Comp].sum(axis = 1)
+      ###Give tpr related Variables
+      Incremental = ['TPR_Discount_contribution_impact']+[i for i in aa if "Catalogue" in i]+[i for i in aa if 'Flag_promo' in i]
+      print('Incremental :',Incremental)
+      dt_dist['Incremental'] = dt_dist[Incremental].sum(axis = 1)
+      ###Give the remaining Base columns
+
+      base_others = baseline_var_othr["Variable"].to_list()
+      base = [ 'Intercept_contribution_base']+[i+'_contribution_base' for i in base_var]+[i+'_contribution_impact' for i in base_others]
+      print("base :",base)
+      dt_dist['Base'] = dt_dist[base].sum(axis = 1)
+
+      model_df = model_df1.copy()
+      req = model_df[['Date','Iteration']] # ,'Promo_wave']]
+      req['Date'] = pd.to_datetime(req['Date'], format='%Y-%m-%d')
+      dt_dist = pd.merge(dt_dist,req,how = "left")
+
+      dt_dist['Base']=(dt_dist['Base']+dt_dist['Comp'])
+
+
+      dt_dist['Lift'] = dt_dist['Incremental']/(dt_dist['Base'])
+      return dt_dist
 
 
 def main(data_frame,coeff_frame):
     base_data = data_frame
     
     train_coef = coeff_frame
-    base_data['Date'] = pd.to_datetime(base_data['Date'])
+    
 
     
     coeff = train_coef.melt(var_name = "Variable",value_name='Value')
-    # import pdb
-    # pdb.set_trace()
     coeff = coeff.iloc[int(coeff[coeff['Variable']=='Intercept'].index[0]):].reset_index(drop=True) # taking only the numeric rows  8 -> 9
     coeff['Value'] = coeff['Value'].astype(float)
+    base_data['Date'] = pd.to_datetime(base_data['Date'])
     ### train_data is the original or the simulated model data
     train_data = base_data.copy() 
     model_coef = coeff.copy()
 
     # train_data['Promo_wave']=promo_wave_cal(train_data)
+    # opt.predict_sales
     train_data['Units']=predict_sales(model_coef,train_data)
 
     train_data['wk_sold_avg_price_byppg']=np.exp(train_data['Median_Base_Price_log'])*(1-train_data['TPR_Discount']/100)
@@ -347,15 +348,14 @@ def main(data_frame,coeff_frame):
     baseline_var = pd.DataFrame(columns =["Variable"])
     baseline_var_othr = pd.DataFrame(columns =["Variable"])
     col = model_coef["Variable"].to_list()
-
-    # baseline variables
     baseprice_cols = ['Median_Base_Price_log']+[i for i in col if "_intra_log_price" in i]
     holiday =[i for i in col if "Holiday" in i ]
     SI_cols = ["SI","SI_month","SI_quarter" ]
-    trend_cols = ["Trend_month","Trend_quarter","Trend_year"]
+    trend_cols = [i for i in col if 'Trend' in i]
     base_list = baseprice_cols+SI_cols+trend_cols+["ACV"]
-    base_others = holiday+[i for i in col if "death_rate" in i]+[i for i in col if 'TPR_Discount_lag' in i]
+    base_others = holiday+[i for i in col if "death_rate" in i]+[i for i in col if 'TPR_Discount_lag' in i]+[i for i in col if 'Category trend' in i]+[i for i in col if 'Flag_nonpromo' in i]
     print(base_list)
+    print(base_others , "base others")
     baseline_var["Variable"]=base_list
     baseline_var_othr["Variable"]=base_others
 
@@ -364,62 +364,67 @@ def main(data_frame,coeff_frame):
     model_coef['Iteration']=1
 
     base_scenario=base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef) # base and increment function
+
+
+    # baseline variables
+        # import pdb
+    # pdb.set_trace()
     return base_scenario
 
 
-def main_file(file1,file2, retailer , ppg, segment):
+# def main_file(file1,file2, retailer , ppg, segment):
     
     
-    model_data = pd.read_excel(file1,sheet_name='MODEL_DATA')
-    model_coeff = pd.read_excel(file1,sheet_name='MODEL_COEFFICIENT')
+#     model_data = pd.read_excel(file1,sheet_name='MODEL_DATA')
+#     model_coeff = pd.read_excel(file1,sheet_name='MODEL_COEFFICIENT')
      
 
-    ret = retailer
-    ppg = ppg
-    tag_path  = ""
-    Segment=segment 
-    prd=0
-    base_data = model_data.loc[(model_data['Account Name']==ret) & (model_data['PPG']==ppg)]
+#     ret = retailer
+#     ppg = ppg
+#     tag_path  = ""
+#     Segment=segment 
+#     prd=0
+#     base_data = model_data.loc[(model_data['Account Name']==ret) & (model_data['PPG']==ppg)]
 
-    train_coef = model_coeff.loc[(model_coeff['Account Name']==ret) & (model_coeff['PPG']==ppg)]
+#     train_coef = model_coeff.loc[(model_coeff['Account Name']==ret) & (model_coeff['PPG']==ppg)]
     
-    coeff = train_coef.melt(var_name = "Variable",value_name='Value')
-    coeff = coeff.iloc[8:].reset_index(drop=True) # taking only the numeric rows  8 -> 9
-    coeff['Value'] = coeff['Value'].astype(float)
-    ### train_data is the original or the simulated model data
-    train_data = base_data.copy() 
-    model_coef = coeff.copy()
+#     coeff = train_coef.melt(var_name = "Variable",value_name='Value')
+#     coeff = coeff.iloc[8:].reset_index(drop=True) # taking only the numeric rows  8 -> 9
+#     coeff['Value'] = coeff['Value'].astype(float)
+#     ### train_data is the original or the simulated model data
+#     train_data = base_data.copy() 
+#     model_coef = coeff.copy()
 
-    # train_data['Promo_wave']=promo_wave_cal(train_data)
-    train_data['Units']=predict_sales(model_coef,train_data)
+#     # train_data['Promo_wave']=promo_wave_cal(train_data)
+#     train_data['Units']=predict_sales(model_coef,train_data)
 
-    train_data['wk_sold_avg_price_byppg']=np.exp(train_data['Median_Base_Price_log'])*(1-train_data['TPR_Discount']/100)
-    model_df=train_data.copy()
+#     train_data['wk_sold_avg_price_byppg']=np.exp(train_data['Median_Base_Price_log'])*(1-train_data['TPR_Discount']/100)
+#     model_df=train_data.copy()
 
 
-    #Base Variable Method
-    baseline_var = pd.DataFrame(columns =["Variable"])
-    baseline_var_othr = pd.DataFrame(columns =["Variable"])
-    col = model_coef["Variable"].to_list()
+#     #Base Variable Method
+#     baseline_var = pd.DataFrame(columns =["Variable"])
+#     baseline_var_othr = pd.DataFrame(columns =["Variable"])
+#     col = model_coef["Variable"].to_list()
 
-    # baseline variables
-    baseprice_cols = ['Median_Base_Price_log']+[i for i in col if "_intra_log_price" in i]
-    holiday =[i for i in col if "Holiday" in i ]
-    SI_cols = ["SI","SI_month","SI_quarter" ]
-    trend_cols = ["Trend_month","Trend_quarter","Trend_year"]
-    base_list = baseprice_cols+SI_cols+trend_cols+["ACV"]
-    base_others = holiday+[i for i in col if "death_rate" in i]+[i for i in col if 'TPR_Discount_lag' in i]
-    print(base_list)
-    baseline_var["Variable"]=base_list
-    baseline_var_othr["Variable"]=base_others
+#     # baseline variables
+#     baseprice_cols = ['Median_Base_Price_log']+[i for i in col if "_intra_log_price" in i]
+#     holiday =[i for i in col if "Holiday" in i ]
+#     SI_cols = ["SI","SI_month","SI_quarter" ]
+#     trend_cols = ["Trend_month","Trend_quarter","Trend_year"]
+#     base_list = baseprice_cols+SI_cols+trend_cols+["ACV"]
+#     base_others = holiday+[i for i in col if "death_rate" in i]+[i for i in col if 'TPR_Discount_lag' in i]
+#     print(base_list)
+#     baseline_var["Variable"]=base_list
+#     baseline_var_othr["Variable"]=base_others
 
-    model_df['Iteration']=1
-    model_df1=model_df.copy()
-    model_coef['Iteration']=1
+#     model_df['Iteration']=1
+#     model_df1=model_df.copy()
+#     model_coef['Iteration']=1
 
-    base_scenario=base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef) # base and increment function
-    print(base_scenario , "base scenario")
-    return base_scenario[['Date','Incremental' , 'Base','Lift']]
+#     base_scenario=base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef) # base and increment function
+#     print(base_scenario , "base scenario")
+#     return base_scenario[['Date','Incremental' , 'Base','Lift']]
 
 
 
@@ -494,9 +499,8 @@ def list_to_frame(coeff,data):
     # print( data_dt[['promo_depth','Catalogue','TPR_Discount_lag1','TPR_Discount_lag2','co investment']] , "dataframe check")
         
     val = main( data_dt,coeff_dt )
-    # import pdb
-    # pdb.set_trace()
-    # print(val[['Incremental' , 'Base' , 'Predicted_sales']] , "val")
+   
+    print(val[['Incremental' , 'Base' , 'Predicted_sales']] , "val")
 
     return val
 
