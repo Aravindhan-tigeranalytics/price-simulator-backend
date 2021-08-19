@@ -244,8 +244,9 @@ def calculate_financial_mertrics( data_list ,roi_list,unit_info , flag,promo_ela
             ob_dict['holiday'] = get_holiday_information(data)
             weekly_units.append(ob_dict)
         except:
-            import pdb
-            pdb.set_trace()
+            # import pdb
+            # pdb.set_trace()
+            pass
     
     return {
         flag : {
@@ -403,19 +404,32 @@ def update_from_request(data_list , querydict):
 
 def update_for_optimizer(data_list , querydict):
     cloned_list = copy.deepcopy(data_list)
+    cataloge_average = 0
+    catalogue_index = []
     for i in range(0,len(querydict)):
         week = querydict[i]['week']
         index = week -1
-        # import pdb
-        # pdb.set_trace()
+        cat = cloned_list[index][data_values.index('catalogue')]
+        if cat :
+            cataloge_average = util.average(cataloge_average , cat)
+            cloned_list[index][data_values.index('catalogue')] = 0
         if(querydict[i]['Mechanic'] in ['N + 1', 'N+1', '2 + 1 free',
                     '1 + 1 free', '3 + 1 free']):
             cloned_list[index][data_values.index('flag_promotype_n_pls_1')] = 1
         if(querydict[i]['Mechanic'] in ['Motivation', 'motivation',
                     'Motivational']):
             cloned_list[index][data_values.index('flag_promotype_motivation')] = 1
-        cloned_list[index][data_values.index('promo_depth')] = querydict[i]['Optimum_Promo']
         cloned_list[index][data_values.index('co_investment')] = querydict[i]['Coinvestment']
+        cloned_list[index][data_values.index('promo_depth')] = querydict[i]['Optimum_Promo']
+        if index + 1 < len(cloned_list):
+            cloned_list[index+1][data_values.index('tpr_discount_lag1')] = querydict[i]['Optimum_Promo']
+        if index + 2 < len(cloned_list):
+            cloned_list[index+2][data_values.index('tpr_discount_lag2')] =querydict[i]['Optimum_Promo']
+        if querydict[i]['Optimum_Promo']:
+                catalogue_index.append(index)
+    for value in catalogue_index:
+        cloned_list[value][data_values.index('catalogue')] = cataloge_average
+        
     # import pdb
     # pdb.set_trace()
     return cloned_list

@@ -496,9 +496,12 @@ def list_to_frame(coeff,data):
     # import pdb
     # pdb.set_trace()
     data_dt['TPR_Discount'] = data_dt['promo_depth'] + data_dt['co investment']
+    # data_dt[['promo_depth','co investment','TPR_Discount']]
     # print( data_dt[['promo_depth','Catalogue','TPR_Discount_lag1','TPR_Discount_lag2','co investment']] , "dataframe check")
         
     val = main( data_dt,coeff_dt )
+    # import pdb
+    # pdb.set_trace()
    
     print(val[['Incremental' , 'Base' , 'Predicted_sales']] , "val")
 
