@@ -870,9 +870,7 @@ def base_var_cont(
   # ##Give tpr related Variables
     
 
-    Incremental = ['tpr_discount_byppg_contribution_impact'] + [i
-            for i in aa if 'Catalogue' in i] + [i for i in aa
-            if 'Display' in i] + [i for i in aa if 'flag_N_pls_1' in i]
+    Incremental = ['tpr_discount_byppg_contribution_impact']+[i for i in aa if "Catalogue" in i]+[i for i in aa if 'Promo_flg_date' in i]+[i for i in aa if "Display" in i]+[i for i in aa if "flag_N_pls_1" in i]+[i for i in aa if "date_Flag" in i]+[i for i in aa if "flag_promo" in i]+[i for i in aa if "flag_date" in i]+[i for i in aa if "flag_march" in i]+[i for i in aa if "Motivation" in i]+[i for i in aa if "traffic" in i]## change added 1808
     # print ('Incremental :', Incremental)
     dt_dist['Incremental'] = dt_dist[Incremental].sum(axis=1)
 
@@ -1731,14 +1729,22 @@ def get_opt_base_comparison(
 
     baseprice_cols = ['wk_sold_median_base_price_byppg_log'] + [i
             for i in col if 'RegularPrice' in i]
-    holiday = [i for i in col if 'day' and 'flag' in i]
+    # holiday =[i for i in col if "day" in i and "flag" in i] ## change added 1808
+    holiday =[i for i in col if "day" and "flag" in i]
+  #holiday =[i for i in col if "day" in i and "flag" in i] ## change added 1808
+    col_remove = ['flag_N_pls_1','date','Non_Promo_flag','Date','Flag_nonpromo','promo','Promo','non_promo','Non_promo','Non_Promo']  ## change added 1808
+    for i in holiday:  ## change added 1808
+        for j in col_remove:
+            if j in i:
+                n=holiday[:]
+                n.remove(i)
+                holiday=n
+                break
     SI_cols = [i for i in col if 'SI' in i]
     trend_cols = [i for i in col if 'trend' in i]
     base_list = baseprice_cols + SI_cols + trend_cols + [i for i in col
             if 'ACV_Selling' in i]
-    base_others = holiday + [i for i in col if 'death_rate' in i] + [i
-            for i in col if 'tpr_discount_byppg_lag1' in i] + [i
-            for i in col if 'tpr_discount_byppg_lag2' in i]
+    base_others = holiday+[i for i in col if "death_rate" in i]+[i for i in col if "Nielsen_Category_Sales" in i]+[i for i in col if 'tpr_discount_byppg_lag1' in i]+[i for i in col if 'tpr_discount_byppg_lag2' in i]+[i for i in col if 'flag_date_non_promo' in i]+[i for i in col if 'Non_Promo_flag' in i]+[i for i in col if 'Flag_nonpromo' in i]##change added 1808
 
   # base_list = ['wk_sold_median_base_price_byppg_log']+[i for i in col if "RegularPrice" in i]+[i for i in col if "day" and "flag" in i ]+["SI","ACV_Selling"]
   # base_list.remove( 'flag_date_1')

@@ -66,7 +66,7 @@ class UnitModel:
         # import pdb
         # pdb.set_trace()
         self.simulate_predicted_units = self.base_unit * (((1 - ((promo_depth + co_investment)/100))** decimal.Decimal(promo_elasticity)))
-        print()
+        # print()
         self.predicted_units = self.simulate_predicted_units if promo_elasticity else predicted_units
         self.asp =  decimal.Decimal(math.exp(median_base_price_log)) * decimal.Decimal(
             (1 - ((promo_depth + co_investment)/100)))
