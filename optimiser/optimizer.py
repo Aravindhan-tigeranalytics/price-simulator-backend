@@ -2265,6 +2265,7 @@ def process(
         _update_params(config, constraints)
    
     print(config , "after update")
+    logger.info(config ,"after update")
     # import pdb
     # pdb.set_trace()
    
@@ -2709,10 +2710,12 @@ def process(
                         iteration = False
                         break
                     if i == len(Sec_combination) - 1:
-
-                          # print i
-
                         relaxed_sec_metrics = Sec_combination[i]
+                        for metric in metrics: ## change added 1808 run time
+                            config['config_constrain']['metric']=True ## change added 1808 run time
+                        print("breaking while loop") ## change added 1808 run time
+                        iteration=False ## change added 1808 run time
+                        break ## change added 1808 run time
                     else:
 
                           # print ('Relaxing :', relaxed_sec_metrics)

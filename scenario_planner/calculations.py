@@ -207,7 +207,7 @@ def calculate_financial_mertrics( data_list ,roi_list,unit_info , flag,promo_ela
         roi = roi_list[i]
         unit = unit_info[i]
         data = data_list[i]
-        print(data[data_values.index('promo_depth')] , "promo depth value for iteration " ,i )
+        # print(data[data_values.index('promo_depth')] , "promo depth value for iteration " ,i )
         try:
 
             ob = model.UnitModel(
@@ -419,6 +419,11 @@ def update_for_optimizer(data_list , querydict):
         if(querydict[i]['Mechanic'] in ['Motivation', 'motivation',
                     'Motivational']):
             cloned_list[index][data_values.index('flag_promotype_motivation')] = 1
+        if(not querydict[i]['Mechanic']):
+            cloned_list[index][data_values.index('flag_promotype_n_pls_1')] = 0
+            cloned_list[index][data_values.index('flag_promotype_motivation')] = 0
+            
+            
         cloned_list[index][data_values.index('co_investment')] = querydict[i]['Coinvestment']
         cloned_list[index][data_values.index('promo_depth')] = querydict[i]['Optimum_Promo']
         if index + 1 < len(cloned_list):
