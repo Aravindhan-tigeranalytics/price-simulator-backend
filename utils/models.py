@@ -46,6 +46,7 @@ class UnitModel:
                  base_unit = 0.0,
                  promo_elasticity = 0,
                  co_investment = 0,
+                 is_vat_applied = True
                  ):
         self.date = date
         self.week = week
@@ -70,8 +71,10 @@ class UnitModel:
         self.predicted_units = self.simulate_predicted_units if promo_elasticity else predicted_units
         self.asp =  decimal.Decimal(math.exp(median_base_price_log)) * decimal.Decimal(
             (1 - ((promo_depth + co_investment)/100)))
-        # self.total_rsv_w_o_vat = self.predicted_units * (self.asp * decimal.Decimal(1 - (20/100)))
-        self.total_rsv_w_o_vat = self.predicted_units * (self.asp)
+        if is_vat_applied:
+            self.total_rsv_w_o_vat = self.predicted_units * (self.asp * decimal.Decimal(1 - (20/100)))
+        else:
+            self.total_rsv_w_o_vat = self.predicted_units * (self.asp)
         self.promo_asp = 0 if not (promo_depth + co_investment) else util._divide(self.total_rsv_w_o_vat,self.predicted_units)
         self.uplift_lsv = incremental_unit * list_price
         self.uplift_gmac_lsv = self.uplift_lsv * (gmac_percent_lsv/100)
@@ -135,7 +138,8 @@ class UnitModelPrice:
                  base_unit = 0.0,
                  promo_elasticity = 0,
                  co_investment = 0,
-                 mars_cogs_per_unit = 0
+                 mars_cogs_per_unit = 0,
+                 is_vat_applied = True
                  ):
         self.date = date
         self.week = week
@@ -159,7 +163,10 @@ class UnitModelPrice:
         self.predicted_units = self.simulate_predicted_units if promo_elasticity else predicted_units
         self.asp =  decimal.Decimal(math.exp(median_base_price_log)) * decimal.Decimal(
             (1 - ((promo_depth + co_investment)/100)))
-        self.total_rsv_w_o_vat = self.predicted_units * (self.asp * decimal.Decimal(1 - (20/100)))
+        if is_vat_applied:
+            self.total_rsv_w_o_vat = self.predicted_units * (self.asp * decimal.Decimal(1 - (20/100)))
+        else:
+            self.total_rsv_w_o_vat = self.predicted_units * (self.asp)
         self.promo_asp = 0 if not (promo_depth + co_investment) else util._divide(self.total_rsv_w_o_vat,self.predicted_units)
         self.uplift_lsv = incremental_unit * list_price
         self.uplift_gmac_lsv = self.uplift_lsv * (gmac_percent_lsv/100)
