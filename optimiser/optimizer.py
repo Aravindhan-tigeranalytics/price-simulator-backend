@@ -46,6 +46,7 @@ def get_promo_wave_values(tpr_discount):
     min_length_gap = 53
     tot_promo_min = 0
     tot_promo_max = 0
+    start = end = 0
 
     val = tpr_discount
     for i in range(0, len(val)):
@@ -59,13 +60,19 @@ def get_promo_wave_values(tpr_discount):
                 if len(waves) < min_consecutive_promo:
                     min_consecutive_promo = len(waves)
             no_of_promo = no_of_promo + 1
-        else:
-            gap.append(val[i])
-            if i + 1 == len(val):
+            if(val[i-1] == 0 and val[i] != 0 and start > 0):
+                end = i
+                gap =[0 for i in range(start , end)]
+                print(gap , "gap ")
                 promo_gap.append(gap)
                 if len(gap) < min_length_gap:
                     min_length_gap = len(gap)
-
+                gap = []
+        else:
+            if(not(i-1 < 0) and val[i-1]!=0 and val[i] == 0):
+                # print(i , "start")
+                start = i
+            gap.append(val[i])
         if not val[i] and val[(0 if i - 1 < 0 else i - 1)]:
             duration_of_waves.append(waves)
             if len(waves) > max_consecutive_promo:
@@ -73,11 +80,11 @@ def get_promo_wave_values(tpr_discount):
             if len(waves) < min_consecutive_promo:
                 min_consecutive_promo = len(waves)
             waves = []
-        elif val[i] and not val[(0 if i - 1 < 0 else i - 1)]:
-            promo_gap.append(gap)
-            if len(gap) < min_length_gap:
-                min_length_gap = len(gap)
-            gap = []
+        # elif val[i] and not val[(0 if i - 1 < 0 else i - 1)]:
+        #     promo_gap.append(gap)
+        #     if len(gap) < min_length_gap:
+        #         min_length_gap = len(gap)
+        #     gap = []
 
         if max_promo > val[i]:
             max_promo = val[i]
@@ -2265,7 +2272,7 @@ def process(
         _update_params(config, constraints)
    
     print(config , "after update")
-    logger.info(config ,"after update")
+    # logger.info(config ,"after update")
     # import pdb
     # pdb.set_trace()
    
@@ -2698,6 +2705,7 @@ def process(
 
                         opt_pop_up_flag = 3
                         opt_pop_up_config = copy.deepcopy(config)
+                        Optimal_calendar_fin = Optimal_calendar.copy() ## change added 2408
 
                 # break the loop if we get a feasible solution
 
@@ -2714,7 +2722,7 @@ def process(
                         for metric in metrics: ## change added 1808 run time
                             config['config_constrain']['metric']=True ## change added 1808 run time
                         print("breaking while loop") ## change added 1808 run time
-                        iteration=False ## change added 1808 run time
+                        # iteration=False ## change added 1808 run time change added 2408
                         break ## change added 1808 run time
                     else:
 
@@ -2747,6 +2755,7 @@ def process(
 
                         opt_pop_up_flag = 4
                         opt_pop_up_config = copy.deepcopy(config)
+                        Optimal_calendar_fin = Optimal_calendar.copy() ## change added 2408
 
                 # break the loop if we get a feasible solution
 
@@ -2792,7 +2801,7 @@ def process(
                 for rel in iter_metrics:  # [MAC,RP,]#TOCHECK
                     rel_no += 1
                     iteration = True
-                    if rel == len(iter_metrics):
+                    if rel_no == len(iter_metrics):
                         break
                     othr_metrics = iter_metrics[rel_no:]  # TODO
                     for metric in othr_metrics:

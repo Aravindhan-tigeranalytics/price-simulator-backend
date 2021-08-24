@@ -234,7 +234,8 @@ def calculate_financial_mertrics( data_list ,roi_list,unit_info , flag,promo_ela
                 incremental_unit = decimal.Decimal(unit['Incremental']),
                 base_unit = decimal.Decimal(unit['Base']),
                 promo_elasticity=promo_elasticity,
-                co_investment = decimal.Decimal(data[data_values.index('co_investment')])
+                co_investment = decimal.Decimal(data[data_values.index('co_investment')]),
+                is_vat_applied=data_values.index('model_meta__account_name') != 'Lenta'
                 
             )
             # import pdb
@@ -295,7 +296,8 @@ def calculate_financial_mertrics_from_pricing( data_list ,roi_list,unit_info , f
             base_unit = decimal.Decimal(unit['Base']),
             promo_elasticity=0,
             co_investment = decimal.Decimal(data[data_values.index('co_investment')]),
-            mars_cogs_per_unit = pricing_week[i].cogs_increase
+            mars_cogs_per_unit = pricing_week[i].cogs_increase,
+             is_vat_applied=data_values.index('model_meta__account_name') != 'Lenta'
             
         )
         update_total(total_units , ob)
@@ -321,8 +323,9 @@ def update_total(total_unit:model.TotalUnit ,unit_model : model.UnitModel ):
     total_unit.nsv = total_unit.nsv + unit_model.total_nsv
     total_unit.mac = total_unit.mac + unit_model.mars_mac
     total_unit.rp = total_unit.rp + unit_model.retailer_margin
-    total_unit.asp = util.average(total_unit.asp,unit_model.asp)  
-    total_unit.avg_promo_selling_price =  util.average(total_unit.avg_promo_selling_price,unit_model.promo_asp) 
+    total_unit.asp = util.average(total_unit.asp,unit_model.asp) 
+    if (unit_model.promo_depth + unit_model.co_investment):
+        total_unit.avg_promo_selling_price =  util.average(total_unit.avg_promo_selling_price,unit_model.promo_asp) 
     total_unit.roi = total_unit.roi + unit_model.roi
     total_unit.rp_percent = util.average(total_unit.rp_percent,unit_model.retailer_margin_percent_of_rsp)
     total_unit.mac_percent = util.average( total_unit.mac_percent,unit_model.mars_mac_percent_of_nsv)
