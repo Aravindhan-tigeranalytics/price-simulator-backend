@@ -17,4 +17,10 @@ local-requirements.txt
 *.mps
 *.sol
 *.log
+.venv
+data/
+optimiser/testdata.py
+/app/settings.py
+/debug.log
 debug.log
+.log
