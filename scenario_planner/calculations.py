@@ -318,6 +318,7 @@ def calculate_financial_mertrics_from_pricing( data_list ,roi_list,unit_info , f
         ob_dict['holiday'] = get_holiday_information(data)
         weekly_units.append(ob_dict)
     # print(weekly_units)
+    aggregate_total(total_units)
     
     return {
         flag : {

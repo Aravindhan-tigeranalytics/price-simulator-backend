@@ -20,7 +20,6 @@ local-requirements.txt
 .venv
 data/
 optimiser/testdata.py
-/app/settings.py
 /debug.log
 debug.log
 .log
