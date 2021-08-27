@@ -202,11 +202,14 @@ def calculate_financial_mertrics( data_list ,roi_list,unit_info , flag,promo_ela
     weekly_units = []
     total_units = model.TotalUnit()
     
+    
     for i in range(0,len(data_list)):
       
         roi = roi_list[i]
         unit = unit_info[i]
         data = data_list[i]
+        # import pdb
+        # pdb.set_trace()
         # print(data[data_values.index('promo_depth')] , "promo depth value for iteration " ,i )
         try:
 
@@ -235,7 +238,10 @@ def calculate_financial_mertrics( data_list ,roi_list,unit_info , flag,promo_ela
                 base_unit = decimal.Decimal(unit['Base']),
                 promo_elasticity=promo_elasticity,
                 co_investment = decimal.Decimal(data[data_values.index('co_investment')]),
-                is_vat_applied=data_values.index('model_meta__account_name') != 'Lenta'
+                is_vat_applied=data[data_values.index('model_meta__account_name')] != 'Lenta',
+                royalty_increase = 0.0 if util._transform_corporate_segment(
+                    data[data_values.index('model_meta__corporate_segment')]
+                ) == 'Choco' else 0.5
                 
             )
             # import pdb
@@ -244,10 +250,14 @@ def calculate_financial_mertrics( data_list ,roi_list,unit_info , flag,promo_ela
             ob_dict = ob.__dict__
             ob_dict['holiday'] = get_holiday_information(data)
             weekly_units.append(ob_dict)
-        except:
+        except Exception as e:
+            raise e
             # import pdb
             # pdb.set_trace()
-            pass
+            # passa
+    # import pdb
+    # pdb.set_trace()
+    aggregate_total(total_units)
     
     return {
         flag : {
@@ -297,14 +307,18 @@ def calculate_financial_mertrics_from_pricing( data_list ,roi_list,unit_info , f
             promo_elasticity=0,
             co_investment = decimal.Decimal(data[data_values.index('co_investment')]),
             mars_cogs_per_unit = pricing_week[i].cogs_increase,
-             is_vat_applied=data_values.index('model_meta__account_name') != 'Lenta'
+             is_vat_applied=data_values.index('model_meta__account_name') != 'Lenta',
+               royalty_increase = 0.0 if util._transform_corporate_segment(
+                    data_values.index('model_meta__corporate_segment')
+                ) == 'Choco' else 0.5
             
         )
         update_total(total_units , ob)
         ob_dict = ob.__dict__
         ob_dict['holiday'] = get_holiday_information(data)
         weekly_units.append(ob_dict)
-    print(weekly_units)
+    # print(weekly_units)
+    
     return {
         flag : {
             'total' :  total_units.__dict__,
@@ -312,6 +326,18 @@ def calculate_financial_mertrics_from_pricing( data_list ,roi_list,unit_info , f
         }
        
     }
+    
+def aggregate_total(total_unit:model.TotalUnit):
+    total_unit.rp_percent = util._divide(total_unit.rp,total_unit.total_rsv_w_o_vat) * 100
+    total_unit.te_percent_of_lsv = util._divide(total_unit.te,total_unit.lsv) * 100
+    total_unit.mac_percent = util._divide( total_unit.mac,total_unit.nsv)* 100
+    total_unit.te_per_unit = util._divide( total_unit.te,total_unit.volume)
+    total_unit.lift = util._divide(total_unit.increment_units,total_unit.base_units)
+    total_unit.roi = util._divide(total_unit.uplift_gmac_lsv,total_unit.total_uplift_cost)
+    total_unit.asp = util._divide(total_unit.asp,52)
+    # lift_ = (unit_model.incremental_unit / unit_model.base_unit)
+    
+    # pass
 
 
 def update_total(total_unit:model.TotalUnit ,unit_model : model.UnitModel ):
@@ -323,18 +349,32 @@ def update_total(total_unit:model.TotalUnit ,unit_model : model.UnitModel ):
     total_unit.nsv = total_unit.nsv + unit_model.total_nsv
     total_unit.mac = total_unit.mac + unit_model.mars_mac
     total_unit.rp = total_unit.rp + unit_model.retailer_margin
-    total_unit.asp = util.average(total_unit.asp,unit_model.asp) 
+    total_unit.asp = total_unit.asp + unit_model.asp
+    # util.average(total_unit.asp,unit_model.asp) 
+    # import pdb
+    # pdb.set_trace()
+    total_unit.uplift_gmac_lsv = total_unit.uplift_gmac_lsv + unit_model.uplift_gmac_lsv
+    total_unit.total_uplift_cost= total_unit.total_uplift_cost + unit_model.total_uplift_cost  
     if (unit_model.promo_depth + unit_model.co_investment):
         total_unit.avg_promo_selling_price =  util.average(total_unit.avg_promo_selling_price,unit_model.promo_asp) 
-    total_unit.roi = total_unit.roi + unit_model.roi
-    total_unit.rp_percent = util.average(total_unit.rp_percent,unit_model.retailer_margin_percent_of_rsp)
-    total_unit.mac_percent = util.average( total_unit.mac_percent,unit_model.mars_mac_percent_of_nsv)
-    total_unit.volume = util.average(total_unit.volume ,unit_model.total_weight_in_tons)
-    total_unit.te_per_unit = total_unit.te_per_unit + unit_model.te_per_units
-    total_unit.te_percent_of_lsv = util.average(total_unit.te_percent_of_lsv ,unit_model.te_percent_of_lsv)
+    # total_unit.roi = total_unit.roi + unit_model.roi
+    # if(unit_model.roi):
+    #     # print(unit_model.roi , "roi")
+    #     total_unit.roi = util.average(total_unit.roi,unit_model.roi)
+        # print(total_unit.roi , "average")
+    # total_unit.rp_percent = util.average(total_unit.rp_percent,unit_model.retailer_margin_percent_of_rsp)
+     
+    # total_unit.mac_percent = util.average( total_unit.mac_percent,unit_model.mars_mac_percent_of_nsv)
+   
+    total_unit.volume = total_unit.volume  + unit_model.total_weight_in_tons
+    # total_unit.te_per_unit = total_unit.te_per_unit + unit_model.te_per_units
+    # total_unit.te_percent_of_lsv = util.average(total_unit.te_percent_of_lsv ,unit_model.te_percent_of_lsv)
     total_unit.base_units = total_unit.base_units + unit_model.base_unit
     total_unit.increment_units =total_unit.increment_units + unit_model.incremental_unit
-    total_unit.lift = total_unit.lift + (unit_model.incremental_unit / unit_model.base_unit)
+    # lift_ = (unit_model.incremental_unit / unit_model.base_unit)
+    # if(lift_):
+    #     total_unit.lift = util.average(total_unit.lift, lift_)
+        # total_unit.lift + 
      
     # pass
         # unit_info[0]['Predicted_sales']
@@ -506,12 +546,21 @@ def update_from_optimizer(data_list , optimizer_week:List[db_model.OptimizerSave
             
         if week.optimum_promo:
             catalogue_index.append(index)
+        if(week.mechanic in ['N + 1', 'N+1', '2 + 1 free',
+                    '1 + 1 free', '3 + 1 free']):
+            cloned_list[index][data_values.index('flag_promotype_n_pls_1')] = 1
+        if(week.mechanic in ['Motivation', 'motivation',
+                    'Motivational']):
+            cloned_list[index][data_values.index('flag_promotype_motivation')] = 1
+        if(not week.mechanic):
+            cloned_list[index][data_values.index('flag_promotype_n_pls_1')] = 0
+            cloned_list[index][data_values.index('flag_promotype_motivation')] = 0
         cloned_list[index][data_values.index('co_investment')]= week.optimum_co_investment
         cloned_list[index][data_values.index('promo_depth')] = week.optimum_promo
-        if week.mechanic in (['N + 1', 'N+1', '2 + 1 free','1 + 1 free', '3 + 1 free']):
-            cloned_list[index][data_values.index('flag_promotype_n_pls_1')] = 1
-        if week.mechanic in (['Motivation', 'motivation','Motivational']):
-            cloned_list[index][data_values.index('flag_promotype_motivation')] = 1
+        # if week.mechanic in (['N + 1', 'N+1', '2 + 1 free','1 + 1 free', '3 + 1 free']):
+        #     cloned_list[index][data_values.index('flag_promotype_n_pls_1')] = 1
+        # if week.mechanic in (['Motivation', 'motivation','Motivational']):
+        #     cloned_list[index][data_values.index('flag_promotype_motivation')] = 1
         if index + 1 < len(optimizer_week):
             cloned_list[index+1][data_values.index('tpr_discount_lag1')] = week.optimum_promo
         if index + 2 < len(optimizer_week):

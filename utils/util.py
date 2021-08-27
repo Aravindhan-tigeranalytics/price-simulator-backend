@@ -5,6 +5,23 @@ import re
 from utils import exceptions as ex
 
 
+
+def _transform_corporate_segment(segment):
+    # import pdb
+    # pdb.set_trace()
+    if segment:
+        if segment.lower() == 'gum':
+            return 'Gum'
+    return 'Choco'
+
+def _get_royalty(segment):
+    # print(segment , "royality value...")
+    ret = 0.5
+    if segment == "Choco":
+        ret = 0.0
+    print(type(ret))
+    return ret
+
 def format_value(val ,is_percent = False , is_currency= False , no_format = False):
     if no_format:
         return val

@@ -20,3 +20,7 @@ class ImportDataException(APIException):
     default_detail = "Error while importing data"
     default_code = 'import_error'
 
+class OptimizationException(APIException):
+    status_code = 400
+    default_detail = "No model data available"
+    default_code = 'optimizer_error'
