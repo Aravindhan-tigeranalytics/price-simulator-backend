@@ -496,8 +496,8 @@ def download_excel_optimizer(account_name , product_group,data):
     percent_header_weekly = [ 'retailer_margin_percent_of_nsv','mars_mac_percent_of_nsv','te_percent_of_lsv'
     ,'rp_percent','mac_percent','roi']
 
-    from optimiser import testdata as test
-    data = test.RESPONSE_OPTIMIZER
+    # from optimiser import testdata as test
+    # data = test.RESPONSE_OPTIMIZER
     
     # summary_data = data['summary']
     # optimal_data = data['optimal']
@@ -1525,9 +1525,10 @@ def download_excel_compare_scenario(data):
     ROW_CONST = 6
     COL_CONST = 1
 
+    compare_scenario_data = data
+
     # from scenario_planner import test as t
     # compare_scenario_data = t.RESPONSE_PROMO
-    compare_scenario_data = data
     
     workbook = xlsxwriter.Workbook(output)
 
@@ -1560,6 +1561,13 @@ def download_excel_compare_scenario(data):
         'align': 'center',
         'text_wrap': True,
         'valign': 'vcenter'})
+    format_value_raw = workbook.add_format({
+        'bold': 1,
+        'border': 1,
+        'align': 'center',
+        'text_wrap': True,
+        'valign': 'vcenter'})
+    format_value_raw.set_font_size(14)
     format_value_left = workbook.add_format({
     'border': 1,
     'align': 'left',
@@ -1687,6 +1695,99 @@ def download_excel_compare_scenario(data):
                     col+=1
             col = COL_CONST
     
+
+    if len(compare_scenario_data) > 0:
+        for data in compare_scenario_data:
+            row = ROW_CONST
+            col = COL_CONST
+
+            scenario_name = (data['scenario_name'][:21] + '_raw_val..') if len(data['scenario_name']) > 21 else data['scenario_name'] + '_raw_val..'
+            worksheet = workbook.add_worksheet(scenario_name)
+            worksheet.hide_gridlines(2)
+
+            worksheet.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
+            worksheet.merge_range('B3:D3', 'Promo Simulator Tool' , merge_format_app)
+            worksheet.set_column('B:D', 20)
+            worksheet.merge_range('B4:D4', "Account Name : {}".format(data['account_name']),merge_format_app)
+            worksheet.merge_range('B5:D5', "Product Group : {}".format(data['product_group']),merge_format_app)
+
+
+            for key in header_title:
+                _writeExcel(worksheet,row, col,key,format_header)
+                col+=1
+
+            col = COL_CONST
+            row+=1
+
+            simulated_weekly = data['simulated']['weekly']
+            base_weekly = data['base']['weekly']
+
+            for base,simulated in zip(base_weekly,simulated_weekly):
+                for k in header_key:
+                    if k == 'date' or k == 'week':
+                        value = simulated[k]
+                        _writeExcel(worksheet,row, col, value ,format_value)
+                        col+=1
+                    elif k == 'promotions':
+                        promotion_value = util.format_promotions(
+                            base['flag_promotype_motivation'],
+                            base['flag_promotype_n_pls_1'],
+                            base['flag_promotype_traffic'],
+                            base['promo_depth'],
+                            base['co_investment']
+                        )
+                        promotion_value_simulated = util.format_promotions(
+                            simulated['flag_promotype_motivation'],
+                            simulated['flag_promotype_n_pls_1'],
+                            simulated['flag_promotype_traffic'],
+                            simulated['promo_depth'],
+                            simulated['co_investment']
+                        )
+                        _writeExcel(worksheet,row, col, promotion_value ,format_value)
+                        col+=1
+                        _writeExcel(worksheet,row, col, promotion_value_simulated ,format_value)
+                        col+=1
+                    elif k in percent_header:
+                        _writeExcel(worksheet,row, col, base[k]/100, format_value)
+                        col+=1
+                        _writeExcel(worksheet,row, col, simulated[k]/100, format_value)
+                        col+=1
+                    elif k in currency_header:
+                        _writeExcel(worksheet,row, col, base[k], format_value)
+                        col+=1
+                        _writeExcel(worksheet,row, col, simulated[k], format_value)
+                        col+=1
+                    else:
+                        _writeExcel(worksheet,row, col, base[k], format_value)
+                        col+=1
+                        _writeExcel(worksheet,row, col, simulated[k], format_value)
+                        col+=1
+                row+=1
+                col = COL_CONST
+
+            simulated_total = data['simulated']['total']
+            base_total = data['base']['total']
+
+            total_header = ['units','base_units','increment_units','volume','lsv','nsv','mac_percent','te','te_percent_of_lsv','te_per_unit','roi','asp','avg_promo_selling_price','total_rsv_w_o_vat','rp','rp_percent','mac']
+            worksheet.merge_range('B{}:E{}'.format(row+1,row+1), 'Total ' , format_header)
+            col = 5
+            for k in total_header:
+                if k in percent_header:
+                    _writeExcel(worksheet,row, col,base_total[k]/100,format_value_raw)
+                    col+=1
+                    _writeExcel(worksheet,row, col,simulated_total[k]/100,format_value_raw)
+                    col+=1
+                elif k in currency_header:
+                    _writeExcel(worksheet,row, col,base_total[k],format_value_raw)
+                    col+=1
+                    _writeExcel(worksheet,row, col,simulated_total[k],format_value_raw)
+                    col+=1
+                else:
+                    _writeExcel(worksheet,row, col,base_total[k],format_value_raw)
+                    col+=1
+                    _writeExcel(worksheet,row, col,simulated_total[k],format_value_raw)
+                    col+=1
+            col = COL_CONST
     workbook.close()
     output.seek(0)
     return output
