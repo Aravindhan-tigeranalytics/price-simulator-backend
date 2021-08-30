@@ -399,9 +399,6 @@ class ModelOptimize(viewsets.GenericViewSet):
     def get_queryset(self):
         return super().get_queryset()
     def post(self,request,format=None):
-        # import pdb
-        # pdb.set_trace()
-        # # print(request.data , "request data")
         account_name = request.data['account_name']
         product_group = request.data['product_group']
         corporate_segment = request.data['corporate_segment']
@@ -409,12 +406,7 @@ class ModelOptimize(viewsets.GenericViewSet):
             # import pdb
             # pdb.set_trace()
             ser = sc.OptimizerSerializer(request.data)
-            print(ser.is_valid() , "is valid check")
-            print(ser.errors , "errors valid check")
             if ser.is_valid():
-                # print(ser.validated_data , ":: of serializer")
-                # print(dict(ser.validated_data) , "dictionary of serializer")
-                
                 return Response(optimizer.process(dict(ser.validated_data)) , 200)
            
        
@@ -424,6 +416,9 @@ class ModelOptimize(viewsets.GenericViewSet):
             ).filter(
             model_meta__account_name = account_name, model_meta__product_group = product_group
             ).order_by('week')
+        if len(tpr) == 0:
+            raise exception.OptimizationException("No model data available for {} and {}".format(account_name , product_group))
+            # OptimizationException
             
             
         
@@ -449,4 +444,5 @@ class ModelOptimize(viewsets.GenericViewSet):
         res = {"data" : serializer.data , "weekly" : tpr}
         res["data"]["param_no_of_waves"] = no_of_waves
         res["data"]["param_no_of_promo"] = no_of_promo
+        
         return Response(res,200)

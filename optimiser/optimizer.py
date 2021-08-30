@@ -22,6 +22,7 @@ import copy
 from optimiser import process as pr
 from utils import units_calculation as cal
 from optimiser import process as process_calc
+from utils import util as utils
 import logging.config
 
 from scenario_planner import mixins as mixin
@@ -31,6 +32,7 @@ logging.config.dictConfig(CONST.LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
 
 value_dict = {}
+
 
 def get_promo_wave_values(tpr_discount):
     no_of_promo = 0
@@ -46,6 +48,7 @@ def get_promo_wave_values(tpr_discount):
     min_length_gap = 53
     tot_promo_min = 0
     tot_promo_max = 0
+    start = end = 0
 
     val = tpr_discount
     for i in range(0, len(val)):
@@ -59,13 +62,19 @@ def get_promo_wave_values(tpr_discount):
                 if len(waves) < min_consecutive_promo:
                     min_consecutive_promo = len(waves)
             no_of_promo = no_of_promo + 1
-        else:
-            gap.append(val[i])
-            if i + 1 == len(val):
+            if(val[i-1] == 0 and val[i] != 0 and start > 0):
+                end = i
+                gap =[0 for i in range(start , end)]
+                print(gap , "gap ")
                 promo_gap.append(gap)
                 if len(gap) < min_length_gap:
                     min_length_gap = len(gap)
-
+                gap = []
+        else:
+            if(not(i-1 < 0) and val[i-1]!=0 and val[i] == 0):
+                # print(i , "start")
+                start = i
+            gap.append(val[i])
         if not val[i] and val[(0 if i - 1 < 0 else i - 1)]:
             duration_of_waves.append(waves)
             if len(waves) > max_consecutive_promo:
@@ -73,11 +82,11 @@ def get_promo_wave_values(tpr_discount):
             if len(waves) < min_consecutive_promo:
                 min_consecutive_promo = len(waves)
             waves = []
-        elif val[i] and not val[(0 if i - 1 < 0 else i - 1)]:
-            promo_gap.append(gap)
-            if len(gap) < min_length_gap:
-                min_length_gap = len(gap)
-            gap = []
+        # elif val[i] and not val[(0 if i - 1 < 0 else i - 1)]:
+        #     promo_gap.append(gap)
+        #     if len(gap) < min_length_gap:
+        #         min_length_gap = len(gap)
+        #     gap = []
 
         if max_promo > val[i]:
             max_promo = val[i]
@@ -128,7 +137,7 @@ def _update_params(config , request_value):
     config['Co_investment'] = request_value['co_investment']
     config['Objective_metric'] = request_value['objective_function']
     config['Objective'] = 'Minimize' if(request_value['objective_function'] in MINIMIZE_PARAMS) else 'Maximize'
-    config['Segment'] = request_value['corporate_segment']
+    config['Segment'] = utils._transform_corporate_segment(request_value['corporate_segment'])
     config['Fin_Pref_Order']=request_value['fin_pref_order']
     config['Promo_Mech']=request_value['promo_mech']
     config['constrain_params']['MAC'] = request_value['param_mac']
@@ -870,9 +879,7 @@ def base_var_cont(
   # ##Give tpr related Variables
     
 
-    Incremental = ['tpr_discount_byppg_contribution_impact'] + [i
-            for i in aa if 'Catalogue' in i] + [i for i in aa
-            if 'Display' in i] + [i for i in aa if 'flag_N_pls_1' in i]
+    Incremental = ['tpr_discount_byppg_contribution_impact']+[i for i in aa if "Catalogue" in i]+[i for i in aa if 'Promo_flg_date' in i]+[i for i in aa if "Display" in i]+[i for i in aa if "flag_N_pls_1" in i]+[i for i in aa if "date_Flag" in i]+[i for i in aa if "flag_promo" in i]+[i for i in aa if "flag_date" in i]+[i for i in aa if "flag_march" in i]+[i for i in aa if "Motivation" in i]+[i for i in aa if "traffic" in i]## change added 1808
     # print ('Incremental :', Incremental)
     dt_dist['Incremental'] = dt_dist[Incremental].sum(axis=1)
 
@@ -1608,6 +1615,7 @@ def optimal_summary_fun(
 
     Base = baseline_data[[
         'Date',
+        'Account Name',
         'wk_base_price_perunit_byppg',
         'Promo',
         'TE',
@@ -1670,12 +1678,15 @@ def optimal_summary_fun(
                 ].isin(['Motivation', 'motivation', 'Motivational']),
                 1, 0)
 
-    new_data['Units'] = predict_sales(Model_Coeff, new_data)
+    # new_data['Units'] = predict_sales(Model_Coeff, new_data)
     new_data['Promo Price'] = new_data['wk_base_price_perunit_byppg'] \
         - new_data['wk_base_price_perunit_byppg'] \
         * (new_data['tpr_discount_byppg'] / 100)
+    new_data['Promo Price'] = np.where(new_data['Account Name']=='Lenta',new_data['Promo Price'],new_data['Promo Price']*(1-0.2)) 
     new_data.loc[new_data['tpr_discount_byppg'].isin(TE_dict.keys()),
                  'TE'] = new_data['tpr_discount_byppg'].map(TE_dict)
+    
+    new_data['Units'] = predict_sales(Model_Coeff,new_data)
     new_data['wk_sold_avg_price_byppg'] = new_data['Promo Price']
     new_data['Sales'] = new_data['Units'] * new_data['Promo Price']
     new_data['GSV'] = new_data['Units'] * new_data['List_Price']
@@ -1717,6 +1728,8 @@ def get_opt_base_comparison(
     train_data['wk_sold_avg_price_byppg'] = \
         np.exp(train_data['wk_sold_median_base_price_byppg_log']) * (1
             - train_data['tpr_discount_byppg'] / 100)
+    train_data['wk_sold_avg_price_byppg'] = np.where(train_data['Account Name']=='Lenta',train_data['wk_sold_avg_price_byppg'],
+                                                   train_data['wk_sold_avg_price_byppg']*(1-0.2)) ## change added 2708
     model_df = train_data.copy()
 
   # Base Variable Method
@@ -1731,14 +1744,22 @@ def get_opt_base_comparison(
 
     baseprice_cols = ['wk_sold_median_base_price_byppg_log'] + [i
             for i in col if 'RegularPrice' in i]
-    holiday = [i for i in col if 'day' and 'flag' in i]
+    # holiday =[i for i in col if "day" in i and "flag" in i] ## change added 1808
+    holiday =[i for i in col if "day" and "flag" in i]
+  #holiday =[i for i in col if "day" in i and "flag" in i] ## change added 1808
+    col_remove = ['flag_N_pls_1','date','Non_Promo_flag','Date','Flag_nonpromo','promo','Promo','non_promo','Non_promo','Non_Promo']  ## change added 1808
+    for i in holiday:  ## change added 1808
+        for j in col_remove:
+            if j in i:
+                n=holiday[:]
+                n.remove(i)
+                holiday=n
+                break
     SI_cols = [i for i in col if 'SI' in i]
     trend_cols = [i for i in col if 'trend' in i]
     base_list = baseprice_cols + SI_cols + trend_cols + [i for i in col
             if 'ACV_Selling' in i]
-    base_others = holiday + [i for i in col if 'death_rate' in i] + [i
-            for i in col if 'tpr_discount_byppg_lag1' in i] + [i
-            for i in col if 'tpr_discount_byppg_lag2' in i]
+    base_others = holiday+[i for i in col if "death_rate" in i]+[i for i in col if "Nielsen_Category_Sales" in i]+[i for i in col if 'tpr_discount_byppg_lag1' in i]+[i for i in col if 'tpr_discount_byppg_lag2' in i]+[i for i in col if 'flag_date_non_promo' in i]+[i for i in col if 'Non_Promo_flag' in i]+[i for i in col if 'Flag_nonpromo' in i]##change added 1808
 
   # base_list = ['wk_sold_median_base_price_byppg_log']+[i for i in col if "RegularPrice" in i]+[i for i in col if "day" and "flag" in i ]+["SI","ACV_Selling"]
   # base_list.remove( 'flag_date_1')
@@ -1845,6 +1866,8 @@ def get_opt_base_comparison(
     train_data['wk_sold_avg_price_byppg'] = \
         np.exp(train_data['wk_sold_median_base_price_byppg_log']) * (1
             - train_data['tpr_discount_byppg'] / 100)
+    train_data['wk_sold_avg_price_byppg'] = np.where(train_data['Account Name']=='Lenta',train_data['wk_sold_avg_price_byppg'],
+                                                   train_data['wk_sold_avg_price_byppg']*(1-0.2)) ## change added 2708
     model_df = train_data.copy()
     model_df['Iteration'] = 1
     model_df1 = model_df.copy()
@@ -2259,6 +2282,19 @@ def process(
         _update_params(config, constraints)
    
     print(config , "after update")
+#     config = {'Retailer': 'Pyaterochka', 'PPG': 'Big Bars', 'Segment': 'Choco', 
+# 'MARS_TPRS': [10, 20], 'Co_investment': [0, 0], 'Promo_Mech': ['TPR', 'TPR'],
+#  'Objective_metric': 'MAC', 'Objective': 'Maximize',
+#  'Fin_Pref_Order': ['RP_Perc', 'MAC_Perc', 'Trade_Expense', 'RP', 'MAC'],
+#  'config_constrain': {'MAC': False, 'RP': False, 'Trade_Expense': False, 'Units': False,
+#  'NSV': False, 'GSV': False, 'Sales': False, 'MAC_Perc': False, 'RP_Perc': False, 
+#  'min_consecutive_promo': True, 'max_consecutive_promo': True, 'promo_gap': True, 
+#  'tot_promo_min': True, 'tot_promo_max': True, 'promo_price': False}, 
+#  'constrain_params': {'MAC': 1.0, 'RP': 1.0, 'Trade_Expense': 1.0, 'Units': 1.0, 'NSV': 1.0, 
+#  'GSV': 1.0, 'Sales': 1.0, 'MAC_Perc': 1.0, 'RP_Perc': 1.0, 'min_consecutive_promo': 3,
+#  'max_consecutive_promo': 3, 'promo_gap': 10, 'tot_promo_min': 6, 'tot_promo_max': 12,
+#  'compul_no_promo_weeks': [28], 'compul_promo_weeks': [11, 12, 24], 'promo_price': 0}}
+    # logger.info(config ,"after update")
     # import pdb
     # pdb.set_trace()
    
@@ -2293,7 +2329,7 @@ def process(
       # getting model data for retailer, ppg and renaming columns
 
     Model_Data = model_data_all
-    Model_Data = Model_Data[['Date'] + idvs]
+    Model_Data = Model_Data[['Date','Account Name'] + idvs]
     Model_Data.rename(columns=col_dict, inplace=True)
 
       # getting model coefficients values with original names and format
@@ -2363,6 +2399,8 @@ def process(
                  Final_Pred_Data['wk_base_price_perunit_byppg'],
                  Final_Pred_Data['wk_base_price_perunit_byppg'] * (1
                  - Final_Pred_Data['tpr_discount_byppg'] / 100))
+    Final_Pred_Data['Promo'] = np.where(Final_Pred_Data['Account Name']=='Lenta',Final_Pred_Data['Promo'],
+                                   Final_Pred_Data['Promo']*(1-0.2)) ## added change 2408(vat)
     Final_Pred_Data['wk_sold_avg_price_byppg'] = Final_Pred_Data['Promo'
             ]
 
@@ -2662,7 +2700,13 @@ def process(
                                    + 1)], [])
             Prim_combination = [i for i in Prim_combination if len(i)
                                 > 0]
-            iteration = True
+            # iteration = True
+            if((len(Prim_combination)>0)or(len(Sec_combination)>0)): ## change added 2708
+                iteration=True ## change added 2708
+            else: ## change added 2708
+                iteration=False ## change added 2708
+                relaxed_sec_metrics_opt=[] ## change added 2708
+                relaxed_prim_metrics_opt=[] ## change added 2708
             while iteration:
                 relaxed_sec_metrics_opt = []
                 relaxed_sec_metrics = []
@@ -2691,6 +2735,7 @@ def process(
 
                         opt_pop_up_flag = 3
                         opt_pop_up_config = copy.deepcopy(config)
+                        Optimal_calendar_fin = Optimal_calendar.copy() ## change added 2408
 
                 # break the loop if we get a feasible solution
 
@@ -2703,10 +2748,12 @@ def process(
                         iteration = False
                         break
                     if i == len(Sec_combination) - 1:
-
-                          # print i
-
                         relaxed_sec_metrics = Sec_combination[i]
+                        for metric in metrics: ## change added 1808 run time
+                            config['config_constrain']['metric']=True ## change added 1808 run time
+                        print("breaking while loop") ## change added 1808 run time
+                        # iteration=False ## change added 1808 run time change added 2408
+                        break ## change added 1808 run time
                     else:
 
                           # print ('Relaxing :', relaxed_sec_metrics)
@@ -2738,6 +2785,7 @@ def process(
 
                         opt_pop_up_flag = 4
                         opt_pop_up_config = copy.deepcopy(config)
+                        Optimal_calendar_fin = Optimal_calendar.copy() ## change added 2408
 
                 # break the loop if we get a feasible solution
 
@@ -2783,7 +2831,7 @@ def process(
                 for rel in iter_metrics:  # [MAC,RP,]#TOCHECK
                     rel_no += 1
                     iteration = True
-                    if rel == len(iter_metrics):
+                    if rel_no == len(iter_metrics):
                         break
                     othr_metrics = iter_metrics[rel_no:]  # TODO
                     for metric in othr_metrics:
@@ -2936,10 +2984,12 @@ def process(
     parsed_base = json.loads(opt_base.to_json(orient="records"))
     # import pdb
     # pdb.set_trace()
+   
     
     financial_metrics = mixin.calculate_finacial_metrics_for_optimizer(account_name,product_group,parsed_base,model_coeff,model_data_all,ROI_data)
   #   print ('completed', opt_base)
   #   print ('completed', summary)
+  
     return {
     "holiday" : holiday_list,
     "summary" : parsed_summary,

@@ -757,7 +757,6 @@ def read_promo_coeff(file):
     sheet = book['MODEL_COEFFICIENT']
     columns = sheet.max_column
     rows = sheet.max_row
-    # print(columns , rows , "columns and rows")
     col_ = [i for i in range(1,len(headers)+1)]
     row_ =0
     for row in range(row_+2 , rows+1):
@@ -765,17 +764,14 @@ def read_promo_coeff(file):
         db_coeff = model.ModelCoefficient()
         for c in range(0,len(col_)):
             
-            # obj = {}
-            # print(row , c," :rowcvalue")'Account Name' , 'Corporate Segment' , 'PPG'
             cell_obj = sheet.cell(row = row,column = col_[c])
             if(headers[c] in const.PROMO_MODEL_META_MAP):
-                # print(headers[c] , const.PROMO_MODEL_META_MAP[headers[c]],cell_obj.value , "generated value")
+                
                 setattr(db_meta,const.PROMO_MODEL_META_MAP[headers[c]],cell_obj.value)
             elif(headers[c] in const.PROMO_MODEL_COEFF_MAP):
                 setattr(db_coeff,const.PROMO_MODEL_COEFF_MAP[headers[c]],
                         cell_obj.value if cell_obj.value else 0.0)
             
-        # print(db_meta.product_group , db_meta.corporate_segment , db_meta.account_name , "from object before save")
         db_meta.slug = util.generate_slug_string(db_meta.account_name,db_meta.corporate_segment,db_meta.product_group)
         if not model.ModelMeta.objects.filter(slug=db_meta.slug).exists():
             db_meta.save()
@@ -875,7 +871,9 @@ def _update_model_data_object(model_data : model.ModelData , sheet:Worksheet,row
     model_data.month = _get_sheet_value(sheet , row,col_map['Month'])
     model_data.period = _get_sheet_value(sheet , row,col_map['Period'])
     model_data.week = _get_sheet_value(sheet , row,col_map['Week'])
-    model_data.date = _get_sheet_value(sheet , row,col_map['Date'])
+    # import pdb
+    # pdb.set_trace()
+    model_data.date = _get_sheet_value(sheet , row,col_map['Date']).split()[0]
     # model_data.wk_sold_avg_price_byppg = _get_sheet_value(sheet , row,col_map['Year'])
     model_data.promo_depth = _get_sheet_value(sheet , row,col_map['Promo_Depth'])
     model_data.co_investment = _get_sheet_value(sheet , row,col_map['Coinvestment'])
@@ -958,7 +956,7 @@ def read_promo_data(file):
         slug = util.generate_slug_string( _get_sheet_value(sheet , row,col_map['Account Name']),
                                             _get_sheet_value(sheet , row,col_map['Corporate Segment']),
                                            _get_sheet_value(sheet , row,col_map['PPG']))
-        db_data.full_clean()
+        # db_data.full_clean()
         db_data.save()
         if slug not in validation_dict:
             validation_dict[slug] = {

@@ -337,6 +337,7 @@ def calculate_finacial_metrics_for_optimizer(account_name,product_group,value_di
                                                                             model.ModelROI,
                                                                             account_name,product_group)
 
+   
     simulated_data_list = cal.update_for_optimizer(data_list, value_dict)
     base_incremental_split = json.loads(uc.list_to_frame(coeff_list , data_list).to_json(orient="records"))
 
@@ -345,6 +346,7 @@ def calculate_finacial_metrics_for_optimizer(account_name,product_group,value_di
     # pdb.set_trace()
     base_finalcial_metrics = cal.calculate_financial_mertrics(data_list ,roi_list,
                                                base_incremental_split , 'base')
+    print("-----------split-------------------------------------------------------")
 
     simulated_financial_metrics = cal.calculate_financial_mertrics(simulated_data_list ,roi_list,
                                             simulated_incremental_split , 'simulated',0)

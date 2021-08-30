@@ -46,6 +46,8 @@ class UnitModel:
                  base_unit = 0.0,
                  promo_elasticity = 0,
                  co_investment = 0,
+                 is_vat_applied = True,
+                 royalty_increase = 0.5
                  ):
         self.date = date
         self.week = week
@@ -58,19 +60,28 @@ class UnitModel:
         self.flag_promotype_n_pls_1 = flag_promotype_n_pls_1
         self.flag_promotype_traffic = flag_promotype_traffic
         self.base_unit = base_unit
-        self.incremental_unit = incremental_unit
+        # self.incremental_unit = incremental_unit
         self.promo_depth = promo_depth
         self.co_investment = co_investment
-        self.lift = (self.incremental_unit / self.base_unit )
+       
         # if promo_elasticity and promo_depth:
-        # import pdb
-        # pdb.set_trace()
+        # if promo_elasticity:
+        #     import pdb
+        #     pdb.set_trace()
         self.simulate_predicted_units = self.base_unit * (((1 - ((promo_depth + co_investment)/100))** decimal.Decimal(promo_elasticity)))
-        print()
+        # print()
         self.predicted_units = self.simulate_predicted_units if promo_elasticity else predicted_units
+        self.incremental_unit = round(self.simulate_predicted_units,5)  - round(self.base_unit,5)
+        self.lift = (self.incremental_unit / self.base_unit )
+        # inc = new_pre - base
         self.asp =  decimal.Decimal(math.exp(median_base_price_log)) * decimal.Decimal(
             (1 - ((promo_depth + co_investment)/100)))
-        self.total_rsv_w_o_vat = self.predicted_units * (self.asp * decimal.Decimal(1 - (20/100)))
+        
+        # print(self.asp , "ASP.............................................................")
+        if is_vat_applied:
+            self.total_rsv_w_o_vat = self.predicted_units * (self.asp * decimal.Decimal(1 - (20/100)))
+        else:
+            self.total_rsv_w_o_vat = self.predicted_units * (self.asp)
         self.promo_asp = 0 if not (promo_depth + co_investment) else util._divide(self.total_rsv_w_o_vat,self.predicted_units)
         self.uplift_lsv = incremental_unit * list_price
         self.uplift_gmac_lsv = self.uplift_lsv * (gmac_percent_lsv/100)
@@ -79,8 +90,8 @@ class UnitModel:
         self.mars_total_on_invoice = self.total_lsv * (on_inv_percent / 100)
         self.mars_uplift_nrv = self.uplift_lsv - self.mars_uplift_on_invoice
         self.mars_total_nrv = self.total_lsv - self.mars_total_on_invoice
-        self.uplift_promo_cost = self.mars_uplift_nrv * ((promo_depth + co_investment)/100)
-        self.tpr_budget_roi = self.mars_total_nrv * ((promo_depth + co_investment)/100)
+        self.uplift_promo_cost = self.mars_uplift_nrv * ((promo_depth)/100) # only depth
+        self.tpr_budget_roi = self.mars_total_nrv * ((promo_depth )/100) #only depth
         self.mars_uplift_net_invoice_price = self.mars_uplift_nrv - self.uplift_promo_cost
         self.mars_total_net_invoice_price = self.mars_total_nrv - self.tpr_budget_roi # changed from tpr budget
         self.mars_uplift_off_invoice = self.mars_uplift_net_invoice_price * (off_inv_percent / 100)
@@ -90,10 +101,10 @@ class UnitModel:
         self.uplift_nsv = self.uplift_lsv - self.uplift_trade_expense
         self.total_nsv = self.total_lsv - self.total_trade_expense
         self.te_per_units = self.total_trade_expense / self.predicted_units
-        self.uplift_royalty = decimal.Decimal(0.5) * self.uplift_nsv
+        self.uplift_royalty = decimal.Decimal(royalty_increase) * self.uplift_nsv #for choco =0
         self.total_uplift_cost = self.uplift_royalty + self.uplift_trade_expense
         self.roi = util._divide(self.uplift_gmac_lsv,self.total_uplift_cost)
-        self.tpr_budget = self.mars_total_nrv * ((promo_depth + co_investment)/100)
+        self.tpr_budget = self.mars_total_nrv * ((promo_depth)/100)  #only depth
         self.mars_total_net_invoice_price = self.mars_total_nrv - self.tpr_budget
         self.mars_cogs_per_unit = list_price - abs(list_price * (gmac_percent_lsv/100))
         self.uplift_cogs = self.incremental_unit * self.mars_cogs_per_unit
@@ -106,6 +117,7 @@ class UnitModel:
         self.retailer_margin_percent_of_nsv = (self.retailer_margin / self.total_nsv) * 100
         self.retailer_margin_percent_of_rsp = (self.retailer_margin / self.total_rsv_w_o_vat) * 100
         self.mars_mac_percent_of_nsv = (self.mars_mac/self.total_nsv) * 100
+        # print(self.mars_mac_percent_of_nsv , "marspercent.......................for week:"+str(self.week)+":................................")
         self.te_percent_of_lsv = (self.trade_expense/self.total_lsv) * 100
 
 
@@ -134,7 +146,9 @@ class UnitModelPrice:
                  base_unit = 0.0,
                  promo_elasticity = 0,
                  co_investment = 0,
-                 mars_cogs_per_unit = 0
+                 mars_cogs_per_unit = 0,
+                 is_vat_applied = True,
+                 royalty_increase = 0.5
                  ):
         self.date = date
         self.week = week
@@ -158,7 +172,10 @@ class UnitModelPrice:
         self.predicted_units = self.simulate_predicted_units if promo_elasticity else predicted_units
         self.asp =  decimal.Decimal(math.exp(median_base_price_log)) * decimal.Decimal(
             (1 - ((promo_depth + co_investment)/100)))
-        self.total_rsv_w_o_vat = self.predicted_units * (self.asp * decimal.Decimal(1 - (20/100)))
+        if is_vat_applied:
+            self.total_rsv_w_o_vat = self.predicted_units * (self.asp * decimal.Decimal(1 - (20/100)))
+        else:
+            self.total_rsv_w_o_vat = self.predicted_units * (self.asp)
         self.promo_asp = 0 if not (promo_depth + co_investment) else util._divide(self.total_rsv_w_o_vat,self.predicted_units)
         self.uplift_lsv = incremental_unit * list_price
         self.uplift_gmac_lsv = self.uplift_lsv * (gmac_percent_lsv/100)
@@ -178,7 +195,7 @@ class UnitModelPrice:
         self.uplift_nsv = self.uplift_lsv - self.uplift_trade_expense
         self.total_nsv = self.total_lsv - self.total_trade_expense
         self.te_per_units = self.total_trade_expense / self.predicted_units
-        self.uplift_royalty = decimal.Decimal(0.5) * self.uplift_nsv
+        self.uplift_royalty = decimal.Decimal(royalty_increase) * self.uplift_nsv
         self.total_uplift_cost = self.uplift_royalty + self.uplift_trade_expense
         self.roi = util._divide(self.uplift_gmac_lsv,self.total_uplift_cost)
         self.tpr_budget = self.mars_total_nrv * ((promo_depth + co_investment)/100)
@@ -217,3 +234,5 @@ class TotalUnit:
     increment_units = 0
     lift = 0
     cogs = 0
+    uplift_gmac_lsv = 0
+    total_uplift_cost = 0

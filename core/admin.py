@@ -68,15 +68,13 @@ class ModelMetaAdmin(admin.ModelAdmin):
             try:
                 total_model = 0
                 csv_file = request.FILES["csv_file"]
-                # roi_file = request.FILES["roi_file"]
-                excel.read_promo_coeff(csv_file)
-                excel.read_roi_data(csv_file)   
-                # excel.lift(csv_file , roi_file)
-                # excel.lift_test()
-                excel.read_coeff_map(csv_file)
-                # @util.validate_import_data
+                 
+                # excel.read_promo_coeff(csv_file)
+                # excel.read_roi_data(csv_file)   
+                
+                # excel.read_coeff_map(csv_file)
+                 
                 excel.read_promo_data(csv_file)
-                # total_model = util.validate_import_data(excel.read_promo_data(csv_file))
                 
                 self.message_user(request, "Total {} model data imported".format(total_model))
                 return redirect("..")
