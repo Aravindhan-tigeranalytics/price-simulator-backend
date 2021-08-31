@@ -76,12 +76,15 @@ class UnitModel:
         # inc = new_pre - base
         self.asp =  decimal.Decimal(math.exp(median_base_price_log)) * decimal.Decimal(
             (1 - ((promo_depth + co_investment)/100)))
+        # self.asp = self.asp * decimal.Decimal(1 - (20/100))
         
-        # print(self.asp , "ASP.............................................................")
+        print(self.asp , "ASP.............................................................")
         if is_vat_applied:
-            self.total_rsv_w_o_vat = self.predicted_units * (self.asp * decimal.Decimal(1 - (20/100)))
+            self.asp = self.asp * decimal.Decimal(1 - (20/100))
+            
         else:
-            self.total_rsv_w_o_vat = self.predicted_units * (self.asp)
+            pass
+        self.total_rsv_w_o_vat = self.predicted_units * (self.asp)
         self.promo_asp = 0 if not (promo_depth + co_investment) else util._divide(self.total_rsv_w_o_vat,self.predicted_units)
         self.uplift_lsv = incremental_unit * list_price
         self.uplift_gmac_lsv = self.uplift_lsv * (gmac_percent_lsv/100)

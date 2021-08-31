@@ -553,10 +553,21 @@ class ScenarioPlannerMetricsViewSetObject(viewsets.GenericViewSet, mixins.ListMo
     
 class LoadScenario(viewsets.ReadOnlyModelViewSet,mixin.CalculationMixin):
     # queryset = Scenario.objects.filter(scenario_type = 'promo')
-    queryset = model.SavedScenario.objects.prefetch_related('optimizer_saved' , 'promo_saved').all()
+    # queryset = model.SavedScenario.objects.prefetch_related('optimizer_saved' , 'promo_saved').all()
     # serializer_class = sc.PromoScenarioSavedList
-    serializer_class = sc.ScenarioSavedList
+    serializer_class = sc.ScenarioSavedListOptimized
     lookup_field = "id"
+    
+    #  # queryset = Scenario.objects.filter(scenario_type = 'promo') backup
+    # queryset = model.SavedScenario.objects.prefetch_related('optimizer_saved' , 'promo_saved').all()
+    # # serializer_class = sc.PromoScenarioSavedList
+    # serializer_class = sc.ScenarioSavedListOptimized
+    # lookup_field = "id"
+    def get_queryset(self):
+        queryset = model.SavedScenario.objects.all()
+    # Set up eager loading to avoid N+1 selects
+        queryset = self.get_serializer_class().setup_eager_loading(queryset)  
+        return queryset
     
     def list(self, request, *args, **kwargs):
         # import pdb

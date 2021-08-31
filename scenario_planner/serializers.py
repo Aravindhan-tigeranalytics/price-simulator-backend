@@ -1,7 +1,9 @@
 from django.db.models import fields, query
+from django.db.models.query import Prefetch
 from numpy import source
 from pulp import constants
 from rest_framework import serializers
+
 from utils import exceptions as exception, models
 # from core.models import Scenario,ScenarioPlannerMetrics
 from core import models as model
@@ -172,6 +174,139 @@ class ScenarioSavedList(serializers.ModelSerializer):
         # pdb.set_trace()
             
         super().__init__(*args, **kwargs)
+  
+class PromoSaveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = model.PromoSave
+        fields = "__all__"
+
+class OptimizerSaveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = model.OptimizerSave
+        fields = "__all__"
+          
+# OptimizerSave,PromoSave        
+class ScenarioSavedListOptimized(serializers.ModelSerializer):
+    meta = serializers.SerializerMethodField('has_pricing')
+    # optimizer_saved = OptimizerSaveSerializer(many = True)
+    # promo_saved = PromoSaveSerializer(many = True)
+    class Meta:
+        model = model.SavedScenario
+        fields = ('id', 'name', 'comments','scenario_type' , 'meta')
+        read_only_fields = ('id',)
+        
+    @staticmethod
+    def setup_eager_loading(queryset):
+        """ Perform necessary eager loading of data. """
+        # queryset = queryset.prefetch_related('optimizer_saved' , 'promo_saved','optimizer_saved__pricing_save')
+        queryset = queryset.prefetch_related(
+            Prefetch(
+                  'optimizer_saved',
+            queryset=model.OptimizerSave.objects.select_related('model_meta' , 'pricing_save').all(),
+            to_attr='prefetched_optimizer'
+            ),
+             Prefetch(
+                  'promo_saved',
+            queryset=model.PromoSave.objects.select_related('saved_pricing').all(),
+            to_attr='prefetched_promo'
+            ),
+              Prefetch(
+                  'pricing_saved',
+            queryset=model.PricingSave.objects.all().prefetch_related(
+                 Prefetch(
+                  'pricing_week',
+            queryset=model.PricingWeek.objects.all(),
+            to_attr='prefetched_price_week'
+            ),
+                ),
+            to_attr='prefetched_price'
+            )
+        )
+        return queryset
+        
+    def get_fields(self , *args,**kwargs):
+        return super().get_fields()
+    def has_pricing(self,obj):
+        
+            
+        if obj.scenario_type == 'promo':
+            # import pdb
+            # pdb.set_trace()
+            # obj.prefetched_promo[0]
+            promo_save  = obj.prefetched_promo[0]
+            obj = {
+                "retailer" : promo_save.account_name,
+                "product_group" : promo_save.product_group,
+                "pricing" : False
+            }
+            # if( bool(promo_save.saved_pricing)):
+            #     pricing = model.PricingWeek.objects.filter(pricing_save = promo_save.saved_pricing).first()
+            #     obj['pricing'] = {
+            #         "lpi" : pricing.lp_increase,
+            #         "rsp" : pricing.rsp_increase,
+            #         "cogs" : pricing.cogs_increase,
+            #         "elasticity" : pricing.base_price_elasticity
+            #     }
+            
+                    
+            return obj
+        if obj.scenario_type == 'optimizer':
+            # import pdb
+            # pdb.set_trace()
+            # print(obj.name , "name have problem with id " , obj.id)
+            optimizer_saved = obj.prefetched_optimizer[0]
+            obj = {
+                "retailer" : optimizer_saved.model_meta.account_name,
+                "product_group" : optimizer_saved.model_meta.product_group,
+                "pricing" : False
+            }
+            promo_save = optimizer_saved.promo_save
+            pricing_save = optimizer_saved.pricing_save
+            # if promo_save:
+            #     # return bool(promo_save.saved_pricing)
+            #     pricing = model.PricingWeek.objects.filter(pricing_save = promo_save.saved_pricing).first()
+            #     obj['pricing'] = {
+            #         "lpi" : pricing.lp_increase,
+            #         "rsp" : pricing.rsp_increase,
+            #         "cogs" : pricing.cogs_increase,
+            #         "elasticity" : pricing.base_price_elasticity
+            #     }
+            # if pricing_save:
+            #     pricing = model.PricingWeek.objects.filter(pricing_save = pricing_save).first()
+            #     obj['pricing'] = {
+            #     "lpi" : pricing.lp_increase,
+            #     "rsp" : pricing.rsp_increase,
+            #     "cogs" : pricing.cogs_increase,
+            #     "elasticity" : pricing.base_price_elasticity
+            #     }
+            return obj
+        # import pdb
+        # pdb.set_trace()
+        pricing_save = obj.prefetched_price[0]
+        pricing = obj.prefetched_price[0].prefetched_price_week[0]
+        obj = {
+                "retailer" : pricing_save.account_name,
+                "product_group" : pricing_save.product_group,
+                "pricing" : False
+            }
+        
+        obj['pricing'] = {
+                "lpi" : pricing.lp_increase,
+                "rsp" : pricing.rsp_increase,
+                "cogs" : pricing.cogs_increase,
+                "elasticity" : pricing.base_price_elasticity
+                }
+        # import pdb
+        # pdb.set_trace()
+            
+        return obj
+    def __init__(self, *args, **kwargs):
+        # if 'context' in kwargs:
+        # import pdb
+        # pdb.set_trace()
+            
+        super().__init__(*args, **kwargs)
+        
 class ScenarioPlannerMetricsSerializerObject(serializers.ModelSerializer):
     my_field = serializers.SerializerMethodField('obj')
     def obj(self,metric):
