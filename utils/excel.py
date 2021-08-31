@@ -638,12 +638,13 @@ def download_excel_optimizer(account_name , product_group,data):
 
                 _writeExcel(worksheet_summary_raw,row+2, col,change,format_value)
                 _writeExcel(worksheet_summary_raw,row+3, col,change/base_total[k],format_value)
+
             else:
                 _writeExcel(worksheet,row+2, col,change,format_value_currency)
-                _writeExcel(worksheet,row+3, col,change/base_total[k],format_value_currency)
+                _writeExcel(worksheet,row+3, col,change/base_total[k] if change > 0 else 0,format_value_currency)
 
                 _writeExcel(worksheet_summary_raw,row+2, col,change,format_value)
-                _writeExcel(worksheet_summary_raw,row+3, col,change/base_total[k],format_value)
+                _writeExcel(worksheet_summary_raw,row+3, col,change/base_total[k] if change > 0 else 0,format_value)
             col+=1
         else:
             change = simulated_total[k]-base_total[k]
@@ -660,10 +661,10 @@ def download_excel_optimizer(account_name , product_group,data):
                 _writeExcel(worksheet_summary_raw,row+3, col,change/base_total[k],format_value)
             else:
                 _writeExcel(worksheet,row+2, col,change,format_value_number)
-                _writeExcel(worksheet,row+3, col,change/base_total[k],format_value_number)
+                _writeExcel(worksheet,row+3, col, 0 if change == 0 else change/base_total[k],format_value_number)
 
                 _writeExcel(worksheet_summary_raw,row+2, col,change,format_value)
-                _writeExcel(worksheet_summary_raw,row+3, col,change/base_total[k],format_value)
+                _writeExcel(worksheet_summary_raw,row+3, col, 0 if change == 0 else change/base_total[k],format_value)
             col+=1
 
     row = ROW_CONST
