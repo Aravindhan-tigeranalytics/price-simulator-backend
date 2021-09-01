@@ -78,7 +78,7 @@ class UnitModel:
             (1 - ((promo_depth + co_investment)/100)))
         # self.asp = self.asp * decimal.Decimal(1 - (20/100))
         
-        print(self.asp , "ASP.............................................................")
+        # print(self.asp , "ASP......../.....................................................")
         if is_vat_applied:
             self.asp = self.asp * decimal.Decimal(1 - (20/100))
             

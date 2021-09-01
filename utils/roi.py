@@ -467,7 +467,7 @@ def base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef):
   dt_dist['Comp'] = dt_dist[Comp].sum(axis = 1)
   ###Give tpr related Variables
   Incremental = ['TPR_Discount_contribution_impact']+[i for i in aa if "Catalogue" in i]
-  print('Incremental :',Incremental)
+#   print('Incremental :',Incremental)
   dt_dist['Incremental'] = dt_dist[Incremental].sum(axis = 1)
   ###Give the remaining Base columns
   

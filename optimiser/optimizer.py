@@ -94,14 +94,14 @@ def get_promo_wave_values(tpr_discount):
             min_promo = val[i]
     tot_promo_max = no_of_promo + 3
     tot_promo_min = no_of_promo - 3
-    print (max_consecutive_promo, 'maximum consecutive  promo')
-    print (min_consecutive_promo, 'minimum consecutive promo')
-    print (min_length_gap, 'promo gap')
-    print (tot_promo_min, 'total promo min')
-    print (tot_promo_max, 'total promo max')
-    print (duration_of_waves, 'duration of waves')
-    print (len(duration_of_waves), 'duration of waves length')
-    print (no_of_promo, 'no of promo')
+    # print (max_consecutive_promo, 'maximum consecutive  promo')
+    # print (min_consecutive_promo, 'minimum consecutive promo')
+    # print (min_length_gap, 'promo gap')
+    # print (tot_promo_min, 'total promo min')
+    # print (tot_promo_max, 'total promo max')
+    # print (duration_of_waves, 'duration of waves')
+    # print (len(duration_of_waves), 'duration of waves length')
+    # print (no_of_promo, 'no of promo')
     return (
         min_consecutive_promo,
         max_consecutive_promo,
@@ -2751,7 +2751,7 @@ def process(
                         relaxed_sec_metrics = Sec_combination[i]
                         for metric in metrics: ## change added 1808 run time
                             config['config_constrain']['metric']=True ## change added 1808 run time
-                        print("breaking while loop") ## change added 1808 run time
+                        # print("breaking while loop") ## change added 1808 run time
                         # iteration=False ## change added 1808 run time change added 2408
                         break ## change added 1808 run time
                     else:
@@ -2967,9 +2967,9 @@ def process(
       # Infeasible Soln
 
         opt_pop_up_flag_final = 0
-    print(opt_pop_up_flag , "opt_pop_up_flag")
-    print(opt_pop_up_flag_final , "opt_pop_up_flag_final")
-    print(opt_pop_up_config_final , "opt_pop_up_config_final")
+    # print(opt_pop_up_flag , "opt_pop_up_flag")
+    # print(opt_pop_up_flag_final , "opt_pop_up_flag_final")
+    # print(opt_pop_up_config_final , "opt_pop_up_config_final")
     if len(holiday_list) > 0:
         for value in holiday_list:
           opt_base[value] = Optimal_data[value]
