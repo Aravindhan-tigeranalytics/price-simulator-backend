@@ -259,14 +259,10 @@ def download_excel_promo(data):
     
     # data_val = data['simulated']['weekly'][0]
 
-    header_key =  ['date','week','promotions', 'predicted_units','base_unit','incremental_unit','total_weight_in_tons','total_lsv','total_nsv','mars_mac_percent_of_nsv','trade_expense','te_percent_of_lsv', 'te_per_units','roi','asp','promo_asp','total_rsv_w_o_vat', 'retailer_margin','retailer_margin_percent_of_nsv', 'mars_mac', ]
+    header_key =  ['date','week','promotions', 'predicted_units','base_unit','incremental_unit','total_weight_in_tons', 'total_rsv_w_o_vat', 'retailer_margin','retailer_margin_percent_of_nsv', 'asp','promo_asp', 'total_lsv','total_nsv','mars_mac_percent_of_nsv','trade_expense','te_percent_of_lsv', 'te_per_units', 'roi']
 
-    header_title = ['Date','Week','Promotions(Base)','Promotions(Simulated)','Units(Base)','Units(Simulated)','Base units(Base)','Base units(Simulated)','Incremental units(Base)',
-    'Incremental units(Simulated)','Volume(Base)','Volume(Simulated)','LSV(Base)','LSV(Simulated)','NSV(Base)','NSV(Simulated)',
-    'MAC, %NSV(Base)','MAC, %NSV(Simulated)','Trade expense(Base)','Trade expense(Simulated)','TE, % LSV(Base)','TE, % LSV(Simulated)',
-    'TE / Unit(Base)','TE / Unit(Simulated)','ROI(Base)','ROI(Simulated)','ASP(Base)','ASP(Simulated)','Promo ASP(Base)','Promo ASP(Simulated)',
-    'RSV w/o VAT(Base)','RSV w/o VAT(Simulated)','Trade Margin(Base)','Trade Margin(Simulated)','Trade Margin,%RSV(Base)',
-    'Trade Margin,%RSV(Simulated)','Mars MAC(Base)','Mars MAC(Simulated)']
+    header_title = ['Date','Week','Promotions(Base)','Promotions(Simulated)','Units(Base)','Units(Simulated)','Base units(Base)','Base units(Simulated)','Incremental units(Base)', 'Incremental units(Simulated)','Volume(Base)','Volume(Simulated)',
+    'RSV w/o VAT(Base)','RSV w/o VAT(Simulated)','Trade Margin(Base)','Trade Margin(Simulated)','Trade Margin,%RSV(Base)', 'Trade Margin,%RSV(Simulated)','ASP(Base)','ASP(Simulated)','Promo ASP(Base)','Promo ASP(Simulated)', 'LSV(Base)','LSV(Simulated)','NSV(Base)','NSV(Simulated)', 'MAC, %NSV(Base)','MAC, %NSV(Simulated)','Trade expense(Base)','Trade expense(Simulated)','TE, % LSV(Base)','TE, % LSV(Simulated)','TE / Unit(Base)','TE / Unit(Simulated)','ROI(Base)','ROI(Simulated)']
 
     for key in header_title:
         _writeExcel(worksheet,row, col,key,format_header)
@@ -338,7 +334,7 @@ def download_excel_promo(data):
     simulated_total = data['simulated']['total']
     base_total = data['base']['total']
 
-    total_header = ['units','base_units','increment_units','volume','lsv','nsv','mac_percent','te','te_percent_of_lsv','te_per_unit','roi','asp','avg_promo_selling_price','total_rsv_w_o_vat','rp','rp_percent','mac']
+    total_header = ['units','base_units','increment_units','volume','total_rsv_w_o_vat','rp','rp_percent','asp','avg_promo_selling_price','lsv','nsv','mac_percent','te','te_percent_of_lsv','te_per_unit', 'roi',]
     worksheet.merge_range('B{}:E{}'.format(row+1,row+1), 'Total ' , format_header)
     worksheet_raw.merge_range('B{}:E{}'.format(row+1,row+1), 'Total ' , format_header)
     col = 5
@@ -1594,14 +1590,9 @@ def download_excel_compare_scenario(data):
     summary_value_number = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K";[<999950000]0.0,,"M";0.0,,,"B"' })
     summary_value_number.set_font_size(14)
 
-    header_key =  ['date','week', 'promotions','predicted_units','base_unit','incremental_unit','total_weight_in_tons','total_lsv','total_nsv','mars_mac_percent_of_nsv','trade_expense','te_percent_of_lsv', 'te_per_units','roi','asp','promo_asp','total_rsv_w_o_vat', 'retailer_margin','retailer_margin_percent_of_nsv', 'mars_mac', ]
+    header_key =  ['date','week', 'promotions', 'predicted_units','base_unit','incremental_unit','total_weight_in_tons', 'total_rsv_w_o_vat', 'retailer_margin','retailer_margin_percent_of_nsv','asp','promo_asp', 'total_lsv','total_nsv','mars_mac_percent_of_nsv','trade_expense','te_percent_of_lsv', 'te_per_units', 'roi']
 
-    header_title = ['Date','Week','Promotion(Base)','Promotion(Simulated)','Units(Base)','Units(Simulated)','Base units(Base)','Base units(Simulated)','Incremental units(Base)',
-    'Incremental units(Simulated)','Volume(Base)','Volume(Simulated)','LSV(Base)','LSV(Simulated)','NSV(Base)','NSV(Simulated)',
-    'MAC, %NSV(Base)','MAC, %NSV(Simulated)','Trade expense(Base)','Trade expense(Simulated)','TE, % LSV(Base)','TE, % LSV(Simulated)',
-    'TE / Unit(Base)','TE / Unit(Simulated)','ROI(Base)','ROI(Simulated)','ASP(Base)','ASP(Simulated)','Promo ASP(Base)','Promo ASP(Simulated)',
-    'RSV w/o VAT(Base)','RSV w/o VAT(Simulated)','Trade Margin(Base)','Trade Margin(Simulated)','Trade Margin,%RSV(Base)',
-    'Trade Margin,%RSV(Simulated)','Mars MAC(Base)','Mars MAC(Simulated)']
+    header_title = ['Date','Week','Promotion(Base)','Promotion(Simulated)','Units(Base)','Units(Simulated)','Base units(Base)','Base units(Simulated)','Incremental units(Base)','Incremental units(Simulated)','Volume(Base)','Volume(Simulated)','RSV w/o VAT(Base)','RSV w/o VAT(Simulated)','Trade Margin(Base)','Trade Margin(Simulated)','Trade Margin,%RSV(Base)', 'Trade Margin,%RSV(Simulated)','ASP(Base)','ASP(Simulated)','Promo ASP(Base)','Promo ASP(Simulated)','LSV(Base)','LSV(Simulated)','NSV(Base)','NSV(Simulated)', 'MAC, %NSV(Base)','MAC, %NSV(Simulated)','Trade expense(Base)','Trade expense(Simulated)','TE, % LSV(Base)','TE, % LSV(Simulated)','TE / Unit(Base)','TE / Unit(Simulated)','ROI(Base)','ROI(Simulated)',]
 
     if len(compare_scenario_data) > 0:
         for data in compare_scenario_data:
@@ -1769,7 +1760,7 @@ def download_excel_compare_scenario(data):
             simulated_total = data['simulated']['total']
             base_total = data['base']['total']
 
-            total_header = ['units','base_units','increment_units','volume','lsv','nsv','mac_percent','te','te_percent_of_lsv','te_per_unit','roi','asp','avg_promo_selling_price','total_rsv_w_o_vat','rp','rp_percent','mac']
+            total_header = ['units','base_units','increment_units','volume', 'total_rsv_w_o_vat','rp','rp_percent','asp','avg_promo_selling_price', 'lsv','nsv','mac_percent','te','te_percent_of_lsv','te_per_unit', 'roi']
             worksheet.merge_range('B{}:E{}'.format(row+1,row+1), 'Total ' , format_header)
             col = 5
             for k in total_header:
