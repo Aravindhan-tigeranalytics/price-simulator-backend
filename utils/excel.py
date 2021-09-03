@@ -265,8 +265,8 @@ def download_excel_promo(data):
     'Incremental units(Simulated)','Volume(Base)','Volume(Simulated)','LSV(Base)','LSV(Simulated)','NSV(Base)','NSV(Simulated)',
     'MAC, %NSV(Base)','MAC, %NSV(Simulated)','Trade expense(Base)','Trade expense(Simulated)','TE, % LSV(Base)','TE, % LSV(Simulated)',
     'TE / Unit(Base)','TE / Unit(Simulated)','ROI(Base)','ROI(Simulated)','ASP(Base)','ASP(Simulated)','Promo ASP(Base)','Promo ASP(Simulated)',
-    'RSV w/o VAT(Base)','RSV w/o VAT(Simulated)','Customer Margin(Base)','Customer Margin(Simulated)','Customer Margin,%RSV(Base)',
-    'Customer Margin,%RSV(Simulated)','Mars MAC(Base)','Mars MAC(Simulated)']
+    'RSV w/o VAT(Base)','RSV w/o VAT(Simulated)','Trade Margin(Base)','Trade Margin(Simulated)','Trade Margin,%RSV(Base)',
+    'Trade Margin,%RSV(Simulated)','Mars MAC(Base)','Mars MAC(Simulated)']
 
     for key in header_title:
         _writeExcel(worksheet,row, col,key,format_header)
@@ -582,7 +582,7 @@ def download_excel_optimizer(account_name , product_group,data):
     
     # data_val = [d['Metric'] for d in summary_data]
     header_key = ['Units','Base units','Incremental units','Volume','LSV','NSV','MAC, %NSV','Trade expense','TE, % LSV',
-    'TE / Unit','ROI','ASP','Promo ASP','RSV w/o VAT','Customer Margin','Customer Margin,%RSV','Mars MAC']
+    'TE / Unit','ROI','ASP','Promo ASP','RSV w/o VAT','Trade Margin','Trade Margin,%RSV','Mars MAC']
 
     for val in header_key:
         _writeExcel(worksheet,row, col,val,format_header)
@@ -690,8 +690,8 @@ def download_excel_optimizer(account_name , product_group,data):
     'Incremental units(Simulated)','Volume(Base)','Volume(Simulated)','LSV(Base)','LSV(Simulated)','NSV(Base)','NSV(Simulated)',
     'MAC, %NSV(Base)','MAC, %NSV(Simulated)','Trade expense(Base)','Trade expense(Simulated)','TE, % LSV(Base)','TE, % LSV(Simulated)',
     'TE / Unit(Base)','TE / Unit(Simulated)','ROI(Base)','ROI(Simulated)','ASP(Base)','ASP(Simulated)','Promo ASP(Base)','Promo ASP(Simulated)',
-    'RSV w/o VAT(Base)','RSV w/o VAT(Simulated)','Customer Margin(Base)','Customer Margin(Simulated)','Customer Margin,%RSV(Base)',
-    'Customer Margin,%RSV(Simulated)','Mars MAC(Base)','Mars MAC(Simulated)']
+    'RSV w/o VAT(Base)','RSV w/o VAT(Simulated)','Trade Margin(Base)','Trade Margin(Simulated)','Trade Margin,%RSV(Base)',
+    'Trade Margin,%RSV(Simulated)','Mars MAC(Base)','Mars MAC(Simulated)']
 
     for key in optimal_header:
         _writeExcel(weekly_worksheet,row, col,key,format_header)
@@ -1600,8 +1600,8 @@ def download_excel_compare_scenario(data):
     'Incremental units(Simulated)','Volume(Base)','Volume(Simulated)','LSV(Base)','LSV(Simulated)','NSV(Base)','NSV(Simulated)',
     'MAC, %NSV(Base)','MAC, %NSV(Simulated)','Trade expense(Base)','Trade expense(Simulated)','TE, % LSV(Base)','TE, % LSV(Simulated)',
     'TE / Unit(Base)','TE / Unit(Simulated)','ROI(Base)','ROI(Simulated)','ASP(Base)','ASP(Simulated)','Promo ASP(Base)','Promo ASP(Simulated)',
-    'RSV w/o VAT(Base)','RSV w/o VAT(Simulated)','Customer Margin(Base)','Customer Margin(Simulated)','Customer Margin,%RSV(Base)',
-    'Customer Margin,%RSV(Simulated)','Mars MAC(Base)','Mars MAC(Simulated)']
+    'RSV w/o VAT(Base)','RSV w/o VAT(Simulated)','Trade Margin(Base)','Trade Margin(Simulated)','Trade Margin,%RSV(Base)',
+    'Trade Margin,%RSV(Simulated)','Mars MAC(Base)','Mars MAC(Simulated)']
 
     if len(compare_scenario_data) > 0:
         for data in compare_scenario_data:
