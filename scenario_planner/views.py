@@ -326,18 +326,18 @@ class SaveScenarioViewSet(viewsets.ModelViewSet):
         # pdb.set_trace()
         return super().destroy(request, *args, **kwargs)
     def dispatch(self, request, *args, **kwargs):
-        print(request , "request from dispatch")
+        # print(request , "request from dispatch")
         return super().dispatch(request, *args, **kwargs)
     
     def get_queryset(self):
-        print(self.request , "request from get query set")
+        # print(self.request , "request from get query set")
         return super().get_queryset()
     def get_serializer_class(self):
-        print(self.request , "request from serializer")
+        # print(self.request , "request from serializer")
         return super().get_serializer_class()
     
     def list(self, request, *args, **kwargs):
-        print(request , "request from list")
+        # print(request , "request from list")
         
         return super().list(request, *args, **kwargs)
     def create_promo(self,request):
@@ -553,10 +553,21 @@ class ScenarioPlannerMetricsViewSetObject(viewsets.GenericViewSet, mixins.ListMo
     
 class LoadScenario(viewsets.ReadOnlyModelViewSet,mixin.CalculationMixin):
     # queryset = Scenario.objects.filter(scenario_type = 'promo')
-    queryset = model.SavedScenario.objects.prefetch_related('optimizer_saved' , 'promo_saved').all()
+    # queryset = model.SavedScenario.objects.prefetch_related('optimizer_saved' , 'promo_saved').all()
     # serializer_class = sc.PromoScenarioSavedList
-    serializer_class = sc.ScenarioSavedList
+    serializer_class = sc.ScenarioSavedListOptimized
     lookup_field = "id"
+    
+    #  # queryset = Scenario.objects.filter(scenario_type = 'promo') backup
+    # queryset = model.SavedScenario.objects.prefetch_related('optimizer_saved' , 'promo_saved').all()
+    # # serializer_class = sc.PromoScenarioSavedList
+    # serializer_class = sc.ScenarioSavedListOptimized
+    # lookup_field = "id"
+    def get_queryset(self):
+        queryset = model.SavedScenario.objects.all()
+    # Set up eager loading to avoid N+1 selects
+        queryset = self.get_serializer_class().setup_eager_loading(queryset)  
+        return queryset
     
     def list(self, request, *args, **kwargs):
         # import pdb
@@ -590,7 +601,7 @@ class LoadScenario(viewsets.ReadOnlyModelViewSet,mixin.CalculationMixin):
         # import pdb
         # pdb.set_trace()
         pricing = model.PromoSave.objects.get(saved_scenario = obj).saved_pricing
-        print(pricing , "pricing details ")
+        # print(pricing , "pricing details ")
         weeks = model.PromoWeek.objects.select_related('pricing_save','pricing_save__saved_scenario').filter(
             pricing_save__saved_scenario = obj
         )

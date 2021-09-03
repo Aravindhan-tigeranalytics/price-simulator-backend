@@ -274,14 +274,14 @@ def base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef):
       dt_dist = pd.pivot_table(dt_dist[['Date','model_coefficient_name','units','Iteration']],index = ["Date","Iteration"],columns = "model_coefficient_name")
       dt_dist = pd.DataFrame(dt_dist).reset_index()
       dt_dist.columns = dt_dist.columns.droplevel(0) 
-      print(dt_dist.columns)
+    #   print(dt_dist.columns)
       a = ["Date","Iteration"]+list(dt_dist.columns[2:])
       dt_dist.columns = a
 
       year_dist = pd.pivot_table(year_dist[['Year','model_coefficient_name','units','Iteration']],index = ["model_coefficient_name","Iteration"],columns = "Year")
       year_dist = pd.DataFrame(year_dist).reset_index()
       year_dist.columns = year_dist.columns.droplevel(0) 
-      print(year_dist.columns)
+    #   print(year_dist.columns)
       a = ["model_coefficient_name","Iteration"]+list(year_dist.columns[2:])
       year_dist.columns = a
 
@@ -300,13 +300,13 @@ def base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef):
       dt_dist['Comp'] = dt_dist[Comp].sum(axis = 1)
       ###Give tpr related Variables
       Incremental = ['TPR_Discount_contribution_impact']+[i for i in aa if "Catalogue" in i]+[i for i in aa if 'Flag_promo' in i]
-      print('Incremental :',Incremental)
+    #   print('Incremental :',Incremental)
       dt_dist['Incremental'] = dt_dist[Incremental].sum(axis = 1)
       ###Give the remaining Base columns
 
       base_others = baseline_var_othr["Variable"].to_list()
       base = [ 'Intercept_contribution_base']+[i+'_contribution_base' for i in base_var]+[i+'_contribution_impact' for i in base_others]
-      print("base :",base)
+    #   print("base :",base)
       dt_dist['Base'] = dt_dist[base].sum(axis = 1)
 
       model_df = model_df1.copy()
@@ -354,8 +354,8 @@ def main(data_frame,coeff_frame):
     trend_cols = [i for i in col if 'Trend' in i]
     base_list = baseprice_cols+SI_cols+trend_cols+["ACV"]
     base_others = holiday+[i for i in col if "death_rate" in i]+[i for i in col if 'TPR_Discount_lag' in i]+[i for i in col if 'Category trend' in i]+[i for i in col if 'Flag_nonpromo' in i]
-    print(base_list)
-    print(base_others , "base others")
+    # print(base_list)
+    # print(base_others , "base others")
     baseline_var["Variable"]=base_list
     baseline_var_othr["Variable"]=base_others
 
@@ -481,9 +481,9 @@ def list_to_frame_bkp(coeff,data,flag=False):
     retuned_dt = main( data_dt,coeff_dt )
     if flag:
         retuned_dt['co_inv'] = co_dt['co_inv']
-    print(retuned_dt['Incremental'][0] , "Incremental")
-    print(retuned_dt['Base'][0] , "Base")
-    print(retuned_dt['Predicted_sales'][0] , "Predicted_sales")
+    # print(retuned_dt['Incremental'][0] , "Incremental")
+    # print(retuned_dt['Base'][0] , "Base")
+    # print(retuned_dt['Predicted_sales'][0] , "Predicted_sales")
     return retuned_dt
 
 def list_to_frame(coeff,data):
@@ -495,7 +495,7 @@ def list_to_frame(coeff,data):
     data_dt = pd.DataFrame(data, columns = data_columns)
     # import pdb
     # pdb.set_trace()
-    print( data_dt[['promo_depth','co investment','Flag_promotype_N_pls_1' ,'TPR_Discount','Catalogue','TPR_Discount_lag1','TPR_Discount_lag2']])
+    # print( data_dt[['promo_depth','co investment','Flag_promotype_N_pls_1' ,'TPR_Discount','Catalogue','TPR_Discount_lag1','TPR_Discount_lag2']])
     data_dt['TPR_Discount'] = data_dt['promo_depth'] + data_dt['co investment']
     # data_dt[['promo_depth','co investment','TPR_Discount']]
     # print( data_dt[['promo_depth','Catalogue','TPR_Discount_lag1','TPR_Discount_lag2','co investment']] , "dataframe check")

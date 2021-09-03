@@ -9,7 +9,7 @@ def custom_exception_handler(exc, context):
     # print(exc , "EXC")
     # print(context , "context..")
     response = exception_handler(exc, context)
-    print(response , "response")
+    # print(response , "response")
     logger.error(exc)
     
 
