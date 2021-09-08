@@ -307,10 +307,14 @@ def calculate_financial_mertrics_from_pricing( data_list ,roi_list,unit_info , f
             promo_elasticity=0,
             co_investment = decimal.Decimal(data[data_values.index('co_investment')]),
             mars_cogs_per_unit = pricing_week[i].cogs_increase,
-             is_vat_applied=data_values.index('model_meta__account_name') != 'Lenta',
-               royalty_increase = 0.0 if util._transform_corporate_segment(
-                    data_values.index('model_meta__corporate_segment')
+            is_vat_applied=data[data_values.index('model_meta__account_name')] != 'Lenta',
+                royalty_increase = 0.0 if util._transform_corporate_segment(
+                    data[data_values.index('model_meta__corporate_segment')]
                 ) == 'Choco' else 0.5
+            #  is_vat_applied=data_values.index('model_meta__account_name') != 'Lenta',
+            #    royalty_increase = 0.0 if util._transform_corporate_segment(
+            #         data_values.index('model_meta__corporate_segment')
+            #     ) == 'Choco' else 0.5
             
         )
         update_total(total_units , ob)

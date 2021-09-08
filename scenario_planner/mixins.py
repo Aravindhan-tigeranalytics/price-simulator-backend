@@ -76,7 +76,7 @@ class CalculationMixin():
         }
         # if promo_save:
         #     meta['promo_id'] = promo_save.id
-        coeff_list , data_list ,roi_list = pd_query.get_list_value_from_query(model.ModelCoefficient,
+        coeff_list , data_list ,roi_list , coeff_map , holiday_calendar= pd_query.get_list_value_from_query(model.ModelCoefficient,
                                                                               model.ModelData,
                                                                               model.ModelROI,
                                                                               account_name,
@@ -97,7 +97,7 @@ class CalculationMixin():
                                                base_incremental_split , 'base')
         simulated_financial_metrics = cal.calculate_financial_mertrics_from_pricing(simulated_data_list ,roi_list,
                                                simulated_incremental_split , 'simulated',pricing_week)
-        return {**meta,**base_finalcial_metrics , **simulated_financial_metrics}
+        return {**meta,**base_finalcial_metrics , **simulated_financial_metrics,**{'holiday_calendar' : holiday_calendar}}
     
         
     def calculate_finacial_metrics_from_request(self,value_dict):

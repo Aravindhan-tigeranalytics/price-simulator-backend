@@ -282,24 +282,28 @@ class ScenarioSavedListOptimized(serializers.ModelSerializer):
             return obj
         # import pdb
         # pdb.set_trace()
-        pricing_save = obj.prefetched_price[0]
-        pricing = obj.prefetched_price[0].prefetched_price_week[0]
-        obj = {
-                "retailer" : pricing_save.account_name,
-                "product_group" : pricing_save.product_group,
-                "pricing" : False
-            }
-        
-        obj['pricing'] = {
-                "lpi" : pricing.lp_increase,
-                "rsp" : pricing.rsp_increase,
-                "cogs" : pricing.cogs_increase,
-                "elasticity" : pricing.base_price_elasticity
+        obj_r = []
+        for i in obj.prefetched_price:
+            pricing_save = i
+            pricing = i.prefetched_price_week[0]
+            obj_t = {
+                "id" : pricing_save.id,
+                    "retailer" : pricing_save.account_name,
+                    "product_group" : pricing_save.product_group,
+                    "pricing" : False
                 }
+            
+            obj_t['pricing'] = {
+                    "lpi" : pricing.lp_increase,
+                    "rsp" : pricing.rsp_increase,
+                    "cogs" : pricing.cogs_increase,
+                    "elasticity" : pricing.base_price_elasticity
+                    }
+            obj_r.append(obj_t)
         # import pdb
         # pdb.set_trace()
             
-        return obj
+        return obj_r
     def __init__(self, *args, **kwargs):
         # if 'context' in kwargs:
         # import pdb

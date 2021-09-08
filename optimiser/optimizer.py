@@ -169,6 +169,8 @@ def _update_params(config , request_value):
     config['config_constrain']['min_consecutive_promo'] = request_value['config_min_consecutive_promo']
     config['config_constrain']['max_consecutive_promo'] = request_value['config_max_consecutive_promo']
     config['config_constrain']['promo_gap'] = request_value['config_promo_gap']
+    config['config_constrain']['automation'] = request_value['config_automation']
+    #  'automation':False
 
 
 def predict_sales(coeffs, data):
@@ -2168,13 +2170,313 @@ def config_lag_function(Model_Coeff, config_dict):
                 config_dict['constrain_params'][i] = \
                     config_dict['constrain_params'][i] + 0.01
     return config_dict
-  
-      # print("parsed_summarycompleted",parsed_summary)
-      # print("completed",summary)
-    
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
 
+def func1(baseline_data,config,Model_Coeff):
+  opt_pop_up_flag = 0
+  opt_pop_up_config={}
+  # financial metric preference order
+  fin_pref_order = config['Fin_Pref_Order']
+  # getting TE for all the tprs
+  TE_dict,ret_inv_dict,ret_mech_dict = get_te_dict(baseline_data,config)
+  # Optimizer scenario creation
+  Required_base = get_required_base(baseline_data,Model_Coeff,TE_dict,ret_inv_dict,ret_mech_dict,config)
+  Optimal_calendar_fin = pd.DataFrame()
+  infeasible_solution = True
+  # creating a copy of config for ppgs with lag variables
+  config_temp = copy.deepcopy(config)
+  # increasing/decresing the limit to satisfy the actual constraints in ppgs with lag variables
+  config_temp = config_lag_function(Model_Coeff,config_temp)
+  # config and config temp will be same in all the ppgs without lag variables
+  print("Init dict",config["constrain_params"])
+  print("Init dict",config_temp["constrain_params"])
+  Optimal_calendar = optimizer_fun(baseline_data,Required_base,config_temp)
+  #print('#######',config_temp['constrain_params']['compul_promo_weeks'],'#######')
+  if((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
+    #Default Run Based On User's Config Step 101
+    opt_pop_up_flag = 1
+    opt_pop_up_config =  copy.deepcopy(config)
+    Optimal_calendar_fin =Optimal_calendar.copy()
+    infeasible_solution = False
+    print("Got solution with default constraints")
+
+  return Optimal_calendar_fin,TE_dict,ret_inv_dict,ret_mech_dict,opt_pop_up_config,opt_pop_up_flag
+def func2(baseline_data,config,Model_Coeff):
+  Optimal_calendar_fin = pd.DataFrame()
+  TE_dict,ret_inv_dict,ret_mech_dict = get_te_dict(baseline_data,config)
+  Required_base = get_required_base(baseline_data,Model_Coeff,TE_dict,ret_inv_dict,ret_mech_dict,config)
+  fin_pref_order = config['Fin_Pref_Order']
+  infeasible_solution = True
+  # An iterative method to automate infeasible scenarios
+  # step1 : decreasing the metrics with lower/upper limit higher/lower than baseline
+  if(infeasible_solution):
+    print("Infeasible solution : decreasing the metrics limit greater than baseline")
+    fin_metrics = ['Units','NSV','GSV','Sales','Trade_Expense',"RP_Perc",'MAC_Perc','RP','MAC']
+    config_constrain = config['config_constrain']
+    Act_fin_metrics = []
+    # getting the financial metric with lower/upper limit higher/lower than baseline
+    # we will be checking only two iterations in this step
+    for i in fin_metrics:
+      if i=='Trade_Expense':
+        if ((config_constrain[i]) and (config['constrain_params'][i]<1) ):
+          Act_fin_metrics.append(i)
+      else:
+        if ((config_constrain[i]) and (config['constrain_params'][i]>1) ):
+          Act_fin_metrics.append(i)
+    iteration =True
+    delta_dict ={}
+    iter_no =0
+    while iteration:
+      if len(Act_fin_metrics)==0:
+        config_temp = copy.deepcopy(config)
+      # increasing/decresing the limit to satisfy the actual constraints in ppgs with lag variables
+        config_temp = config_lag_function(Model_Coeff,config_temp)
+        config = copy.deepcopy(config_temp)
+        iteration = False
+        continue
+      iter_no +=1
+      for rel in Act_fin_metrics:
+        if(rel=='Trade_Expense'):
+          if (config['constrain_params'][rel]<1 and iter_no==1):
+            delta_dict[rel] = (1-config['constrain_params'][rel])/2 #0.005
+          if ((config['constrain_params'][rel])<1):
+            config['constrain_params'][rel]=config['constrain_params'][rel]+delta_dict[rel]
+          else:
+            config['constrain_params'][rel]=config['constrain_params'][rel]+delta
+        else:
+          if (config['constrain_params'][rel]>1 and iter_no==1):
+            delta_dict[rel] = (config['constrain_params'][rel]-1)/2
+          if ((config['constrain_params'][rel])>1):
+            config['constrain_params'][rel]=config['constrain_params'][rel]-delta_dict[rel]
+      print(config['constrain_params'])
+      config_temp = copy.deepcopy(config)
+      # increasing/decresing the limit to satisfy the actual constraints in ppgs with lag variables
+      config_temp = config_lag_function(Model_Coeff,config_temp)
+      Optimal_calendar = optimizer_fun(baseline_data,Required_base,config_temp)
+      #print('#######',config_temp['constrain_params']['compul_promo_weeks'],'#######')
+      if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
+        #Slight Relaxation in All True/Activatated Fin Metrics Run Step 201
+        opt_pop_up_flag = 2
+        opt_pop_up_config =  copy.deepcopy(config)
+        print(config['constrain_params'])
+        Optimal_calendar_fin = Optimal_calendar.copy()
+        iteration = False
+        infeasible_solution = False
+      if iter_no==2:
+        config = copy.deepcopy(config_temp) ## changed now
+        iteration = False
+
+  # if solution is infeasible after step 1 , we will relax each finacial metric one by one and check which metric is causing the infeasible solution
+  #print('--------',config['constrain_params']['compul_promo_weeks'],'#######')
+  if(infeasible_solution):
+    print("Infeasible solution - relaxing financial metrics")
+    # selecting the secondory finacial metric based on the financial preferance order from the user input
+    Sec_fin_metrics = fin_pref_order[:-3]
+    # selecting the primary finacial metric based on the financial preferance order from the user input
+    Prim_fin_metrics = fin_pref_order[-3:]
+    # calendar metrics
+    calendar_metrics = ['compul_no_promo_weeks','compul_promo_weeks','promo_gap','max_consecutive_promo','min_consecutive_promo','tot_promo_min',
+                       'tot_promo_max']
+
+    config_constrain = config['config_constrain']
+    Act_Prim_fin_metrics = []
+    # getting the active secondary and primary financial metrics(config with True)
+    for i in Prim_fin_metrics:
+      if config_constrain[i]:
+        Act_Prim_fin_metrics.append(i)
+    Act_Sec_fin_metrics =[]
+    for i in Sec_fin_metrics:
+      if config_constrain[i]:
+        Act_Sec_fin_metrics.append(i)
+    # creating the combinations of primary and secondary financial metrics
+    Sec_combination = sum([list(map(list, combinations(Act_Sec_fin_metrics, i))) for i in range(len(Act_Sec_fin_metrics) + 1)], [])
+    Sec_combination = [i for i in Sec_combination if len(i)>0]
+    Prim_combination = sum([list(map(list, combinations(Act_Prim_fin_metrics, i))) for i in range(len(Act_Prim_fin_metrics) + 1)], [])
+    Prim_combination = [i for i in Prim_combination if len(i)>0]
+    
+    print(len(Sec_combination),"*****")
+    print(len(Prim_combination),"****")
+    
+    if((len(Prim_combination)>0)or(len(Sec_combination)>0)): ## change added 2708
+      iteration=True ## change added 2708
+    else: ## change added 2708
+      iteration=False ## change added 2708
+      relaxed_sec_metrics_opt=[] ## change added 2708
+      relaxed_prim_metrics_opt=[] ## change added 2708
+    #iteration =True
+    while iteration:
+      relaxed_sec_metrics_opt=[]
+      relaxed_sec_metrics = []
+      relaxed_prim_metrics_opt=[]
+      relaxed_prim_metrics = []
+      # first we will start by relaxing secondary financial variables
+      for i in range(len(Sec_combination)):
+        print("----",Sec_combination[i],"-----")
+        metrics = Sec_combination[i]
+        for metric in metrics:
+          config['config_constrain'][metric]=False
+        print(config['config_constrain'])
+
+        print("The relaxed metric is:",metric) ## change added 1808
+        #print('*******',config['constrain_params']['compul_promo_weeks'],'#######')
+        Optimal_calendar = optimizer_fun(baseline_data,Required_base,config) ## instead of config take config temp
+        #print('#######',config['constrain_params']['compul_promo_weeks'],'#######')
+        if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
+          #Complete Relaxation in All Seconderoy Fin Metrics Run Step 301
+          opt_pop_up_flag = 3
+          opt_pop_up_config =  copy.deepcopy(config)
+          Optimal_calendar_fin = Optimal_calendar.copy()
+          # break the loop if we get a feasible solution
+          relaxed_sec_metrics_opt = Sec_combination[i]
+          print("The relaxed metric is:",relaxed_sec_metrics_opt) ## change added 1808
+          for metric in metrics:
+            config['config_constrain'][metric]=True
+          print("breaking while loop")
+          iteration = False
+          break
+        if i==(len(Sec_combination)-1):
+          print(i)
+          relaxed_sec_metrics = Sec_combination[i]
+          print("Relaxing :",relaxed_sec_metrics)
+          for metric in metrics: ## change added 1808
+            config['config_constrain']['metric']=True ## change added 1808
+          #iteration=False ## change added 1808
+          break ## change added 1808
+        else:
+          for metric in metrics:
+            config['config_constrain'][metric]=True
+          
+      # if we dont get any feasible solution by relaxing all the secondary metrics, we relax primary metrics one by one
+      if iteration==False:
+        continue
+      for i in range(len(Prim_combination)):
+        print("****",Prim_combination[i],"****")
+        metrics = Prim_combination[i]
+        for metric in metrics:
+          config['config_constrain'][metric]=False
+        print(config['config_constrain'])
+        print("The relaxed metric is------:",metric) ## change added 1808
+        Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
+        #print('#######',config['constrain_params']['compul_promo_weeks'],'#######')
+        if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
+          #Complete Relaxation in All Primary Fin Metrics Run Step 351
+          opt_pop_up_flag = 4
+          opt_pop_up_config =  copy.deepcopy(config)
+          Optimal_calendar_fin = Optimal_calendar.copy()
+          # break the loop if we get a feasible solution
+          relaxed_prim_metrics_opt = Prim_combination[i]
+          print("The relaxed metric is*****:",relaxed_prim_metrics_opt) ## change added 1808
+          for metric in metrics:
+            config['config_constrain'][metric]=True
+          iteration = False
+          break
+        if i==(len(Prim_combination)-1):
+          print(i)
+          relaxed_prim_metrics = Prim_combination[i]
+          print("Relaxing :",relaxed_prim_metrics)
+          for metric in metrics:
+            config['config_constrain'][metric]=True
+          iteration = False
+          break
+        else:
+          for metric in metrics:
+            config['config_constrain'][metric]=True
+  
+
+    relaxed_metrics = []
+    if len(relaxed_sec_metrics_opt)>0:
+      relaxed_metrics = relaxed_sec_metrics_opt
+    elif len(relaxed_prim_metrics_opt)>0:
+      relaxed_metrics = relaxed_prim_metrics_opt
+    print("****",relaxed_metrics)
+    #Till here everything is same in all methods
+    delta = 0.01
+    opt_soln = False
+    metric_list = fin_pref_order.copy()
+    metric_list.reverse()
+    # decresing/increasing the lower/limit of metric to get a feasible solution
+    # if there is more than one metric, first we relax the metric with highest preference and decativate all other metrics. Once we get the solution with first metric, we relax the second metric
+    if len(relaxed_metrics)>0:
+      print("len >1")
+      iter_metrics = [i for i in metric_list if i in relaxed_metrics]
+      print("****",iter_metrics)
+      n_metrics = len(iter_metrics)
+      rel_no=0
+      for rel in iter_metrics: #[MAC,RP,]#TOCHECK
+        rel_no+=1
+        iteration = True
+        if rel_no==len(iter_metrics):
+          print("len is equal")
+          break
+        othr_metrics = iter_metrics[rel_no:]#TODO
+        for metric in othr_metrics:
+          config['config_constrain'][metric]=False
+        print(othr_metrics)
+        print(config['config_constrain'])
+        iter_no =0
+        while iteration:
+          print("going inside iteration")
+          iter_no+=1
+          if(rel=='Trade_Expense'):
+             config['constrain_params'][rel]=config['constrain_params'][rel]+delta
+          else:
+             config['constrain_params'][rel]=config['constrain_params'][rel]-delta
+          print(config['constrain_params'])
+          Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
+          print("&&&&",Optimal_calendar['Solution'].unique())
+          #print('#######',config['constrain_params']['compul_promo_weeks'],'#######')
+          if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
+            print("going inside")
+            #Slight Relaxation in Optimized Combined Fin Metrics(Primary/Secondry) Run Step 401
+            opt_pop_up_flag = 5
+            opt_pop_up_config =  copy.deepcopy(config)
+            opt_soln = True
+            Optimal_calendar_fin = Optimal_calendar.copy()
+            for metric in othr_metrics:
+              config['config_constrain'][metric]=True
+            iteration = False
+            break
+          if(iter_no==15):
+            iteration = False
+            
+        for metric in othr_metrics:
+          config['config_constrain'][metric]=True
+      if opt_soln:
+        dta=delta/4
+        k=0
+        # we will be checking extra 3 ietration to check feasible solution between last limit and and the feasible limit
+        while k<3:
+          for rel in relaxed_metrics:
+            if(rel=='Trade_Expense'):
+              config['constrain_params'][rel]=config['constrain_params'][rel]-dta
+            else:
+              config['constrain_params'][rel]=config['constrain_params'][rel]+dta
+          Optimal_calendar = optimizer_fun(baseline_data,Required_base,config)
+          #print('#######',config['constrain_params']['compul_promo_weeks'],'#######')
+          if ((Optimal_calendar.shape[0]==52) and (Optimal_calendar['Solution'].unique()=='Optimal')):
+            #Slight Restricting on top of feasible limit(above section) Fin Metrics Run Step 501
+            opt_pop_up_flag = 6
+            opt_pop_up_config =  copy.deepcopy(config)
+            print(config['constrain_params'])
+            Optimal_calendar_fin = Optimal_calendar.copy()
+          k+=1
+
+  if Optimal_calendar_fin.shape[0]==0:
+    #print("making flag 0")
+    opt_pop_up_flag=0
+    opt_pop_up_config = {}
+    Optimal_calendar_fin['TPR']=baseline_data['tpr_discount_byppg']
+
+    Financial_information1= baseline_data[['TE','tpr_discount_byppg']].drop_duplicates().reset_index(drop=True) ## change added new
+    promo_info1 = baseline_data[['Coinvestment','tpr_discount_byppg']].drop_duplicates().reset_index(drop=True) ## change added new
+    mech_info1 = baseline_data[['Mechanic','tpr_discount_byppg']].drop_duplicates().reset_index(drop=True) ## change added new
+
+
+    TE_dict= dict(zip(Financial_information1.tpr_discount_byppg, Financial_information1.TE)) ## change added new
+    ret_inv_dict = dict(zip(promo_info1.tpr_discount_byppg, promo_info1.Coinvestment)) ## change added new
+    ret_mech_dict = dict(zip(mech_info1.tpr_discount_byppg, mech_info1.Mechanic)) ## change added new
+
+  return Optimal_calendar_fin,TE_dict,ret_inv_dict,ret_mech_dict,opt_pop_up_config,opt_pop_up_flag
+  
 
 def process(
     constraints=None,
@@ -2255,6 +2557,7 @@ def process(
             'tot_promo_min': True,
             'tot_promo_max': True,
             'promo_price': False,
+            'automation':False
             },
         'constrain_params': {
             'MAC': 1.05,
@@ -2493,456 +2796,59 @@ def process(
     if len(config['MARS_TPRS']) == 0:
         pass
     else:
-
-          # print 'No TPRs are given, please provide TPRs for optimisation'
-
-        opt_pop_up_flag = 0
-        opt_pop_up_config = {}
-
-        # financial metric preference order
-
-        fin_pref_order = config['Fin_Pref_Order']
-
-        # getting TE for all the tprs
-
-        (TE_dict, ret_inv_dict, ret_mech_dict) = \
-            get_te_dict(baseline_data, config)
-
-        # Optimizer scenario creation
-
-        Required_base = get_required_base(
-            baseline_data,
-            Model_Coeff,
-            TE_dict,
-            ret_inv_dict,
-            ret_mech_dict,
-            config,
-            )
-        Optimal_calendar_fin = pd.DataFrame()
-        infeasible_solution = True
-
-        # creating a copy of config for ppgs with lag variables
-
-        config_temp = copy.deepcopy(config)
-
-        # increasing/decresing the limit to satisfy the actual constraints in ppgs with lag variables
-
-        config_temp = config_lag_function(Model_Coeff, config_temp)
-
-        # config and config temp will be same in all the ppgs without lag variables
-
-          # print ('Init dict', config['constrain_params'])
-          # print ('Init dict', config_temp['constrain_params'])
-
-        Optimal_calendar = optimizer_fun(baseline_data, Required_base,
-                config_temp)
-        if Optimal_calendar.shape[0] == 52 \
-            and Optimal_calendar['Solution'].unique() == 'Optimal':
-
-          # Default Run Based On User's Config Step 101
-
-            opt_pop_up_flag = 1
-            opt_pop_up_config = copy.deepcopy(config)
-            Optimal_calendar_fin = Optimal_calendar.copy()
-            infeasible_solution = False
-
-        # An iterative method to automate infeasible scenarios
-        # step1 : decreasing the metrics with lower/upper limit higher/lower than baseline
-
-        if infeasible_solution:
-
-              # print 'Infeasible solution : decreasing the metrics limit greater than baseline'
-
-            fin_metrics = [
-                'Units',
-                'NSV',
-                'GSV',
-                'Sales',
-                'Trade_Expense',
-                'RP_Perc',
-                'MAC_Perc',
-                'RP',
-                'MAC',
-                ]
-            config_constrain = config['config_constrain']
-            Act_fin_metrics = []
-
-          # getting the financial metric with lower/upper limit higher/lower than baseline
-          # we will be checking only two iterations in this step
-
-            for i in fin_metrics:
-                if i == 'Trade_Expense':
-                    if config_constrain[i] and config['constrain_params'
-                            ][i] < 1:
-                        Act_fin_metrics.append(i)
-                else:
-                    if config_constrain[i] and config['constrain_params'
-                            ][i] > 1:
-                        Act_fin_metrics.append(i)
-            iteration = True
-            delta_dict = {}
-            iter_no = 0
-            while iteration:
-                if len(Act_fin_metrics) == 0:
-                    config_temp = copy.deepcopy(config)
-
-            # increasing/decresing the limit to satisfy the actual constraints in ppgs with lag variables
-
-                    config_temp = config_lag_function(Model_Coeff,
-                            config_temp)
-                    config = copy.deepcopy(config_temp)
-                    iteration = False
-                    continue
-                iter_no += 1
-                for rel in Act_fin_metrics:
-                    if rel == 'Trade_Expense':
-                        if config['constrain_params'][rel] < 1 \
-                            and iter_no == 1:
-                            delta_dict[rel] = (1
-                                    - config['constrain_params'][rel]) \
-                                / 2  # 0.005
-                        if config['constrain_params'][rel] < 1:
-                            config['constrain_params'][rel] = \
-                                config['constrain_params'][rel] \
-                                + delta_dict[rel]
-                        else:
-                            config['constrain_params'][rel] = \
-                                config['constrain_params'][rel] + delta
-                    else:
-                        if config['constrain_params'][rel] > 1 \
-                            and iter_no == 1:
-                            delta_dict[rel] = (config['constrain_params'
-                                    ][rel] - 1) / 2
-                        if config['constrain_params'][rel] > 1:
-                            config['constrain_params'][rel] = \
-                                config['constrain_params'][rel] \
-                                - delta_dict[rel]
-
-                  # print config['constrain_params']
-
-                config_temp = copy.deepcopy(config)
-
-            # increasing/decresing the limit to satisfy the actual constraints in ppgs with lag variables
-
-                config_temp = config_lag_function(Model_Coeff,
-                        config_temp)
-                Optimal_calendar = optimizer_fun(baseline_data,
-                        Required_base, config_temp)
-                if Optimal_calendar.shape[0] == 52 \
-                    and Optimal_calendar['Solution'].unique() \
-                    == 'Optimal':
-
-              # Slight Relaxation in All True/Activatated Fin Metrics Run Step 201
-
-                    opt_pop_up_flag = 2
-                    opt_pop_up_config = copy.deepcopy(config)
-
-                      # print config['constrain_params']
-
-                    Optimal_calendar_fin = Optimal_calendar.copy()
-                    iteration = False
-                    infeasible_solution = False
-                if iter_no == 2:
-                    config = copy.deepcopy(config_temp)
-                    iteration = False
-
-        # if solution is infeasible after step 1 , we will relax each finacial metric one by one and check which metric is causing the infeasible solution
-
-        if infeasible_solution:
-
-              # print 'Infeasible solution - relaxing financial metrics'
-
-          # selecting the secondory finacial metric based on the financial preferance order from the user input
-
-            Sec_fin_metrics = fin_pref_order[:-3]
-
-          # selecting the primary finacial metric based on the financial preferance order from the user input
-
-            Prim_fin_metrics = fin_pref_order[-3:]
-
-          # calendar metrics
-
-            calendar_metrics = [
-                'compul_no_promo_weeks',
-                'compul_promo_weeks',
-                'promo_gap',
-                'max_consecutive_promo',
-                'min_consecutive_promo',
-                'tot_promo_min',
-                'tot_promo_max',
-                ]
-
-            config_constrain = config['config_constrain']
-            Act_Prim_fin_metrics = []
-
-          # getting the active secondary and primary financial metrics(config with True)
-
-            for i in Prim_fin_metrics:
-                if config_constrain[i]:
-                    Act_Prim_fin_metrics.append(i)
-            Act_Sec_fin_metrics = []
-            for i in Sec_fin_metrics:
-                if config_constrain[i]:
-                    Act_Sec_fin_metrics.append(i)
-
-          # creating the combinations of primary and secondary financial metrics
-
-            Sec_combination = sum([list(map(list,
-                                  combinations(Act_Sec_fin_metrics,
-                                  i))) for i in
-                                  range(len(Act_Sec_fin_metrics) + 1)],
-                                  [])
-            Sec_combination = [i for i in Sec_combination if len(i) > 0]
-            Prim_combination = sum([list(map(list,
-                                   combinations(Act_Prim_fin_metrics,
-                                   i))) for i in
-                                   range(len(Act_Prim_fin_metrics)
-                                   + 1)], [])
-            Prim_combination = [i for i in Prim_combination if len(i)
-                                > 0]
-            # iteration = True
-            if((len(Prim_combination)>0)or(len(Sec_combination)>0)): ## change added 2708
-                iteration=True ## change added 2708
-            else: ## change added 2708
-                iteration=False ## change added 2708
-                relaxed_sec_metrics_opt=[] ## change added 2708
-                relaxed_prim_metrics_opt=[] ## change added 2708
-            while iteration:
-                relaxed_sec_metrics_opt = []
-                relaxed_sec_metrics = []
-                relaxed_prim_metrics_opt = []
-                relaxed_prim_metrics = []
-
-            # first we will start by relaxing secondary financial variables
-
-                for i in range(len(Sec_combination)):
-
-                      # print Sec_combination[i]
-
-                    metrics = Sec_combination[i]
-                    for metric in metrics:
-                        config['config_constrain'][metric] = False
-
-                      # print config['config_constrain']
-
-                    Optimal_calendar = optimizer_fun(baseline_data,
-                            Required_base, config)
-                    if Optimal_calendar.shape[0] == 52 \
-                        and Optimal_calendar['Solution'].unique() \
-                        == 'Optimal':
-
-                # Complete Relaxation in All Seconderoy Fin Metrics Run Step 301
-
-                        opt_pop_up_flag = 3
-                        opt_pop_up_config = copy.deepcopy(config)
-                        Optimal_calendar_fin = Optimal_calendar.copy() ## change added 2408
-
-                # break the loop if we get a feasible solution
-
-                        relaxed_sec_metrics_opt = Sec_combination[i]
-                        for metric in metrics:
-                            config['config_constrain'][metric] = True
-
-                          # print 'breaking while loop'
-
-                        iteration = False
-                        break
-                    if i == len(Sec_combination) - 1:
-                        relaxed_sec_metrics = Sec_combination[i]
-                        for metric in metrics: ## change added 1808 run time
-                            config['config_constrain']['metric']=True ## change added 1808 run time
-                        # print("breaking while loop") ## change added 1808 run time
-                        # iteration=False ## change added 1808 run time change added 2408
-                        break ## change added 1808 run time
-                    else:
-
-                          # print ('Relaxing :', relaxed_sec_metrics)
-
-                        for metric in metrics:
-                            config['config_constrain'][metric] = True
-
-            # if we dont get any feasible solution by relaxing all the secondary metrics, we relax primary metrics one by one
-
-                if iteration == False:
-                    continue
-                for i in range(len(Prim_combination)):
-
-                      # print Prim_combination[i]
-
-                    metrics = Prim_combination[i]
-                    for metric in metrics:
-                        config['config_constrain'][metric] = False
-
-                      # print config['config_constrain']
-
-                    Optimal_calendar = optimizer_fun(baseline_data,
-                            Required_base, config)
-                    if Optimal_calendar.shape[0] == 52 \
-                        and Optimal_calendar['Solution'].unique() \
-                        == 'Optimal':
-
-                # Complete Relaxation in All Primary Fin Metrics Run Step 351
-
-                        opt_pop_up_flag = 4
-                        opt_pop_up_config = copy.deepcopy(config)
-                        Optimal_calendar_fin = Optimal_calendar.copy() ## change added 2408
-
-                # break the loop if we get a feasible solution
-
-                        relaxed_prim_metrics_opt = Prim_combination[i]
-                        for metric in metrics:
-                            config['config_constrain'][metric] = True
-                        iteration = False
-                        break
-                    if i == len(Prim_combination) - 1:
-
-                          # print i
-
-                        relaxed_prim_metrics = Prim_combination[i]
-                        for metric in metrics:
-                            config['config_constrain'][metric] = True
-                        iteration = False
-                        break
-                    else:
-                        for metric in metrics:
-                            config['config_constrain'][metric] = True
-            relaxed_metrics = []
-            if len(relaxed_sec_metrics_opt) > 0:
-                relaxed_metrics = relaxed_sec_metrics_opt
-            elif len(relaxed_prim_metrics_opt) > 0:
-                relaxed_metrics = relaxed_prim_metrics_opt
-            relaxed_metrics
-
-          # Till here everything is same in all methods
-
-            delta = 0.01
-            opt_soln = False
-            metric_list = fin_pref_order.copy()
-            metric_list.reverse()
-
-          # decresing/increasing the lower/limit of metric to get a feasible solution
-          # if there is more than one metric, first we relax the metric with highest preference and decativate all other metrics. Once we get the solution with first metric, we relax the second metric
-
-            if len(relaxed_metrics) > 0:
-                iter_metrics = [i for i in metric_list if i
-                                in relaxed_metrics]
-                n_metrics = len(iter_metrics)
-                rel_no = 0
-                for rel in iter_metrics:  # [MAC,RP,]#TOCHECK
-                    rel_no += 1
-                    iteration = True
-                    if rel_no == len(iter_metrics):
-                        break
-                    othr_metrics = iter_metrics[rel_no:]  # TODO
-                    for metric in othr_metrics:
-                        config['config_constrain'][metric] = False
-
-                      # print othr_metrics
-                      # print config['config_constrain']
-
-                    iter_no = 0
-                    while iteration:
-                        iter_no += 1
-                        if rel == 'Trade_Expense':
-                            config['constrain_params'][rel] = \
-                                config['constrain_params'][rel] + delta
-                        else:
-                            config['constrain_params'][rel] = \
-                                config['constrain_params'][rel] - delta
-
-                          # print config['constrain_params']
-
-                        Optimal_calendar = optimizer_fun(baseline_data,
-                                Required_base, config)
-                        if Optimal_calendar.shape[0] == 52 \
-                            and Optimal_calendar['Solution'].unique() \
-                            == 'Optimal':
-
-                  # Slight Relaxation in Optimized Combined Fin Metrics(Primary/Secondry) Run Step 401
-
-                            opt_pop_up_flag = 5
-                            opt_pop_up_config = copy.deepcopy(config)
-                            opt_soln = True
-                            Optimal_calendar_fin = \
-                                Optimal_calendar.copy()
-                            for metric in othr_metrics:
-                                config['config_constrain'][metric] = \
-                                    True
-                            iteration = False
-                        if iter_no == 15:
-                            iteration = False
-                    for metric in othr_metrics:
-                        config['config_constrain'][metric] = True
-                if opt_soln:
-                    dta = delta / 4
-                    k = 0
-
-              # we will be checking extra 3 ietration to check feasible solution between last limit and and the feasible limit
-
-                    while k < 3:
-                        for rel in relaxed_metrics:
-                            if rel == 'Trade_Expense':
-                                config['constrain_params'][rel] = \
-                                    config['constrain_params'][rel] \
-                                    - dta
-                            else:
-                                config['constrain_params'][rel] = \
-                                    config['constrain_params'][rel] \
-                                    + dta
-                        Optimal_calendar = optimizer_fun(baseline_data,
-                                Required_base, config)
-                        if Optimal_calendar.shape[0] == 52 \
-                            and Optimal_calendar['Solution'].unique() \
-                            == 'Optimal':
-
-                  # Slight Restricting on top of feasible limit(above section) Fin Metrics Run Step 501
-
-                            opt_pop_up_flag = 6
-                            opt_pop_up_config = copy.deepcopy(config)
-
-                              # print config['constrain_params']
-
-                            Optimal_calendar_fin = \
-                                Optimal_calendar.copy()
-                        k += 1
-        if Optimal_calendar_fin.shape[0] == 0:
-            opt_pop_up_flag = 0
+        Optimal_calendar_fin,TE_dict,ret_inv_dict,ret_mech_dict,opt_pop_up_config,opt_pop_up_flag=func1(baseline_data,config,Model_Coeff)
+    if opt_pop_up_flag==0:
+        print("Solution is infeasible, try automation?")
+        if(config['config_constrain']['automation']==True):
+            print("Starting automation process")
+            Optimal_calendar_fin,TE_dict,ret_inv_dict,ret_mech_dict,opt_pop_up_config,opt_pop_up_flag=func2(baseline_data,config,Model_Coeff)
+        else:
+            print("Giving baseline results")
+            #opt_pop_up_flag=0
+            Optimal_calendar_fin = pd.DataFrame()
             opt_pop_up_config = {}
-            Optimal_calendar_fin['TPR'] = \
-                baseline_data['tpr_discount_byppg']
-            Financial_information1= baseline_data[['TE','tpr_discount_byppg']].drop_duplicates().reset_index(drop=True) ## change added new
-            promo_info1 = baseline_data[['Coinvestment','tpr_discount_byppg']].drop_duplicates().reset_index(drop=True) ## change added new
-            mech_info1 = baseline_data[['Mechanic','tpr_discount_byppg']].drop_duplicates().reset_index(drop=True) ## change added new
-            
-        
-            TE_dict= dict(zip(Financial_information1.tpr_discount_byppg, Financial_information1.TE)) ## change added new
-            ret_inv_dict = dict(zip(promo_info1.tpr_discount_byppg, promo_info1.Coinvestment)) ## change added new
-            ret_mech_dict = dict(zip(mech_info1.tpr_discount_byppg, mech_info1.Mechanic)) ## change added new
+            Optimal_calendar_fin['TPR']=baseline_data['tpr_discount_byppg']
 
-        # getting data with optimal calendar
+            Financial_information1= baseline_data[['TE','tpr_discount_byppg']].drop_duplicates().reset_index(drop=True) 
+            promo_info1 = baseline_data[['Coinvestment','tpr_discount_byppg']].drop_duplicates().reset_index(drop=True)
+            mech_info1 = baseline_data[['Mechanic','tpr_discount_byppg']].drop_duplicates().reset_index(drop=True) 
+            TE_dict= dict(zip(Financial_information1.tpr_discount_byppg, Financial_information1.TE))
+            ret_inv_dict = dict(zip(promo_info1.tpr_discount_byppg, promo_info1.Coinvestment)) 
+            ret_mech_dict = dict(zip(mech_info1.tpr_discount_byppg, mech_info1.Mechanic)) 
 
-        Optimal_data = optimal_summary_fun(
-            baseline_data,
-            Model_Coeff,
-            Optimal_calendar_fin,
-            TE_dict,
-            ret_inv_dict,
-            ret_mech_dict,
-            )
 
-        # getting comparison between baseline and optimal calendar
+    Optimal_data = optimal_summary_fun(
+        baseline_data,
+        Model_Coeff,
+        Optimal_calendar_fin,
+        TE_dict,
+        ret_inv_dict,
+        ret_mech_dict,
+        )
 
-        opt_base = get_opt_base_comparison(baseline_data, Optimal_data,
-                Model_Coeff, config)
+    # getting comparison between baseline and optimal calendar
 
-        # metric summary comparison between optimal and baseline calendar
+    opt_base = get_opt_base_comparison(baseline_data, Optimal_data,
+            Model_Coeff, config)
 
-        summary = get_calendar_summary(baseline_data, Optimal_data,
-                opt_base)
-        # import pdb
-        # pdb.set_trace()
+    # metric summary comparison between optimal and baseline calendar
 
-      # Optmised Pop Up Final Message
+    summary = get_calendar_summary(baseline_data, Optimal_data,
+            opt_base)
+    if len(holiday_list) > 0:
+        for value in holiday_list:
+          opt_base[value] = Optimal_data[value]
+    opt_base['week'] = opt_base.sort_values("Date").index + 1
+    opt_base['Coinvestment']  = Optimal_data.sort_values("Date")['Coinvestment']
+    opt_base["Optimum_Promo"] = opt_base["Optimum_Promo"] - opt_base['Coinvestment']
+    # import pdb
+    # pdb.set_trace()
+    opt_base['Mechanic']  = Optimal_data.sort_values("Date")['Mechanic']
+    
+    # import pdb
+    # pdb.set_trace()
+
+    # Optmised Pop Up Final Message
 
     opt_pop_up_flag_final = 0
     opt_pop_up_config_final = {}
@@ -2967,18 +2873,21 @@ def process(
       # Infeasible Soln
 
         opt_pop_up_flag_final = 0
+        return {
+            "opt_pop_up_flag_final" : opt_pop_up_flag_final
+        }
     # print(opt_pop_up_flag , "opt_pop_up_flag")
-    # print(opt_pop_up_flag_final , "opt_pop_up_flag_final")
+    # print(opt_pop_up_flag_final    , "opt_pop_up_flag_final")
     # print(opt_pop_up_config_final , "opt_pop_up_config_final")
-    if len(holiday_list) > 0:
-        for value in holiday_list:
-          opt_base[value] = Optimal_data[value]
-    opt_base['week'] = opt_base.sort_values("Date").index + 1
-    opt_base['Coinvestment']  = Optimal_data.sort_values("Date")['Coinvestment']
-    opt_base["Optimum_Promo"] = opt_base["Optimum_Promo"] - opt_base['Coinvestment']
-    # import pdb
-    # pdb.set_trace()
-    opt_base['Mechanic']  = Optimal_data.sort_values("Date")['Mechanic']
+    # if len(holiday_list) > 0:
+    #     for value in holiday_list:
+    #       opt_base[value] = Optimal_data[value]
+    # opt_base['week'] = opt_base.sort_values("Date").index + 1
+    # opt_base['Coinvestment']  = Optimal_data.sort_values("Date")['Coinvestment']
+    # opt_base["Optimum_Promo"] = opt_base["Optimum_Promo"] - opt_base['Coinvestment']
+    # # import pdb
+    # # pdb.set_trace()
+    # opt_base['Mechanic']  = Optimal_data.sort_values("Date")['Mechanic']
     
     parsed_summary = json.loads(summary.to_json(orient="records"))
     parsed_base = json.loads(opt_base.to_json(orient="records"))
@@ -2991,6 +2900,8 @@ def process(
   #   print ('completed', summary)
   
     return {
+        "opt_pop_up_flag_final" : opt_pop_up_flag_final,
+        "opt_pop_up_config_final" : opt_pop_up_config_final,
     "holiday" : holiday_list,
     "summary" : parsed_summary,
     "optimal" : parsed_base,

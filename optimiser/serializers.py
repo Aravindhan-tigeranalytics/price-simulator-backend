@@ -169,6 +169,7 @@ class OptimizerSerializer(serializers.Serializer):
     config_min_consecutive_promo = serializers.BooleanField(default=True,initial=True)
     config_max_consecutive_promo = serializers.BooleanField(default=True,initial=True)
     config_promo_gap = serializers.BooleanField(default=True,initial=True)
+    config_automation = serializers.BooleanField(default=False,initial=False)
     
     param_mac = serializers.FloatField(max_value = 10 ,min_value=0,default=1.0,initial=1.0)
     param_rp = serializers.FloatField(max_value = 10 ,min_value=0,default=1.0,initial=1.0)
