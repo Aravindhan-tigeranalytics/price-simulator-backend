@@ -248,13 +248,13 @@ def download_excel_promo(data):
     worksheet.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
     worksheet.merge_range('B3:D3', 'Promo Simulator Tool' , merge_format_app)
     worksheet.set_column('B:D', 20)
-    worksheet.merge_range('B4:D4', "Account Name : {}".format(data['account_name']),merge_format_app)
+    worksheet.merge_range('B4:D4', "Retailer : {}".format(data['account_name']),merge_format_app)
     worksheet.merge_range('B5:D5', "Product Group : {}".format(data['product_group']),merge_format_app)
 
     worksheet_raw.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
     worksheet_raw.merge_range('B3:D3', 'Promo Simulator Tool' , merge_format_app)
     worksheet_raw.set_column('B:D', 20)
-    worksheet_raw.merge_range('B4:D4', "Account Name : {}".format(data['account_name']),merge_format_app)
+    worksheet_raw.merge_range('B4:D4', "Retailer : {}".format(data['account_name']),merge_format_app)
     worksheet_raw.merge_range('B5:D5', "Product Group : {}".format(data['product_group']),merge_format_app)
     
     # data_val = data['simulated']['weekly'][0]
@@ -431,7 +431,7 @@ def download_excel_promo_compare(data):
     worksheet.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
     worksheet.merge_range('B3:D3', 'Promo Simulator Tool' , merge_format_app)
     worksheet.set_column('B:D', 20)
-    worksheet.merge_range('B4:D4', "Account Name : {}".format(data['account_name']),merge_format_app)
+    worksheet.merge_range('B4:D4', "Retailer : {}".format(data['account_name']),merge_format_app)
     worksheet.merge_range('B5:D5', "Product Group : {}".format(data['product_group']),merge_format_app)
     worksheet.merge_range("B6:D6", "Scenario 1",merge_format_date)
     
@@ -567,13 +567,13 @@ def download_excel_optimizer(account_name , product_group,data):
     worksheet.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
     worksheet.merge_range('B3:D3', 'Promo Optimizer Tool' , merge_format_app)
     worksheet.set_column('B:D', 20)
-    worksheet.merge_range('B4:D4', "Account Name : {}".format(account_name),merge_format_app)
+    worksheet.merge_range('B4:D4', "Retailer : {}".format(account_name),merge_format_app)
     worksheet.merge_range('B5:D5', "Product Group : {}".format(product_group),merge_format_app)
 
     worksheet_summary_raw.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
     worksheet_summary_raw.merge_range('B3:D3', 'Promo Optimizer Tool' , merge_format_app)
     worksheet_summary_raw.set_column('B:D', 20)
-    worksheet_summary_raw.merge_range('B4:D4', "Account Name : {}".format(account_name),merge_format_app)
+    worksheet_summary_raw.merge_range('B4:D4', "Retailer : {}".format(account_name),merge_format_app)
     worksheet_summary_raw.merge_range('B5:D5', "Product Group : {}".format(product_group),merge_format_app)
     
     # data_val = [d['Metric'] for d in summary_data]
@@ -671,11 +671,11 @@ def download_excel_optimizer(account_name , product_group,data):
     weekly_worksheet_raw_value.hide_gridlines(2)
 
     weekly_worksheet.merge_range('A3:B3', "Optimizer Weekly Data",merge_format_app)
-    weekly_worksheet.merge_range('A4:B4', "Account Name : {}".format(account_name),merge_format_app)
+    weekly_worksheet.merge_range('A4:B4', "Retailer : {}".format(account_name),merge_format_app)
     weekly_worksheet.merge_range('A5:B5', "Product Group : {}".format(product_group),merge_format_app)
 
     weekly_worksheet_raw_value.merge_range('A3:B3', "Optimizer Weekly Data",merge_format_app)
-    weekly_worksheet_raw_value.merge_range('A4:B4', "Account Name : {}".format(account_name),merge_format_app)
+    weekly_worksheet_raw_value.merge_range('A4:B4', "Retailer : {}".format(account_name),merge_format_app)
     weekly_worksheet_raw_value.merge_range('A5:B5', "Product Group : {}".format(product_group),merge_format_app)
 
     row+=1
@@ -1021,7 +1021,7 @@ def _update_model_data_object(model_data : model.ModelData , sheet:Worksheet,row
     model_data.holiday_flag_9 = _get_sheet_value(sheet , row,col_map['Holiday_Flag9'])
     model_data.holiday_flag_10 = _get_sheet_value(sheet , row,col_map['Holiday_Flag10'])
     model_data.model_meta = model.ModelMeta.objects.get(
-        account_name =  _get_sheet_value(sheet , row,col_map['Account Name']),
+        account_name =  _get_sheet_value(sheet , row,col_map['Retailer']),
         corporate_segment = _get_sheet_value(sheet , row,col_map['Corporate Segment']),
         product_group = _get_sheet_value(sheet , row,col_map['PPG'])
     )
@@ -1044,9 +1044,9 @@ def read_promo_data(file):
     for row in range(row_+2 , rows+1):    
         db_data = model.ModelData()
         _update_model_data_object(db_data , sheet , row , col_map)
-        if not _get_sheet_value(sheet , row,col_map['Account Name']):
+        if not _get_sheet_value(sheet , row,col_map['Retailer']):
             break
-        slug = util.generate_slug_string( _get_sheet_value(sheet , row,col_map['Account Name']),
+        slug = util.generate_slug_string( _get_sheet_value(sheet , row,col_map['Retailer']),
                                             _get_sheet_value(sheet , row,col_map['Corporate Segment']),
                                            _get_sheet_value(sheet , row,col_map['PPG']))
         # db_data.full_clean()
@@ -1054,7 +1054,7 @@ def read_promo_data(file):
         if slug not in validation_dict:
             validation_dict[slug] = {
                 'count' : 1,
-                'account_name' : _get_sheet_value(sheet , row,col_map['Account Name']),
+                'account_name' : _get_sheet_value(sheet , row,col_map['Retailer']),
                 'corporate_segment' :  _get_sheet_value(sheet , row,col_map['Corporate Segment']),
                 'product_group' : _get_sheet_value(sheet , row,col_map['PPG'])
             }
@@ -1601,7 +1601,7 @@ def download_excel_compare_scenario(data):
             worksheet.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
             worksheet.merge_range('B3:D3', 'Promo Simulator Tool' , merge_format_app)
             worksheet.set_column('B:D', 20)
-            worksheet.merge_range('B4:D4', "Account Name : {}".format(data['account_name']),merge_format_app)
+            worksheet.merge_range('B4:D4', "Retailer : {}".format(data['account_name']),merge_format_app)
             worksheet.merge_range('B5:D5', "Product Group : {}".format(data['product_group']),merge_format_app)
 
 
@@ -1695,7 +1695,7 @@ def download_excel_compare_scenario(data):
             worksheet.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
             worksheet.merge_range('B3:D3', 'Promo Simulator Tool' , merge_format_app)
             worksheet.set_column('B:D', 20)
-            worksheet.merge_range('B4:D4', "Account Name : {}".format(data['account_name']),merge_format_app)
+            worksheet.merge_range('B4:D4', "Retailer : {}".format(data['account_name']),merge_format_app)
             worksheet.merge_range('B5:D5', "Product Group : {}".format(data['product_group']),merge_format_app)
 
 
@@ -1803,8 +1803,8 @@ def excel_download_input(account_name , product_group):
     worksheet.set_column('F:F', 25)
     worksheet.set_column('G:G', 25)
     worksheet.set_column('H:H', 25)
-    worksheet.write('A1', "Account name", header_format)
-    worksheet.write('B1', "Corporate segment", header_format)
+    worksheet.write('A1', "Retailer", header_format)
+    worksheet.write('B1', "Category", header_format)
     worksheet.write('C1', "Strategic cell", header_format)
     worksheet.write('D1', "Brand", header_format)
     worksheet.write('E1', "Brand format", header_format)
