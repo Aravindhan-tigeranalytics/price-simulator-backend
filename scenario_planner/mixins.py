@@ -353,3 +353,12 @@ def calculate_finacial_metrics_for_optimizer(account_name,product_group,value_di
     return {**base_finalcial_metrics,**simulated_financial_metrics , **{
         'holiday_calendar' : holiday_calendar
     }}
+    
+def calculate_pricing_metrics(request_data):
+    print(request_data , "request data...")
+    print(request_data['pricing'])
+    base_pricing  = cal.calculate_financial_mertrics_for_pricing_request(request_data['pricing'] , "base")
+    simulated_list = cal.update_increased_pricing(request_data['pricing'] , request_data['products'])
+    simulated_pricing = cal.calculate_financial_mertrics_for_pricing_request(simulated_list , "simulated")
+    # for i in request_data['pricing']:
+    return {**base_pricing,**simulated_pricing}

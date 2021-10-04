@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import re
 from optimiser import optimizer as opt
+import math
 
 
 def predict_sales(coeffs,data):
@@ -509,7 +510,7 @@ def list_to_frame(coeff,data):
     return val
 
 
-def list_to_frame_many(coeff,data , roi):
+def list_to_frame_many_bkp(coeff,data , roi):
     # import pdb
     # pdb.set_trace()
     coeff_dt = pd.DataFrame(coeff, columns = coeff_columns)
@@ -525,33 +526,41 @@ def list_to_frame_many(coeff,data , roi):
     # pdb.set_trace()
     val = []
     for index , row in coeff_dt.iterrows():
-        # import pdb
-        # pdb.set_trace()
+       
         d_dt = data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]
         d_dt['TPR_Discount'] = d_dt['promo_depth'] + d_dt['co investment']
         if d_dt.empty:
             continue
         ret_val = main(d_dt,coeff_dt[(coeff_dt['Account Name'] == row['Account Name']) & 
                                      (coeff_dt['PPG'] == row['PPG'])]) 
+        
+        
         data_dt['off_inv'] = 0.0
         data_dt['on_inv'] = 0.0
         data_dt['gmac'] = 0.0
         data_dt['list_price'] = 0.0
-        # import pdb
-        # pdb.set_trace()
-        
+        import pdb
+        pdb.set_trace()
+        data_dt.reset_index(drop=True)
+        d_dt.reset_index(drop=True)
+        roi_dt.reset_index(drop=True)
+        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])].reset_index(drop=True)
+        roi_dt.loc[(roi_dt['Account Name'] == row['Account Name']) & (roi_dt['PPG'] == row['PPG'])].reset_index(drop=True)
         # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['TPR_Discount'] = d_dt['TPR_Discount']
         data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'TPR_Discount'] = d_dt['TPR_Discount']
         data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'Incremental'] = ret_val['Incremental']
         data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'Base'] = ret_val['Base']
         data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'Predicted_sales'] = ret_val['Predicted_sales']
-        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'off_inv'] = roi_dt['off_inv']
-        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'on_inv'] = roi_dt['on_inv']
-        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'gmac'] = roi_dt['gmac']
-        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'list_price'] = roi_dt['list_price']
+        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'off_inv'] = roi_dt.loc[(roi_dt['Account Name'] == row['Account Name']) & (roi_dt['PPG'] == row['PPG']),'off_inv']
+        # roi_dt['off_inv']
+        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'on_inv'] = roi_dt.loc[(roi_dt['Account Name'] == row['Account Name']) & (roi_dt['PPG'] == row['PPG']),'on_inv']
+        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'gmac'] = roi_dt.loc[(roi_dt['Account Name'] == row['Account Name']) & (roi_dt['PPG'] == row['PPG']),'gmac']
+        data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'list_price'] = roi_dt.loc[(roi_dt['Account Name'] == row['Account Name']) & (roi_dt['PPG'] == row['PPG']),'list_price']
         # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['Incremental'] = ret_val['Incremental']
         # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['Base'] = ret_val['Base']
         # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['Predicted_sales'] = ret_val['Predicted_sales']
+        import pdb
+        pdb.set_trace()
     
     
     coeff_dt['cross_elasticity'] = 0.0
@@ -563,6 +572,109 @@ def list_to_frame_many(coeff,data , roi):
    
     # 'off_inv', 'on_inv', 'gmac', 'list_price'
     result_dt = pd.merge(data_dt,coeff_dt,how="inner" ,left_on = ["Account Name" , "PPG"] , right_on = ["Account Name" , "PPG"])
+    result_dt['Median_Base_Price_log_x'] = result_dt['Median_Base_Price_log_x'].apply(lambda x: math.exp(x)) 
+    # print(result_dt['Median_Base_Price_log_x'].apply(lambda x: math.log(x)) , "log value") 
+    # import pdb
+    # pdb.set_trace() 
+    # result_dt = pd.merge(result_dt,roi_dt,how="inner" ,left_on = ["Account Name" , "PPG" , "Week"] , right_on = ["Account Name" , "PPG" , "week"]) 
+    # C_1_crossretailer_log_price,C_1_intra_log_price,C_2_intra_log_price,C_3_intra_log_price
+    # C_4_intra_log_price,C_5_intra_log_price
+  
+
+    return result_dt
+
+
+
+
+
+
+
+def list_to_frame_many(coeff,data , roi):
+    # import pdb
+    # pdb.set_trace()
+    coeff_dt = pd.DataFrame(coeff, columns = coeff_columns)
+    
+
+    data_dt = pd.DataFrame(data, columns = data_columns)
+    roi_dt = pd.DataFrame(roi, columns = roi_columns)
+    res_dt = pd.DataFrame()
+    data_dt['Incremental'] = 0
+    data_dt['Base'] = 0
+    data_dt['Predicted_sales'] = 0
+    
+    # import pdb
+    # pdb.set_trace()
+    val = []
+    result = pd.DataFrame()
+    frames = []
+    for index , row in coeff_dt.iterrows():
+        result = None
+        print(result)
+        # import pdb
+        # pdb.set_trace()
+       
+        d_dt = data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]
+        r_dt = roi_dt[(roi_dt['Account Name'] == row['Account Name']) & (roi_dt['PPG'] == row['PPG'])]
+        d_dt['TPR_Discount'] = d_dt['promo_depth'] + d_dt['co investment']
+        if d_dt.empty:
+            continue
+        ret_val = main(d_dt,coeff_dt[(coeff_dt['Account Name'] == row['Account Name']) & 
+                                     (coeff_dt['PPG'] == row['PPG'])]) 
+        
+        
+        d_dt['off_inv'] = 0.0
+        d_dt['on_inv'] = 0.0
+        d_dt['gmac'] = 0.0
+        d_dt['list_price'] = 0.0
+        d_dt['Incremental'] = 0
+        d_dt['Base'] = 0
+        d_dt['Predicted_sales'] = 0
+        d_dt['cogs'] = 0
+        # import pdb
+        # pdb.set_trace()
+        d_dt = d_dt.reset_index(drop=True)
+        # d_dt.reset_index(drop=True)
+        r_dt = r_dt.reset_index(drop=True)
+        # d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG'])].reset_index(drop=True)
+        # roi_dt.loc[(roi_dt['Account Name'] == row['Account Name']) & (roi_dt['PPG'] == row['PPG'])].reset_index(drop=True)
+        # d_dt[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG'])]['TPR_Discount'] = d_dt['TPR_Discount']
+        d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'TPR_Discount'] = d_dt['TPR_Discount']
+        d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'Incremental'] = ret_val['Incremental']
+        d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'Base'] = ret_val['Base']
+        d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'Predicted_sales'] = ret_val['Predicted_sales']
+        d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'off_inv'] = r_dt.loc[(r_dt['Account Name'] == row['Account Name']) & (r_dt['PPG'] == row['PPG']),'off_inv']
+        # r_dt['off_inv']
+        d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'on_inv'] = r_dt.loc[(r_dt['Account Name'] == row['Account Name']) & (r_dt['PPG'] == row['PPG']),'on_inv']
+        d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'gmac'] = r_dt.loc[(r_dt['Account Name'] == row['Account Name']) & (r_dt['PPG'] == row['PPG']),'gmac']
+        d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'list_price'] = r_dt.loc[(r_dt['Account Name'] == row['Account Name']) & (r_dt['PPG'] == row['PPG']),'list_price']
+        d_dt['cogs'] = d_dt['list_price'] - (d_dt['list_price'] * d_dt['gmac'])
+       
+        # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['Incremental'] = ret_val['Incremental']
+        # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['Base'] = ret_val['Base']
+        # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['Predicted_sales'] = ret_val['Predicted_sales']
+        # import pdb
+        # pdb.set_trace()
+        # res_dt = pd.concat(d_dt)
+        # print(res_dt)
+        frames.append(d_dt)
+        
+    
+    
+    coeff_dt['cross_elasticity'] = 0.0
+    coeff_dt['net_elasticity'] = 0.0
+    coeff_dt['cross_elasticity'] = coeff_dt['C_1_crossretailer_log_price'] + coeff_dt['C_1_intra_log_price']
+    + coeff_dt['C_2_intra_log_price'] + coeff_dt['C_3_intra_log_price']
+    +coeff_dt['C_4_intra_log_price'] +  coeff_dt['C_5_intra_log_price'] 
+    coeff_dt['net_elasticity'] = coeff_dt['cross_elasticity'] + coeff_dt['Median_Base_Price_log'] 
+    
+    # import pdb
+    # pdb.set_trace()
+    resultss = pd.concat(frames)
+   
+    # 'off_inv', 'on_inv', 'gmac', 'list_price'
+    result_dt = pd.merge(resultss,coeff_dt,how="inner" ,left_on = ["Account Name" , "PPG"] , right_on = ["Account Name" , "PPG"])
+    result_dt['Median_Base_Price_log_x'] = result_dt['Median_Base_Price_log_x'].apply(lambda x: math.exp(x)) 
+    # print(result_dt['Median_Base_Price_log_x'].apply(lambda x: math.log(x)) , "log value") 
     # import pdb
     # pdb.set_trace() 
     # result_dt = pd.merge(result_dt,roi_dt,how="inner" ,left_on = ["Account Name" , "PPG" , "Week"] , right_on = ["Account Name" , "PPG" , "week"]) 

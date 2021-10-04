@@ -75,17 +75,17 @@ def get_list_value_from_query(coeff_model:model.ModelCoefficient,
     return coeff_list , data_list, roi_list , coeff_map,holiday_calendar_list
 
 
-def get_list_value_from_query_all():
+def get_list_value_from_query_all(request_id):
     '''
     returns list form of ORM query
     '''
     # import pdb
     # pdb.set_trace()
     coefficient = model.ModelCoefficient.objects.select_related('model_meta').values_list(
-        *const.COEFFICIENT_VALUES)
+        *const.COEFFICIENT_VALUES).filter(model_meta__in = request_id)
     data = model.ModelData.objects.select_related('model_meta').values_list(
-        *const.DATA_VALUES).order_by('week')
-    roi = model.ModelROI.objects.select_related('model_meta').values_list(*const.ROI_VALUES).order_by('week')
+        *const.DATA_VALUES).order_by('week').filter(model_meta__in = request_id)
+    roi = model.ModelROI.objects.select_related('model_meta').values_list(*const.ROI_VALUES).order_by('week').filter(model_meta__in = request_id)
     coeff_list = [list(i) for i in coefficient]
     data_list = [list(i) for i in data]
     roi_list = [list(i) for i in roi] 

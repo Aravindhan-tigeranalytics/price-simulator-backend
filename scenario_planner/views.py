@@ -387,20 +387,20 @@ class SaveScenarioViewSet(viewsets.ModelViewSet):
                 return Response({}, 200)
         request.data['name']
         request.data['comments']
-        request_dump = json.loads(request.data['savedump'])
-        price_change =  request_dump['formArray']
-        product = request_dump['productFilter']
-        retailer = request_dump['retailerFilter']
-        p_r_list = list(itertools.product([i.replace('Magnit','Tander') for i in retailer],product)) # change backend data in pricing scenario
-        model_meta_set = set(model.ModelMeta.objects.values_list('account_name','product_group'))
-        model_meta_list = []
-        for i in model_meta_set:
-            r = util.remove_duplicate_spaces(i[0]),util.remove_duplicate_spaces(i[1])
-            model_meta_list.append(r)
-        available = []
-        for i in p_r_list:
-            if (util.remove_duplicate_spaces(i[0]),util.remove_duplicate_spaces(i[1])) in model_meta_list:
-                available.append(i)
+        request_dump = request.data['value']
+        # price_change =  request_dump['formArray']
+        # product = request_dump['productFilter']
+        # retailer = request_dump['retailerFilter']
+        # p_r_list = list(itertools.product([i.replace('Magnit','Tander') for i in retailer],product)) # change backend data in pricing scenario
+        # model_meta_set = set(model.ModelMeta.objects.values_list('account_name','product_group'))
+        # model_meta_list = []
+        # for i in model_meta_set:
+        #     r = util.remove_duplicate_spaces(i[0]),util.remove_duplicate_spaces(i[1])
+        #     model_meta_list.append(r)
+        # available = []
+        # for i in p_r_list:
+        #     if (util.remove_duplicate_spaces(i[0]),util.remove_duplicate_spaces(i[1])) in model_meta_list:
+        #         available.append(i)
         # import pdb
         # pdb.set_trace()
         scenario = model.SavedScenario(
@@ -412,30 +412,30 @@ class SaveScenarioViewSet(viewsets.ModelViewSet):
         )   
         scenario.save()
         bulk_pricing_week = []
-        for i in available:
+        for i in request_dump['products']:
             pr_save = model.PricingSave(
-                account_name = i[0],
-                corporate_segment = i[0],
-                product_group = i[1],
+                account_name = i['account_name'],
+                corporate_segment = i['account_name'],
+                product_group = i['product_group'],
                 saved_scenario = scenario
             )
             pr_save.save()
             
-            sc = ScenarioPlannerMetrics.objects.filter(retailer = i[0].replace('Tander','Magnit') , product_group = i[1])
-            price = [d for d in price_change if d['product_group'] == i[1]][0]
+            # sc = ScenarioPlannerMetrics.objects.filter(retailer = i[0].replace('Tander','Magnit') , product_group = i[1])
+            # price = [d for d in price_change if d['product_group'] == i[1]][0]
             # print(price.lpi_increase , "price information")
             # import pdb
             # pdb.set_trace()
             
-            for sce in sc:
-                cogs = sce.list_price * decimal.Decimal(1- abs(1*(sce.gmac_percent_lsv/100)))
+            for j in range(1,53):
+                 
                 pw = model.PricingWeek(
                    
-                    week = sce.week,
-                    year = sce.year,
-                    lp_increase = sce.list_price * decimal.Decimal(1 + int(price['lpi_increase'])/100),
-                    rsp_increase = sce.retailer_median_base_price_w_o_vat * decimal.Decimal(1 + int(price['rsp_increase'])/100),
-                    cogs_increase = cogs * decimal.Decimal(1 + int(price['cogs_increase'])/100),
+                    week = j,
+                    year = 1,
+                    lp_increase = i['inc_list_price'],
+                    rsp_increase = i['inc_rsp'],
+                    cogs_increase = i['inc_cogs'],
                     pricing_save = pr_save,
                 )
                 bulk_pricing_week.append(pw)
@@ -453,7 +453,7 @@ class SaveScenarioViewSet(viewsets.ModelViewSet):
         # scenario.save()
         
         
-        return Response({},status=200)
+        return Response({"saved_id" : scenario.id},status=200)
     
 class ScenarioViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin,
 mixins.UpdateModelMixin,mixins.DestroyModelMixin , mixins.RetrieveModelMixin):
@@ -518,9 +518,11 @@ class ScenarioPlannerMetricsViewSet(viewsets.GenericViewSet, mixins.ListModelMix
     
     
     def list(self, request, *args, **kwargs):
+        val = request.GET.get('actors' , '[]')
+        val = ast.literal_eval(val)
         # import pdb
         # pdb.set_trace()
-        coeff_list , data_list,roi_list = pd_query.get_list_value_from_query_all()
+        coeff_list , data_list,roi_list = pd_query.get_list_value_from_query_all(val)
         # import pdb
         # pdb.set_trace()
         result_dt = uc.list_to_frame_many(coeff_list , data_list , roi_list)
@@ -528,16 +530,18 @@ class ScenarioPlannerMetricsViewSet(viewsets.GenericViewSet, mixins.ListModelMix
         
         res = result_dt[['Account Name','Corporate Segment_x','PPG' , 'Brand Filter_x' , 'Brand Format Filter_x',
                    'Strategic Cell Filter_x' , 'Year' , 'Quarter','Month', 'Period', 'Date', 'Week',
-                   'Median_Base_Price_log_y' ,  'cross_elasticity', 'net_elasticity','Predicted_sales','list_price',
+                   'Median_Base_Price_log_y' ,  'cross_elasticity', 'net_elasticity','Predicted_sales','Base','Incremental','list_price',
+                   'cogs',
                    'Median_Base_Price_log_x','on_inv','off_inv','TPR_Discount_x',
                    'gmac','Weighted Weight in grams'
                    ]]
         res.rename(columns = {'Account Name':'account_name' , 'Corporate Segment_x':'corporate_segment',
-                              'PPG'  :'poduct_group' , 'Brand Filter_x':'brand_filter' , 
+                              'PPG'  :'product_group' , 'Brand Filter_x':'brand_filter' , 
                               'Brand Format Filter_x':'brand_format' , 'Strategic Cell Filter_x':'strategic_cell_filter', 
                               'Year' : 'year' , 'Quarter' : 'quarter','Month' : 'month', 'Period' : 'period', 
                               'Date' : 'date', 'Week' : 'week','Median_Base_Price_log_y' : 'base_price_elasticity' ,
-                              'Predicted_sales' : 'base_units' ,  'Median_Base_Price_log_x' : 'retail_median_base_price_w_o_vat',
+                              'Predicted_sales' : 'base_units','Base' : 'base_split','Incremental' : 'incremental_split' , 
+                              'Median_Base_Price_log_x' : 'retail_median_base_price_w_o_vat',
                               'TPR_Discount_x' : 'tpr_discount','Weighted Weight in grams' : 'product_weight_in_grams'
                               },
                    inplace = True)
@@ -546,6 +550,13 @@ class ScenarioPlannerMetricsViewSet(viewsets.GenericViewSet, mixins.ListModelMix
         # pdb.set_trace()
         parsed_summary = json.loads(res.to_json(orient="records"))
         return Response(parsed_summary , status=200)
+    
+    def post(self, request, format=None):
+        payload = mixin.calculate_pricing_metrics(request.data)
+        # print(request.data , "post request.......")
+        # print
+        return Response({"payload" : payload})
+        
 
 class ScenarioPlannerMetricsViewSetObject(viewsets.GenericViewSet, mixins.ListModelMixin):
     queryset = ScenarioPlannerMetrics.objects.all()

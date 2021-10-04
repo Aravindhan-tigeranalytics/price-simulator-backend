@@ -7,7 +7,7 @@ from scenario_planner import views
 router = DefaultRouter()
 # router.register('savedscenario', views.ScenarioViewSet)
 # savescenario
-router.register('savedscenario', views.SaveScenarioViewSet)
+router.register('savescenario', views.SaveScenarioViewSet)
 router.register('scenario-metrics', views.ScenarioPlannerMetricsViewSet)
 router.register('scenario-metrics-obj', views.ScenarioPlannerMetricsViewSetObject)
 router.register('promo-test', views.PromoSimulatorTestViewSet)
@@ -36,5 +36,6 @@ urlpatterns = [
     path('promo-simulate-test/',views.PromoSimulatorViewTest.as_view({'get': 'get'})),
     path('promo-simulate-test/<int:id>/',views.PromoSimulatorViewTest.as_view({'get': 'retrieve'})),
     path('upload/',views.MyUploadView.as_view({'get': 'get'}))
+    # path('price-simulate' , views.)
     
 ]

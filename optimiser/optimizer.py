@@ -2871,14 +2871,17 @@ def process(
     else:
 
       # Infeasible Soln
+        print(opt_pop_up_flag , "opt_pop_up_flag")
+        print(opt_pop_up_flag_final    , "opt_pop_up_flag_final")
+        print(opt_pop_up_config_final , "opt_pop_up_config_final")
 
         opt_pop_up_flag_final = 0
         return {
             "opt_pop_up_flag_final" : opt_pop_up_flag_final
         }
-    # print(opt_pop_up_flag , "opt_pop_up_flag")
-    # print(opt_pop_up_flag_final    , "opt_pop_up_flag_final")
-    # print(opt_pop_up_config_final , "opt_pop_up_config_final")
+    print(opt_pop_up_flag , "opt_pop_up_flag")
+    print(opt_pop_up_flag_final    , "opt_pop_up_flag_final")
+    print(opt_pop_up_config_final , "opt_pop_up_config_final")
     # if len(holiday_list) > 0:
     #     for value in holiday_list:
     #       opt_base[value] = Optimal_data[value]

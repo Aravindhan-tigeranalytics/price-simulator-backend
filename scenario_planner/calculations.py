@@ -5,6 +5,9 @@ from django.db.models.query import QuerySet
 from core import models as db_model
 from utils import util as util
 from utils import models as model
+from functools import reduce
+from itertools import groupby
+from operator import itemgetter
 # from .query import roi_values , data_values
 from utils.constants import (
      DATA_VALUES as data_values , ROI_VALUES as roi_values
@@ -317,7 +320,7 @@ def calculate_financial_mertrics_from_pricing( data_list ,roi_list,unit_info , f
             #     ) == 'Choco' else 0.5
             
         )
-        update_total(total_units , ob)
+        update_pricing_total(total_units , ob)
         ob_dict = ob.__dict__
         ob_dict['holiday'] = get_holiday_information(data)
         weekly_units.append(ob_dict)
@@ -343,6 +346,40 @@ def aggregate_total(total_unit:model.TotalUnit):
     # lift_ = (unit_model.incremental_unit / unit_model.base_unit)
     
     # pass
+
+
+
+def update_pricing_total(total_unit:model.TotalUnit ,unit_model : model.PricingUnit ):
+    total_unit.total_rsv_w_o_vat = total_unit.total_rsv_w_o_vat + unit_model.total_rsv_w_o_vat
+    total_unit.cogs = total_unit.cogs + unit_model.total_cogs
+    total_unit.units = total_unit.units + unit_model.predicted_units
+    total_unit.te = total_unit.te + unit_model.trade_expense
+    total_unit.lsv = total_unit.lsv + unit_model.total_lsv
+    total_unit.nsv = total_unit.nsv + unit_model.total_nsv
+    total_unit.mac = total_unit.mac + unit_model.mars_mac
+    total_unit.rp = total_unit.rp + unit_model.retailer_margin
+    total_unit.asp = total_unit.asp + unit_model.asp
+    # util.average(total_unit.asp,unit_model.asp) 
+    # import pdb
+    # pdb.set_trace()
+    total_unit.uplift_gmac_lsv = total_unit.uplift_gmac_lsv + unit_model.uplift_gmac_lsv
+    total_unit.total_uplift_cost= total_unit.total_uplift_cost + unit_model.total_uplift_cost  
+    # if (unit_model.promo_depth + unit_model.co_investment):
+    #     total_unit.avg_promo_selling_price =  util.average(total_unit.avg_promo_selling_price,unit_model.promo_asp) 
+    # total_unit.roi = total_unit.roi + unit_model.roi
+    # if(unit_model.roi):
+    #     # print(unit_model.roi , "roi")
+    #     total_unit.roi = util.average(total_unit.roi,unit_model.roi)
+        # print(total_unit.roi , "average")
+    # total_unit.rp_percent = util.average(total_unit.rp_percent,unit_model.retailer_margin_percent_of_rsp)
+     
+    # total_unit.mac_percent = util.average( total_unit.mac_percent,unit_model.mars_mac_percent_of_nsv)
+   
+    total_unit.volume = total_unit.volume  + unit_model.total_weight_in_tons
+    # total_unit.te_per_unit = total_unit.te_per_unit + unit_model.te_per_units
+    # total_unit.te_percent_of_lsv = util.average(total_unit.te_percent_of_lsv ,unit_model.te_percent_of_lsv)
+    total_unit.base_units = total_unit.base_units + unit_model.base_unit
+    total_unit.increment_units =total_unit.increment_units + unit_model.incremental_unit
 
 
 def update_total(total_unit:model.TotalUnit ,unit_model : model.UnitModel ):
@@ -653,3 +690,117 @@ def calculate_financial_mertrics_from_pricing_promo(data_list ,roi_list,unit_inf
         }
        
     }
+
+def calculate_financial_mertrics_for_pricing_request(price_list , flag):
+    '''
+    To calculate financial metrics for each week as well as total
+    '''
+
+   
+    
+    retailers = []
+    for key, price_list in groupby(price_list,
+                          key = itemgetter('account_name' , 'product_group')):
+        # import pdb
+        # pdb.set_trace()
+        retailer = {}
+        retailer['account_name'] = key[0]
+        retailer['product'] = key[1]
+        weekly_units = []
+        total_units = model.TotalUnit()
+
+    
+    
+        for price in price_list:
+            try:
+
+                ob = model.PricingUnit(
+                    price['week'],
+                    price['year'],
+                    price['date'],
+                    price['quarter'],
+                    price['base_units'],
+                    price['base_split'],
+                    price['incremental_split'],
+                    price['list_price'],
+                    price['retail_median_base_price_w_o_vat'],
+                    price['cogs'],
+                    price['on_inv'],
+                    price['off_inv'],
+                    price['tpr_discount'],
+                    price['gmac'],
+                    price['product_weight_in_grams'],
+                    
+                    royalty_increase = 0.0 if util._transform_corporate_segment(
+                    price['corporate_segment']
+                    ) == 'Choco' else 0.5,
+                    is_vat_applied= price['account_name'] != 'Lenta',
+                    
+                    
+                    
+                )
+                # import pdb
+                # pdb.set_trace()
+                update_pricing_total(total_units , ob)
+                ob_dict = ob.__dict__
+                weekly_units.append(ob_dict)
+            except Exception as e:
+                raise e
+                # import pdb
+                # pdb.set_trace()
+                # passa
+        # import pdb
+        # pdb.set_trace()
+        aggregate_total(total_units)
+        retailer['total'] =total_units.__dict__
+        retailer['weekly'] = weekly_units
+        retailers.append(retailer)
+        
+        #      'total' :  
+        #     'weekly' : 
+            
+        # }
+    
+    return {
+        flag : retailers
+       
+    }
+
+def update_increased_pricing(pricing_list , form_data):
+    # import pdb
+    # pdb.set_trace()
+    #   this.new_base_units =
+    #   this.competition == 'Follows'
+    #     ? this.base_units *
+    #       (1 +
+    #         this.net_elasticity *
+    #           ((this.suggested_retailer_median_base_price_w_o_vat -
+    #             this.retailer_median_base_price_w_o_vat) /
+    #             this.retailer_median_base_price_w_o_vat))
+    #     : this.base_units *
+    #       (1 +
+    #         this.base_price_elasticity *
+    #           ((this.suggested_retailer_median_base_price_w_o_vat -
+    #             this.retailer_median_base_price_w_o_vat) /
+    #             this.retailer_median_base_price_w_o_vat));
+
+    local_memory = {
+    }
+    for price in pricing_list:
+        if((price['account_name']+ price['product_group']) in local_memory):
+            form = local_memory[(price['account_name']+ price['product_group'])]
+
+        else:
+
+            form = list(filter(lambda forms: (price['account_name'] == forms['account_name'] and price['product_group'] == forms['product_group']), form_data))[0]
+            local_memory[form['retailer']] = form
+        price['list_price'] = float(form['inc_list_price'])
+        price['retail_median_base_price_w_o_vat'] = float(form['inc_rsp']) 
+        price['base_price_elasticity'] = float(form['inc_elasticity'])
+        price['net_elasticity'] = float(form['inc_net_elasticity'])
+        price['cogs'] = float(form['inc_cogs'])
+    return pricing_list
+        # price[]
+        # pass
+        
+        # if(price['account_name'] == )

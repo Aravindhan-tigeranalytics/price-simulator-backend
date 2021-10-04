@@ -239,3 +239,95 @@ class TotalUnit:
     cogs = 0
     uplift_gmac_lsv = 0
     total_uplift_cost = 0
+    
+    # category,
+    # product_group,
+    # retailer,
+    # brand_filter,
+    # brand_format_filter,
+    # strategic_cell_filter,
+class PricingUnit:
+    def __init__(self,
+    week,
+    year,
+    date,
+    quarter,
+     predicted_units,
+    base_units,
+    incremental_units,
+    list_price,
+    retailer_median_base_price_w_o_vat,
+    mars_cogs_per_unit,
+    on_inv_percent,
+    off_inv_percent,
+    tpr_percent,
+    gmac_percent_lsv,
+    product_group_weight_in_grams,
+    royalty_increase = 0.5,
+    is_vat_applied = True):
+        self.date = date
+        self.week = week
+        self.year = year
+        # self.quater = quater
+        # self.month = month
+        # self.period = period
+        # self.si = si
+        # self.flag_promotype_motivation = flag_promotype_motivation
+        # self.flag_promotype_n_pls_1 = flag_promotype_n_pls_1
+        # self.flag_promotype_traffic = flag_promotype_traffic
+        self.base_unit = base_units
+        self.incremental_unit = incremental_units
+        # self.promo_depth = promo_depth
+        # self.co_investment = co_investment
+        self.lift = (self.incremental_unit / self.base_unit )
+        # if promo_elasticity and promo_depth:
+        #     import pdb
+        #     pdb.set_trace()
+        # self.simulate_predicted_units = self.base_unit * (((1 - ((promo_depth + co_investment)/100))** promo_elasticity))
+        self.predicted_units =  predicted_units
+        self.asp =  retailer_median_base_price_w_o_vat 
+        if is_vat_applied:
+            self.total_rsv_w_o_vat = self.predicted_units * (self.asp * (1 - (20/100)))
+        else:
+            self.total_rsv_w_o_vat = self.predicted_units * (self.asp)
+        # self.promo_asp = 0 if not (promo_depth + co_investment) else util._divide(self.total_rsv_w_o_vat,self.predicted_units)
+        self.uplift_lsv = incremental_units * list_price
+        self.uplift_gmac_lsv = self.uplift_lsv * (gmac_percent_lsv/100)
+        self.total_lsv = predicted_units * list_price
+        self.mars_uplift_on_invoice = self.uplift_lsv * (on_inv_percent / 100)
+        self.mars_total_on_invoice = self.total_lsv * (on_inv_percent / 100)
+        self.mars_uplift_nrv = self.uplift_lsv - self.mars_uplift_on_invoice
+        self.mars_total_nrv = self.total_lsv - self.mars_total_on_invoice
+        self.uplift_promo_cost = self.mars_uplift_nrv  
+        self.tpr_budget_roi = self.mars_total_nrv  
+        self.mars_uplift_net_invoice_price = self.mars_uplift_nrv - self.uplift_promo_cost
+        self.mars_total_net_invoice_price = self.mars_total_nrv - self.tpr_budget_roi # changed from tpr budget
+        self.mars_uplift_off_invoice = self.mars_uplift_net_invoice_price * (off_inv_percent / 100)
+        self.mars_total_off_invoice = self.mars_total_net_invoice_price * (off_inv_percent/100)
+        self.uplift_trade_expense = self.mars_uplift_off_invoice + self.tpr_budget_roi + self.mars_uplift_on_invoice
+        self.total_trade_expense = self.mars_total_on_invoice + self.tpr_budget_roi + self.mars_total_off_invoice
+        self.uplift_nsv = self.uplift_lsv - self.uplift_trade_expense
+        self.total_nsv = self.total_lsv - self.total_trade_expense
+        self.te_per_units = self.total_trade_expense / self.predicted_units
+        self.uplift_royalty = (royalty_increase) * self.uplift_nsv
+        self.total_uplift_cost = self.uplift_royalty + self.uplift_trade_expense
+        self.roi = util._divide(self.uplift_gmac_lsv,self.total_uplift_cost)
+        self.tpr_budget = self.mars_total_nrv * ((tpr_percent)/100)
+        self.mars_total_net_invoice_price = self.mars_total_nrv - self.tpr_budget
+        self.mars_cogs_per_unit = mars_cogs_per_unit
+        # import pdb
+        # pdb.set_trace()
+        print(self.mars_cogs_per_unit , type(self.mars_cogs_per_unit) , "mars cogs per unit")
+        print(self.incremental_unit , type(self.incremental_unit) , "incrementa lunits")
+        self.uplift_cogs = self.incremental_unit * self.mars_cogs_per_unit
+        self.uplift_mac = self.uplift_nsv - self.uplift_cogs        
+        self.total_cogs = self.mars_cogs_per_unit * predicted_units
+        self.mars_mac = self.total_nsv - self.total_cogs
+        self.total_weight_in_tons = (predicted_units * product_group_weight_in_grams) /1000000
+        self.trade_expense = self.mars_total_on_invoice + self.tpr_budget_roi + self.mars_total_off_invoice
+        self.retailer_margin =  self.total_rsv_w_o_vat - self.total_nsv
+        self.retailer_margin_percent_of_nsv = util._divide(self.retailer_margin ,self.total_nsv) * 100
+        self.retailer_margin_percent_of_rsp = util._divide(self.retailer_margin,self.total_rsv_w_o_vat) * 100
+        self.mars_mac_percent_of_nsv = util._divide(self.mars_mac,self.total_nsv) * 100
+        self.te_percent_of_lsv = util._divide(self.trade_expense,self.total_lsv) * 100
+
