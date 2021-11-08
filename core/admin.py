@@ -6,6 +6,7 @@ from core import models
 from django import forms
 from django.urls import path
 from django.shortcuts import render,redirect
+import scenario_planner
 from utils import excel as excel
 from utils import util as util
 import openpyxl
@@ -150,6 +151,26 @@ class ModelDataAdmin(admin.ModelAdmin):
     search_fields = ['model_meta__id','model_meta__slug','model_meta__account_name']
     list_display = [field.name for field in models.ModelData._meta.fields]
     list_filter = ('model_meta__account_name','model_meta__product_group','optimiser_flag')
+    
+    actions = ['populate_predicted']
+    
+    def populate_predicted(self, request, queryset):
+        from utils import units_calculation as uc
+        from scenario_planner import query as pd_query
+        retailer = "Pyaterochka"
+        ppg = "Orbit OTC"
+        
+        coeff_list = pd_query.get_coefficient(retailer , ppg)
+        data_list = pd_query.get_model_data(retailer , ppg)
+        data_list = [pd_query._check_if_vat_applied(list(i)) for i in data_list]
+        res = uc.list_to_frame(coeff_list , data_list)
+        res.to_csv("file-"+retailer+"-"+ppg+".csv")
+        # import pdb
+        # pdb.set_trace()
+        # for q in queryset:
+        #     q.delete()
+        # models.ScenarioPlannerMetrics.objects.all().delete()
+    populate_predicted.short_description = "populate units"
 
 class ModelROIAdmin(admin.ModelAdmin):
     search_fields = ['model_meta__id','model_meta__slug','model_meta__account_name']
@@ -162,9 +183,11 @@ class CoeffMapAdmin(admin.ModelAdmin):
     list_filter = ('model_meta__account_name','model_meta__product_group')
 
 class SavedScenarioAdmin(admin.ModelAdmin):
+    list_filter = ('scenario_type',)
     list_display = [field.name for field in models.SavedScenario._meta.fields]
     
 class PricingSaveAdmin(admin.ModelAdmin):
+    
     list_display = [field.name for field in models.PricingSave._meta.fields]
     
 class PromoSaveAdmin(admin.ModelAdmin):

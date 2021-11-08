@@ -1,5 +1,9 @@
+from typing import List
 from core import models as model
 from utils import constants as const
+from django.db.models import Q
+import math
+import decimal
 # from django.db.models import Model 
 # coeff_values = [ 'model_meta__id','model_meta__account_name', 
 #                     'model_meta__corporate_segment', 'model_meta__product_group', 'model_meta__brand_filter',
@@ -36,6 +40,36 @@ def _get_calendar_values(retailer) :
         return "magnit_flag"
     else:
         return "x5_magnit_flag"
+    
+def get_coefficient(retailer , ppg):
+    return model.ModelCoefficient.objects.select_related('model_meta').filter(
+                    model_meta__account_name__iexact = retailer,
+                    model_meta__product_group__iexact = ppg
+                ).values_list(*const.COEFFICIENT_VALUES)
+    
+def get_model_data(retailer , ppg):
+    return model.ModelData.objects.select_related('model_meta').filter(
+                    model_meta__account_name__iexact = retailer,
+                    model_meta__product_group__iexact = ppg
+                ).values_list(*const.DATA_VALUES).order_by('week')
+def get_roi(retailer , ppg):
+    return model.ModelROI.objects.select_related('model_meta').filter(
+                    model_meta__account_name__iexact = retailer,
+                    model_meta__product_group__iexact = ppg
+                ).values_list(*const.ROI_VALUES).order_by('week') 
+    
+def get_coeff_map(retailer,ppg):
+    return model.CoeffMap.objects.select_related('model_meta').filter(
+        model_meta__account_name__iexact = retailer,
+                    model_meta__product_group__iexact = ppg
+    ).values('coefficient_old' , 'coefficient_new') 
+    
+def get_holiday_calendar(retailer):
+    holiday_cal =  model.HolidayCalendar.objects.filter(year = 2022).values(
+       'week' ,  _get_calendar_values(retailer)
+        
+    )
+    return [{i['week']:i[ _get_calendar_values(retailer)]} for i in holiday_cal ]
 
 def get_list_value_from_query(coeff_model:model.ModelCoefficient,
                               data_model:model.ModelData,
@@ -46,32 +80,17 @@ def get_list_value_from_query(coeff_model:model.ModelCoefficient,
     '''
     # import pdb
     # pdb.set_trace()
-    coefficient = coeff_model.objects.select_related('model_meta').filter(
-                    model_meta__account_name__iexact = retailer,
-                    model_meta__product_group__iexact = ppg
-                ).values_list(*const.COEFFICIENT_VALUES)
-    data = data_model.objects.select_related('model_meta').filter(
-                    model_meta__account_name__iexact = retailer,
-                    model_meta__product_group__iexact = ppg
-                ).values_list(*const.DATA_VALUES).order_by('week')
-    roi = roi_model.objects.select_related('model_meta').filter(
-                    model_meta__account_name__iexact = retailer,
-                    model_meta__product_group__iexact = ppg
-                ).values_list(*const.ROI_VALUES).order_by('week')
-    coeff_map = model.CoeffMap.objects.select_related('model_meta').filter(
-        model_meta__account_name__iexact = retailer,
-                    model_meta__product_group__iexact = ppg
-    ).values('coefficient_old' , 'coefficient_new') 
-    holiday_calendar = model.HolidayCalendar.objects.filter(year = 2022).values(
-       'week' ,  _get_calendar_values(retailer)
-        
-    )
+    coefficient = get_coefficient(retailer , ppg)
+    data = get_model_data(retailer , ppg)
+    roi = get_roi(retailer , ppg)
+    coeff_map = get_coeff_map(retailer ,ppg)
     # import pdb
     # pdb.set_trace()
     coeff_list = [list(i) for i in coefficient]
-    data_list = [list(i) for i in data]
+    # data_list = [list(i) for i in data]
+    data_list = [_check_if_vat_applied(list(i)) for i in data]
     roi_list = [list(i) for i in roi] 
-    holiday_calendar_list = [{i['week']:i[ _get_calendar_values(retailer)]} for i in holiday_calendar ]
+    holiday_calendar_list = get_holiday_calendar(retailer)
     return coeff_list , data_list, roi_list , coeff_map,holiday_calendar_list
 
 
@@ -87,6 +106,54 @@ def get_list_value_from_query_all(request_id):
         *const.DATA_VALUES).order_by('week').filter(model_meta__in = request_id)
     roi = model.ModelROI.objects.select_related('model_meta').values_list(*const.ROI_VALUES).order_by('week').filter(model_meta__in = request_id)
     coeff_list = [list(i) for i in coefficient]
-    data_list = [list(i) for i in data]
+    data_list = [_check_if_vat_applied(list(i)) for i in data]
+    roi_list = [list(i) for i in roi] 
+    return coeff_list , data_list, roi_list
+
+def _check_if_vat_applied(model_data):
+    # import pdb
+    # pdb.set_trace()
+    # for lenta dont apply vat
+    if(model_data[const.DATA_VALUES.index('model_meta__account_name')] != 'Lenta'):
+        rsp = model_data[const.DATA_VALUES.index('median_base_price_log')]
+        rsp = math.exp(rsp)
+        rsp = decimal.Decimal(rsp) * decimal.Decimal(1 - (20/100))
+        model_data[const.DATA_VALUES.index('median_base_price_log')] = decimal.Decimal(math.log(rsp))
+        
+    return model_data
+
+def get_list_value_from_query_by_name(retailer:List):
+    '''
+    returns list form of ORM query
+    '''
+    # import pdb
+    # pdb.set_trace()
+    # from django.db.models import Q
+    query = Q()
+    for i in retailer:
+        query.add(Q(Q(model_meta__account_name=i['account_name']) & Q(model_meta__product_group = i['product_group'])),Q.OR)
+
+    # print(query , "generate query")
+    
+    # import pdb
+    # pdb.set_trace()
+    
+    # query = Q(first_name='mark')
+    # query.add(Q(email='mark@test.com'), Q.OR)
+    # query.add(Q(last_name='doe'), Q.AND)
+
+    # queryset = User.objects.filter(query)
+    coefficient = model.ModelCoefficient.objects.select_related('model_meta').values_list(
+        *const.COEFFICIENT_VALUES).filter(
+            query
+            )
+    data = model.ModelData.objects.select_related('model_meta').values_list(
+        *const.DATA_VALUES).order_by('week').filter(query)
+    # import pdb
+    # pdb.set_trace()
+    roi = model.ModelROI.objects.select_related('model_meta').values_list(*const.ROI_VALUES).order_by('week').filter(
+       query)
+    coeff_list = [list(i) for i in coefficient]
+    data_list = [_check_if_vat_applied(list(i)) for i in data]
     roi_list = [list(i) for i in roi] 
     return coeff_list , data_list, roi_list

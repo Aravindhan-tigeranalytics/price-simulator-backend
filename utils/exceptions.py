@@ -24,3 +24,8 @@ class OptimizationException(APIException):
     status_code = 400
     default_detail = "No model data available"
     default_code = 'optimizer_error'
+    
+class PricingROIException(APIException):
+    status_code = 400
+    default_detail = "Price information not available for one of the selected products "
+    default_code = 'pricing_error'

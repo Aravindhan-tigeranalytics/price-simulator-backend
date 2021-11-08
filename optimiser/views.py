@@ -14,12 +14,14 @@ from rest_framework.permissions import IsAuthenticated
 from optimiser import serializers as sc
 from optimiser import permissions as perm
 from scenario_planner import serializers as ser
+from scenario_planner import calculations as cal
 from optimiser import optimizer
 from optimiser import process as process
 from core import models as model
 from utils import excel as excel
 from utils import exceptions as exception
 from optimiser import utils as opt_util
+
 import ast
 
 
@@ -71,9 +73,41 @@ class LoadScenarioOptimizer(viewsets.ReadOnlyModelViewSet):
         pricing_week = model.PricingWeek.objects.select_related(
                 'pricing_save'
                 ).filter(pricing_save__id = int(pricing_save_id))
+        account_name = pricing_week[0].pricing_save.account_name
+        product_group = pricing_week[0].pricing_save.product_group
+        corporate_segment = pricing_week[0].pricing_save.corporate_segment
+        tpr = model.ModelData.objects.select_related('model_meta').values(
+            'tpr_discount' , 'year','quater' , 'week' , 'date','promo_depth' , 'co_investment',
+            'flag_promotype_motivation' , 'flag_promotype_n_pls_1' , 'flag_promotype_traffic'
+            ).filter(
+            model_meta__account_name = account_name, model_meta__product_group = product_group
+            ).order_by('week')
+        tpr_list = list(tpr)
+         
+        tpr_list = cal.update_tpr_from_pricing(tpr_list , pricing_week)
+        min_consecutive_promo,max_consecutive_promo,min_length_gap,tot_promo_min,tot_promo_max,no_of_promo, no_of_waves = optimizer.get_promo_wave_values([i['tpr_discount'] for i in tpr_list])
+
+        
+        serializer = sc.OptimizerSerializer({'param_total_promo_min' : tot_promo_min,
+                                                'param_total_promo_max' : tot_promo_max,
+                                                'param_promo_gap' : min_length_gap,
+                                                'param_max_consecutive_promo' : max_consecutive_promo,
+                                                'param_min_consecutive_promo' : min_consecutive_promo,
+                                            'param_mac' : 1.0, 'param_rp' : 1.0,'param_trade_expense' : 1.0,'param_units' : 1.0,'param_nsv' :1.0,'param_gsv' : 1.0,'param_sales' : 1.0,'param_mac_perc' : 1.0,'param_rp_perc' : 1.0,
+                                            'config_mac' : True, 'config_rp' : True,'config_trade_expense' : False,'config_units' : False,'config_nsv' :False,'config_gsv' : False,'config_sales' : False,'config_mac_perc' : False,
+                                            'config_rp_perc' : True, 'config_min_consecutive_promo' : True, 'config_max_consecutive_promo' : True, 'config_promo_gap' : True,
+                                                'account_name' :account_name,'corporate_segment' : corporate_segment,'brand':'','brand_format':'',
+                                                'product_group' : product_group,'strategic_cell':'','result' : ''} )
+        if serializer.is_valid():
+            pass
+        res = {"data" : serializer.data , "weekly" : tpr_list}
+        res["data"]["param_no_of_waves"] = no_of_waves
+        res["data"]["param_no_of_promo"] = no_of_promo
+        return Response(res,200)
+
     
-        return Response( optimizer.process(pricing_week = pricing_week), 
-                    status=status.HTTP_201_CREATED)
+        # return Response( optimizer.process(pricing_week = pricing_week), 
+        #             status=status.HTTP_201_CREATED)
     
     
     def retrieve_pricing_promo(self, request, *args, **kwargs):
@@ -89,6 +123,7 @@ class LoadScenarioOptimizer(viewsets.ReadOnlyModelViewSet):
         if obj.scenario_type == 'pricing':
             pricing_save = model.PricingSave.objects.filter(saved_scenario = obj)
             serializer = ser.PricingSaveSerializer(pricing_save,many=True)
+          
             return Response(serializer.data , status=200)
            
         if obj.scenario_type == 'optimizer':
@@ -402,12 +437,20 @@ class ModelOptimize(viewsets.GenericViewSet):
         account_name = request.data['account_name']
         product_group = request.data['product_group']
         corporate_segment = request.data['corporate_segment']
+        pricing = None
+        # import pdb
+        # pdb.set_trace()
+        
+        
         if 'objective_function' in request.data:
+            if("pricing" in request.data):
+                pricing = request.data.pop("pricing")
+                print(pricing , "pricing info")
             # import pdb
             # pdb.set_trace()
             ser = sc.OptimizerSerializer(request.data)
             if ser.is_valid():
-                return Response(optimizer.process(dict(ser.validated_data)) , 200)
+                return Response(optimizer.process(dict(ser.validated_data) , pricing = pricing) , 200)
            
        
         tpr = model.ModelData.objects.values(

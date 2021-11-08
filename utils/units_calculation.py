@@ -323,6 +323,8 @@ def base_var_cont(model_df,model_df1,baseline_var,baseline_var_othr,model_coef):
 
 
 def main(data_frame,coeff_frame):
+    # import pdb
+    # pdb.set_trace()
     base_data = data_frame
     
     train_coef = coeff_frame
@@ -487,19 +489,22 @@ def list_to_frame_bkp(coeff,data,flag=False):
     # print(retuned_dt['Predicted_sales'][0] , "Predicted_sales")
     return retuned_dt
 
-def list_to_frame(coeff,data):
+def list_to_frame(coeff,data , tpr_updated = False):
     # import pdb
     # pdb.set_trace()
     coeff_dt = pd.DataFrame(coeff, columns = coeff_columns)
    
 
     data_dt = pd.DataFrame(data, columns = data_columns)
-    # import pdb
-    # pdb.set_trace()
+   
     # print( data_dt[['promo_depth','co investment','Flag_promotype_N_pls_1' ,'TPR_Discount','Catalogue','TPR_Discount_lag1','TPR_Discount_lag2']])
-    data_dt['TPR_Discount'] = data_dt['promo_depth'] + data_dt['co investment']
+    if not tpr_updated:
+        data_dt['TPR_Discount'] = data_dt['promo_depth'] + data_dt['co investment']
+    # else:
+    #     import pdb
+    #     pdb.set_trace()
     # data_dt[['promo_depth','co investment','TPR_Discount']]
-    # print( data_dt[['promo_depth','Catalogue','TPR_Discount_lag1','TPR_Discount_lag2','co investment']] , "dataframe check")
+    # print( data_dt[['promo_depth','TPR_Discount','Catalogue','TPR_Discount_lag1','TPR_Discount_lag2','co investment']] , "dataframe check")
         
     val = main( data_dt,coeff_dt )
     # import pdb
@@ -539,8 +544,8 @@ def list_to_frame_many_bkp(coeff,data , roi):
         data_dt['on_inv'] = 0.0
         data_dt['gmac'] = 0.0
         data_dt['list_price'] = 0.0
-        import pdb
-        pdb.set_trace()
+        # import pdb
+        # pdb.set_trace()
         data_dt.reset_index(drop=True)
         d_dt.reset_index(drop=True)
         roi_dt.reset_index(drop=True)
@@ -556,6 +561,7 @@ def list_to_frame_many_bkp(coeff,data , roi):
         data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'on_inv'] = roi_dt.loc[(roi_dt['Account Name'] == row['Account Name']) & (roi_dt['PPG'] == row['PPG']),'on_inv']
         data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'gmac'] = roi_dt.loc[(roi_dt['Account Name'] == row['Account Name']) & (roi_dt['PPG'] == row['PPG']),'gmac']
         data_dt.loc[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG']),'list_price'] = roi_dt.loc[(roi_dt['Account Name'] == row['Account Name']) & (roi_dt['PPG'] == row['PPG']),'list_price']
+        
         # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['Incremental'] = ret_val['Incremental']
         # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['Base'] = ret_val['Base']
         # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['Predicted_sales'] = ret_val['Predicted_sales']
@@ -584,7 +590,25 @@ def list_to_frame_many_bkp(coeff,data , roi):
     return result_dt
 
 
+def list_to_frame_multi(data , coeff):
+    coeff_dt = pd.DataFrame(coeff, columns = coeff_columns)
+    
 
+    data_dt = pd.DataFrame(data, columns = data_columns)
+    
+    ret_val_list = []
+    for index , row in coeff_dt.iterrows():
+        d_dt = data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]
+        d_dt['TPR_Discount'] = d_dt['promo_depth'] + d_dt['co investment']
+        if d_dt.empty:
+            continue
+        
+        ret_val = main(d_dt,coeff_dt[(coeff_dt['Account Name'] == row['Account Name']) & 
+                                     (coeff_dt['PPG'] == row['PPG'])]) 
+        ret_val_list.append(ret_val)
+    return ret_val_list
+     # ret_val = main(d_dt,coeff_dt[(coeff_dt['Account Name'] == row['Account Name']) & 
+        #                              (coeff_dt['PPG'] == row['PPG'])]) 
 
 
 
@@ -601,25 +625,19 @@ def list_to_frame_many(coeff,data , roi):
     data_dt['Incremental'] = 0
     data_dt['Base'] = 0
     data_dt['Predicted_sales'] = 0
-    
-    # import pdb
-    # pdb.set_trace()
     val = []
     result = pd.DataFrame()
     frames = []
     for index , row in coeff_dt.iterrows():
         result = None
-        print(result)
-        # import pdb
-        # pdb.set_trace()
-       
         d_dt = data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]
         r_dt = roi_dt[(roi_dt['Account Name'] == row['Account Name']) & (roi_dt['PPG'] == row['PPG'])]
         d_dt['TPR_Discount'] = d_dt['promo_depth'] + d_dt['co investment']
         if d_dt.empty:
             continue
-        ret_val = main(d_dt,coeff_dt[(coeff_dt['Account Name'] == row['Account Name']) & 
-                                     (coeff_dt['PPG'] == row['PPG'])]) 
+        
+        # ret_val = main(d_dt,coeff_dt[(coeff_dt['Account Name'] == row['Account Name']) & 
+        #                              (coeff_dt['PPG'] == row['PPG'])]) 
         
         
         d_dt['off_inv'] = 0.0
@@ -639,9 +657,9 @@ def list_to_frame_many(coeff,data , roi):
         # roi_dt.loc[(roi_dt['Account Name'] == row['Account Name']) & (roi_dt['PPG'] == row['PPG'])].reset_index(drop=True)
         # d_dt[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG'])]['TPR_Discount'] = d_dt['TPR_Discount']
         d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'TPR_Discount'] = d_dt['TPR_Discount']
-        d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'Incremental'] = ret_val['Incremental']
-        d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'Base'] = ret_val['Base']
-        d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'Predicted_sales'] = ret_val['Predicted_sales']
+        # d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'Incremental'] = ret_val['Incremental']
+        # d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'Base'] = ret_val['Base']
+        # d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'Predicted_sales'] = ret_val['Predicted_sales']
         d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'off_inv'] = r_dt.loc[(r_dt['Account Name'] == row['Account Name']) & (r_dt['PPG'] == row['PPG']),'off_inv']
         # r_dt['off_inv']
         d_dt.loc[(d_dt['Account Name'] == row['Account Name']) & (d_dt['PPG'] == row['PPG']),'on_inv'] = r_dt.loc[(r_dt['Account Name'] == row['Account Name']) & (r_dt['PPG'] == row['PPG']),'on_inv']
@@ -670,6 +688,7 @@ def list_to_frame_many(coeff,data , roi):
     # import pdb
     # pdb.set_trace()
     resultss = pd.concat(frames)
+    # resultss['Date'] = resultss['Date'].dt.strftime('%Y-%m-%d')
    
     # 'off_inv', 'on_inv', 'gmac', 'list_price'
     result_dt = pd.merge(resultss,coeff_dt,how="inner" ,left_on = ["Account Name" , "PPG"] , right_on = ["Account Name" , "PPG"])

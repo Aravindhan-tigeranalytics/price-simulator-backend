@@ -176,6 +176,7 @@ class UpdatePromo(viewsets.GenericViewSet):
         return Response(serializer.data)
     
     def post(self, request, format=None):
+       
         value = request.data
         if model.SavedScenario.objects.filter(name =  value['name']).exclude(id = value['scenario_id']).exists():
             raise exception.AlredyExistsException("{} already exists".format(value['name']))
@@ -379,8 +380,6 @@ class SaveScenarioViewSet(viewsets.ModelViewSet):
     
     
     def create(self, request, *args, **kwargs):
-        # import pdb
-        # pdb.set_trace()
         if 'scenario_type' in request.data:
             if request.data['scenario_type'] == 'promo':
                 self.create_promo(request)
@@ -412,11 +411,25 @@ class SaveScenarioViewSet(viewsets.ModelViewSet):
         )   
         scenario.save()
         bulk_pricing_week = []
+        
         for i in request_dump['products']:
+            # import pdb
+            # pdb.set_trace()
+            lpdate = util.convert_timestamp(i['list_price_date'])
+            cogsdate = util.convert_timestamp(i['cogs_date'])
+            rspdate= util.convert_timestamp(i['rsp_date'])
+            promodate= util.convert_timestamp(i['promo_date'])
             pr_save = model.PricingSave(
                 account_name = i['account_name'],
                 corporate_segment = i['account_name'],
                 product_group = i['product_group'],
+                list_price_date=  lpdate,
+                cogs_date= cogsdate,
+                rsp_date=  rspdate,
+                promo_date = promodate,
+                follow_competition = i['follow_competition'],
+                inc_elasticity = i['inc_elasticity'],
+                inc_net_elasticity = i['inc_net_elasticity'],
                 saved_scenario = scenario
             )
             pr_save.save()
@@ -428,15 +441,46 @@ class SaveScenarioViewSet(viewsets.ModelViewSet):
             # pdb.set_trace()
             
             for j in range(1,53):
-                 
-                pw = model.PricingWeek(
+                # import pdb
+                # pdb.set_trace()
+                model_value = {
+                    "week" : j,
+                    "year" : 1,
+                    "lp_increase" : i['inc_list_price'],
+                    "cogs_increase" : i['inc_cogs'],
+                    "rsp_increase" : i['inc_rsp'],
+                     "base_price_elasticity" :i['inc_elasticity'],
+                     "base_list_price" : i["list_price"],
+                         "base_retail_price" : i["rsp"],
+                             "base_cogs" : i["cogs"],
+                              "base_promo_price" : i["promo_price"],
+                               "promo_increase" : i["inc_promo_price"],
+                    "pricing_save" : pr_save,
+                    
+                }
+                if(lpdate):
+                    if(j>=util.week_from_date(lpdate)):
+                        model_value["lp_increase"] = i['inc_list_price']
+                    else:
+                        model_value["lp_increase"] = 0
+                if(cogsdate):
+                    if(j>=util.week_from_date(cogsdate)):
+                        model_value["cogs_increase"] = i['inc_cogs']
+                    else:
+                        model_value["cogs_increase"] = 0
+                if(rspdate):
+                    if(j>=util.week_from_date(rspdate)):
+                        model_value["rsp_increase"] = i['inc_rsp']
+                    else:
+                        model_value["rsp_increase"] = 0
+                if(promodate):
+                    if(j>=util.week_from_date(promodate)):
+                        model_value["promo_increase"] = i['inc_promo_price']
+                    else:
+                        model_value["promo_increase"] = 0
+               
+                pw = model.PricingWeek(**model_value
                    
-                    week = j,
-                    year = 1,
-                    lp_increase = i['inc_list_price'],
-                    rsp_increase = i['inc_rsp'],
-                    cogs_increase = i['inc_cogs'],
-                    pricing_save = pr_save,
                 )
                 bulk_pricing_week.append(pw)
         model.PricingWeek.objects.bulk_create(bulk_pricing_week)        
@@ -454,6 +498,43 @@ class SaveScenarioViewSet(viewsets.ModelViewSet):
         
         
         return Response({"saved_id" : scenario.id},status=200)
+    
+    def update(self, request, *args, **kwargs):
+        
+        
+        value = request.data
+        scenario = self.get_object()
+        pr_save = model.PromoSave(
+                account_name = value['account_name'],
+                corporate_segment = value['corporate_segment'],
+                product_group =value['product_group'],
+                promo_elasticity = value['promo_elasticity'],
+                saved_scenario = scenario,
+                saved_pricing_id = value['price_id']
+            )
+        pr_save.save()
+        
+        
+        
+        bulk_pricing_week = []
+        for i in value.keys():
+            week_regex = util._regex(r'week-\d{1,2}',i)
+            if week_regex:
+                week = int(util._regex(r'\d{1,2}',week_regex.group()).group())
+                # print(week , "week")
+                # print(value[i] , "week value")
+                pw = model.PromoWeek(
+                   
+                    week = week,
+                    year = 2022,
+                    promo_depth = value[i]['promo_depth'],
+                     co_investment = value[i]['co_investment'],
+                      promo_mechanic =value[i]['promo_mechanics'],
+                       pricing_save = pr_save,
+                )
+                bulk_pricing_week.append(pw)
+        model.PromoWeek.objects.bulk_create(bulk_pricing_week) 
+        return Response({"saved_id" : "updated"},status=200)
     
 class ScenarioViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin,
 mixins.UpdateModelMixin,mixins.DestroyModelMixin , mixins.RetrieveModelMixin):
@@ -520,11 +601,10 @@ class ScenarioPlannerMetricsViewSet(viewsets.GenericViewSet, mixins.ListModelMix
     def list(self, request, *args, **kwargs):
         val = request.GET.get('actors' , '[]')
         val = ast.literal_eval(val)
-        # import pdb
-        # pdb.set_trace()
         coeff_list , data_list,roi_list = pd_query.get_list_value_from_query_all(val)
-        # import pdb
-        # pdb.set_trace()
+        if(len(roi_list) != len(data_list)):
+            raise exception.PricingROIException
+            
         result_dt = uc.list_to_frame_many(coeff_list , data_list , roi_list)
         
         
@@ -533,7 +613,7 @@ class ScenarioPlannerMetricsViewSet(viewsets.GenericViewSet, mixins.ListModelMix
                    'Median_Base_Price_log_y' ,  'cross_elasticity', 'net_elasticity','Predicted_sales','Base','Incremental','list_price',
                    'cogs',
                    'Median_Base_Price_log_x','on_inv','off_inv','TPR_Discount_x',
-                   'gmac','Weighted Weight in grams'
+                   'gmac','Weighted Weight in grams','TPR_Discount_y'
                    ]]
         res.rename(columns = {'Account Name':'account_name' , 'Corporate Segment_x':'corporate_segment',
                               'PPG'  :'product_group' , 'Brand Filter_x':'brand_filter' , 
@@ -542,7 +622,8 @@ class ScenarioPlannerMetricsViewSet(viewsets.GenericViewSet, mixins.ListModelMix
                               'Date' : 'date', 'Week' : 'week','Median_Base_Price_log_y' : 'base_price_elasticity' ,
                               'Predicted_sales' : 'base_units','Base' : 'base_split','Incremental' : 'incremental_split' , 
                               'Median_Base_Price_log_x' : 'retail_median_base_price_w_o_vat',
-                              'TPR_Discount_x' : 'tpr_discount','Weighted Weight in grams' : 'product_weight_in_grams'
+                              'TPR_Discount_x' : 'tpr_discount','Weighted Weight in grams' : 'product_weight_in_grams',
+                              'TPR_Discount_y' : 'tpr_coefficient'
                               },
                    inplace = True)
         # rankings_pd.rename(columns = {'test':'TEST'}, inplace = True)
@@ -588,21 +669,90 @@ class LoadScenario(viewsets.ReadOnlyModelViewSet,mixin.CalculationMixin):
     
     def retrieve_pricing_promo(self, request, *args, **kwargs):
         
-        # import pdb
-        # pdb.set_trace()
+       
+        promo_week = None
         # get_serializer = sc.ModelMetaGetSerializer()
         pricing_save_id = request.parser_context['kwargs']['_id']  # pricing save id
+        promotions = model.PromoSave.objects.filter(saved_pricing = pricing_save_id)
+        if(len(promotions) == 0):
+            pass
+        else:
+            promo_week = model.PromoWeek.objects.filter(pricing_save = promotions[0])
+        
         pricing_week = model.PricingWeek.objects.select_related('pricing_save').filter(pricing_save__id = pricing_save_id )
+        # import pdb #loadscenariopricing
+        # pdb.set_trace()
     
-        return Response(self.calculate_finacial_metrics_from_pricing(pricing_week), status = 200)
+        return Response(self.calculate_finacial_metrics_from_pricing(pricing_week , promo_week), status = 200)
     def retrieve(self, request, *args, **kwargs):
         obj = self.get_object()
         
         if obj.scenario_type == 'pricing':
-            pricing_save = model.PricingSave.objects.filter(saved_scenario = obj)
-           
-            serializer = sc.PricingSaveSerializer(pricing_save,many=True)
-            return Response(serializer.data , status=200)
+            # import pdb
+            # pdb.set_trace()
+            print(obj , "object load")
+          
+            pricing_week = model.PricingWeek.objects.select_related('pricing_save','pricing_save__saved_scenario').filter(pricing_save__saved_scenario = obj)  
+            pricing_list = list(pricing_week.values("pricing_save__account_name" , "pricing_save__product_group").distinct())
+            # pricing_save__account_name
+            # pricing_save__product_group
+            price_week_list = list(pricing_week)
+            # pricing_save = model.PricingSave.objects.select_related('saved_scenario').filter(saved_scenario = obj)
+            # pricing_week = model.PricingWeek.objects.select_related('pricing_save').filter(pricing_save__in = pricing_save)
+            # pricing_list = list(pricing_save)
+            
+            # print(pricing_list)
+            retailers = []
+            # import pdb
+            # pdb.set_trace()
+            for price in pricing_list:
+                retailers.append({
+                    "account_name" : price['pricing_save__account_name'],
+                    "product_group" : price['pricing_save__product_group']
+                })
+            data = {
+                "retailers" : retailers,
+                "price" : price_week_list
+            }
+            payload = mixin.calculte_pricing_compare(data)
+            
+            # coeff_list , data_list,roi_list = pd_query.get_list_value_from_query_by_name(retailers)
+            # import pdb
+            # pdb.set_trace()
+            # mixin.calculate_financial_metrics_for_price
+            # result_dt = uc.list_to_frame_many_bkp(coeff_list , data_list , roi_list)
+        
+        
+            # res = result_dt[['Account Name','Corporate Segment_x','PPG' , 'Brand Filter_x' , 'Brand Format Filter_x',
+            #         'Strategic Cell Filter_x' , 'Year' , 'Quarter','Month', 'Period', 'Date', 'Week',
+            #         'Median_Base_Price_log_y' ,  'cross_elasticity', 'net_elasticity','Predicted_sales','Base','Incremental','list_price',
+                    
+            #         'Median_Base_Price_log_x','on_inv','off_inv','TPR_Discount_x',
+            #         'gmac','Weighted Weight in grams'
+            #         ]]
+            # res.rename(columns = {'Account Name':'account_name' , 'Corporate Segment_x':'corporate_segment',
+            #                     'PPG'  :'product_group' , 'Brand Filter_x':'brand_filter' , 
+            #                     'Brand Format Filter_x':'brand_format' , 'Strategic Cell Filter_x':'strategic_cell_filter', 
+            #                     'Year' : 'year' , 'Quarter' : 'quarter','Month' : 'month', 'Period' : 'period', 
+            #                     'Date' : 'date', 'Week' : 'week','Median_Base_Price_log_y' : 'base_price_elasticity' ,
+            #                     'Predicted_sales' : 'base_units','Base' : 'base_split','Incremental' : 'incremental_split' , 
+            #                     'Median_Base_Price_log_x' : 'retail_median_base_price_w_o_vat',
+            #                     'TPR_Discount_x' : 'tpr_discount','Weighted Weight in grams' : 'product_weight_in_grams'
+            #                     },
+            #         inplace = True)
+            # rankings_pd.rename(columns = {'test':'TEST'}, inplace = True)
+            # import pdb
+            # pdb.set_trace()
+            # parsed_summary = json.loads(res.to_json(orient="records"))
+            # payload = mixin.calculate_pricing_metrics_loading(parsed_summary , pricing_list , pricing_week)
+            print(payload , "parsed summary")
+            meta = {
+                "scenario_id" : obj.id,
+                "scenario_name" : obj.name,
+                "scenario_comment" : obj.comments
+            }
+                # serializer = sc.PricingSaveSerializer(pricing_save,many=True)
+            return Response({**meta , **payload} , status=200)
         if obj.scenario_type == 'optimizer':
             optimizer_save = model.OptimizerSave.objects.filter(saved_scenario = obj)
             return Response(self.calculate_finacial_metrics_from_optimizer(optimizer_save), status=status.HTTP_200_OK)
@@ -754,6 +904,40 @@ class ModelOptimize(APIView):
 #     def post(self, request, format=None):
 #         serializer = sc.ModelDataSerializer()
 #         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+@api_view(['POST'])
+def pricing_download(request):
+    if request.method == 'POST':
+        
+        filename = 'pricing_simulator.xlsx'
+        response = HttpResponse(
+            excel.download_excel_pricing(request.data),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=%s' % filename
+        return response
+    
+@api_view(['POST'])
+def pricing_weely_upload(request):
+    if request.method == 'POST':
+        # import pdb
+        # pdb.set_trace()
+        
+        csv_file = request.FILES["simulator_input"]
+        workbook = openpyxl.load_workbook(csv_file,data_only=True)
+        sheet_name = workbook.sheetnames
+        sheet = workbook[sheet_name[0]]
+        excel_data = sheet.values
+        # Get the first line in file as a header line
+        columns = next(excel_data)[0:]
+        excel_input_df = pd.DataFrame(excel_data,columns=columns)
+        json.loads(excel_input_df.to_json(orient="records"))
+        # import pdb
+        # pdb.set_trace()
+        # print(columns , "columns")
+        return Response(json.loads(excel_input_df.to_json(orient="records")) , status=200)
+         
+
 
 class PromoSimulatorView(viewsets.GenericViewSet,mixin.CalculationMixin):
     authentication_classes = (TokenAuthentication,)
@@ -1147,8 +1331,14 @@ class CompareScenarioExcelDownloadView(APIView):
         try:
             if 'download' in request.stream.path:
                 filename = 'compare_scenario.xlsx'
+                if 'pricing' in request.stream.path:
+                    result = excel.download_excel_compare_scenario(request.data)
+                else:
+                    result = excel.download_excel_pricing(request.data)
                 response = HttpResponse(
-                    excel.download_excel_compare_scenario(request.data),
+                    #  excel.download_excel_pricing(request.data),
+                    result,
+                    
                     content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
                 response['Content-Disposition'] = 'attachment; filename=%s' % filename
@@ -1168,6 +1358,13 @@ class WeeklyInputTemplateDownload(APIView):
         response = HttpResponse(excel.excel_download_input(request.GET['account_name'],request.GET['product_group']), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment;filename=%s' % filename
         return response
+    
+    def post(self , request):
+        filename = 'WeeklyInputTemplatePricing.xlsx'
+        response = HttpResponse(excel.excel_download_input_pricing(request.data), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment;filename=%s' % filename
+        return response
+        
 
 
     # def get(self,request):

@@ -2483,23 +2483,25 @@ def process(
     optimizer_save=None,
     promo_week=None,
     pricing_week=None,
+    pricing = None
     ):
 
     if constraints:
         account_name = constraints['account_name']
         product_group = constraints['product_group']
         segment = constraints['corporate_segment']
-        (model_data_all, ROI_data, model_coeff, coeff_mapping) = \
+        (model_data_query, ROI_data_query, model_coeff_query, coeff_mapping_query) = \
             pr.get_list_from_db(constraints['account_name'],
                                 constraints['product_group'],
-                                optimizer_save=optimizer_save)
+                                optimizer_save=optimizer_save,
+                                pricing = pricing)
 
     if optimizer_save:
         optimizer_save = list(optimizer_save)
         account_name = optimizer_save[0].model_meta.account_name
         product_group = optimizer_save[0].model_meta.product_group
         segment = optimizer_save[0].model_meta.corporate_segment
-        (model_data_all, ROI_data, model_coeff, coeff_mapping) = \
+        (model_data_query, ROI_data_query, model_coeff_query, coeff_mapping_query) = \
             pr.get_list_from_db(account_name, product_group,
                                 optimizer_save=optimizer_save)
     if promo_week:
@@ -2507,7 +2509,7 @@ def process(
         account_name = promo_week[0].pricing_save.account_name
         product_group = promo_week[0].pricing_save.product_group
         segment = promo_week[0].pricing_save.corporate_segment
-        (model_data_all, ROI_data, model_coeff, coeff_mapping) = \
+        (model_data_query, ROI_data_query, model_coeff_query, coeff_mapping_query) = \
             pr.get_list_from_db(account_name, product_group,
                                 promo_week=promo_week)
     if pricing_week:
@@ -2515,9 +2517,12 @@ def process(
         account_name = pricing_week[0].pricing_save.account_name
         product_group = pricing_week[0].pricing_save.product_group
         segment = pricing_week[0].pricing_save.corporate_segment
-        (model_data_all, ROI_data, model_coeff, coeff_mapping) = \
+        (model_data_query, ROI_data_query, model_coeff_query, coeff_mapping_query) = \
             pr.get_list_from_db(account_name, product_group,
                                 pricing_week=pricing_week)
+    (model_data_all, ROI_data, model_coeff, coeff_mapping) = pr.convert_query_to_dataframe(
+        model_coeff_query,model_data_query,ROI_data_query,coeff_mapping_query
+    )
 
       # min_consecutive_promo,max_consecutive_promo,min_promo_length_gap,tot_promo_min,tot_promo_max,no_of_promo, no_of_waves= get_promo_wave_values(model_data_all['TPR_Discount'])
       # slct_retailer = account_name
@@ -2898,7 +2903,7 @@ def process(
     # pdb.set_trace()
    
     
-    financial_metrics = mixin.calculate_finacial_metrics_for_optimizer(account_name,product_group,parsed_base,model_coeff,model_data_all,ROI_data)
+    financial_metrics = mixin.calculate_finacial_metrics_for_optimizer(account_name,product_group,parsed_base,model_coeff_query,model_data_query,ROI_data_query , pricing=pricing)
   #   print ('completed', opt_base)
   #   print ('completed', summary)
   

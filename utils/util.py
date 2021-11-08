@@ -4,11 +4,31 @@ import random
 import re
 from utils import exceptions as ex
 
+# 2021-10-03T18:30:00.000Z
 
+def week_from_date(datestr):
+    arr = datestr.split("-")
+    a_date = datetime.date(int(arr[0]), int(arr[1]), int(arr[2]))
+    return a_date.isocalendar()[1] + 1
 
+def is_date_greater_or_equal(price_date_str,form_date_str):
+    format = "%Y-%m-%d"
+    if not form_date_str:
+        return True
+    return datetime.datetime.strptime(convert_timestamp(price_date_str) , format) >= datetime.datetime.strptime(convert_timestamp(form_date_str),format)
+
+def convert_timestamp(str):
+    if(str):
+        spl = str.split("T")
+        if(len(spl) > 0):
+            return spl[0]
+        return None
+    return None
+    
 def _transform_corporate_segment(segment):
     # import pdb
     # pdb.set_trace()
+    
     if segment:
         if segment.lower() == 'gum':
             return 'Gum'

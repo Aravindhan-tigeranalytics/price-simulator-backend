@@ -15,57 +15,11 @@ coeff_map_values = const.COEFFICIENT_MAP_VALUES
 roi_values = const.ROI_VALUES
 
 
-def get_list_from_db(retailer,ppg , optimizer_save = None , promo_week = None , pricing_week = None):
-    
-  
+
+def convert_query_to_dataframe(model_coeff,model_data_list,roi_data_list,coeff_map):
     model_coefficient_cols = ['Account Name', 'Corporate Segment', 'PPG', 'Brand Filter',
        'Brand Format Filter', 'Strategic Cell Filter',
        'Coefficient_new', 'Value', 'Coefficient']
-
-    coeff_map = model.CoeffMap.objects.select_related('model_meta').filter(
-        model_meta__account_name__iexact = retailer,model_meta__product_group__iexact = ppg
-        ).values_list(
-           *coeff_map_values
-            )
-    
-    model_coeff = model.ModelCoefficient.objects.select_related('model_meta').filter(
-        model_meta__account_name__iexact = retailer,model_meta__product_group__iexact = ppg
-        ).values_list(
-           *coeff_values
-            )
-    
-    model_data = model.ModelData.objects.select_related('model_meta').filter(
-        model_meta__account_name__iexact = retailer,model_meta__product_group__iexact = ppg
-        ).values_list(
-           *data_values
-            )
-
-    roi = model.ModelROI.objects.select_related('model_meta').filter(
-    model_meta__account_name__iexact = retailer,model_meta__product_group__iexact = ppg
-    ).values_list(
-        *roi_values
-        ).annotate(
-            cogs=F('list_price') - (F('list_price') * F('gmac'))
-            )
-
-    model_data_list = [list(i) for i in model_data]
-    roi_data_list = [list(i) for i in roi]
-  
-    if optimizer_save:
-        model_data_list = cal.update_from_optimizer(model_data_list , optimizer_save)
-    
-    if promo_week:
-        model_data_list,roi_data_list = cal.update_from_saved_data(model_data_list , promo_week,roi_list=roi_data_list)
-    
-    if pricing_week:
-         model_data_list,roi_data_list = cal.update_optimizer_from_pricing(model_data_list , pricing_week,roi_list=roi_data_list)
-        
-         
-    
-    
-    # cal.update_from_pricing(model_data_list , roi_data_list)
-        
-        
     pd.set_option('display.max_columns', None)  # or 1000
     pd.set_option('display.max_rows', 100)  # or 1000
 
@@ -182,6 +136,54 @@ def get_list_from_db(retailer,ppg , optimizer_save = None , promo_week = None , 
 
     return data_dt,roi_dt,coeff_dt,coeff_map_dt
 
+def get_list_from_db(retailer,ppg , optimizer_save = None , promo_week = None , pricing_week = None,pricing=None):
+
+    coeff_map = model.CoeffMap.objects.select_related('model_meta').filter(
+        model_meta__account_name__iexact = retailer,model_meta__product_group__iexact = ppg
+        ).values_list(
+           *coeff_map_values
+            )
+    
+    model_coeff = model.ModelCoefficient.objects.select_related('model_meta').filter(
+        model_meta__account_name__iexact = retailer,model_meta__product_group__iexact = ppg
+        ).values_list(
+           *coeff_values
+            )
+    
+    model_data = model.ModelData.objects.select_related('model_meta').order_by('week').filter(
+        model_meta__account_name__iexact = retailer,model_meta__product_group__iexact = ppg
+        ).values_list(
+           *data_values
+            )
+
+    roi = model.ModelROI.objects.select_related('model_meta').order_by('week').filter(
+    model_meta__account_name__iexact = retailer,model_meta__product_group__iexact = ppg
+    ).values_list(
+        *roi_values
+        ).annotate(
+            cogs=F('list_price') - (F('list_price') * F('gmac'))
+            )
+
+    model_data_list = [list(i) for i in model_data]
+    roi_data_list = [list(i) for i in roi]
+    model_coeff_list = [list(i) for i in model_coeff]
+    
+    if optimizer_save:
+        model_data_list = cal.update_from_optimizer(model_data_list , optimizer_save)
+    
+    if promo_week:
+        model_data_list,roi_data_list = cal.update_from_saved_data(model_data_list , promo_week,roi_list=roi_data_list)
+    
+    if pricing_week:
+         model_data_list,roi_data_list = cal.update_optimizer_from_pricing(model_data_list , pricing_week,roi_list=roi_data_list)
+        
+    return model_data_list , roi_data_list , model_coeff_list,coeff_map
+    
+    
+    # cal.update_from_pricing(model_data_list , roi_data_list)
+        
+        
+    
 
 
 def update_db(opt_base,retailer,ppg):   

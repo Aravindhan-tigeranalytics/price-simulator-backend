@@ -330,7 +330,6 @@ class MetaSave(models.Model):
     account_name = models.CharField(max_length=100,verbose_name="Account Name")
     corporate_segment =  models.CharField(max_length=100,verbose_name="Corporate Segment" , null=True,blank=True)
     product_group = models.CharField(max_length=100,verbose_name="Product Group")
-    
     class Meta:
         abstract = True
 
@@ -338,6 +337,17 @@ class PricingSave(MetaSave):
     saved_scenario = models.ForeignKey(
         'core.SavedScenario' , related_name="pricing_saved" , on_delete=models.CASCADE
     )
+    promo_save = models.ForeignKey(
+        'core.PromoSave' , related_name="pricing_promo_map" , on_delete=models.CASCADE , blank=True, null=True
+    )
+    list_price_date = models.DateField(verbose_name="List Price Date", blank=True, null=True)
+    cogs_date = models.DateField(verbose_name="Cogs Date", blank=True, null=True)
+    rsp_date = models.DateField(verbose_name="Rsp Date", blank=True, null=True)
+    promo_date = models.DateField(verbose_name="Rsp Date", blank=True, null=True)
+    follow_competition =  models.BooleanField(default=False)
+    inc_elasticity = models.DecimalField(verbose_name="Increased base price elasticity",max_digits=8 , decimal_places=3 , blank=True,null=True)
+    inc_net_elasticity =models.DecimalField(verbose_name="Increased net price elasticity",max_digits=8 , decimal_places=3, blank=True,null=True)
+    
     class Meta:
         db_table = 'pricing_save'
         
@@ -360,9 +370,14 @@ class PricingWeek(models.Model):
     )
     year = models.IntegerField(verbose_name="Year")
     week = models.IntegerField(verbose_name="week" , default=1 , null=True)
+    base_list_price = models.DecimalField(verbose_name="base list price",max_digits=8 , decimal_places=3,default=0)
+    base_retail_price = models.DecimalField(verbose_name="base retail price",max_digits=8 , decimal_places=3,default=0)
+    base_cogs = models.DecimalField(verbose_name="base cogs",max_digits=8 , decimal_places=3,default=0)
+    base_promo_price = models.DecimalField(verbose_name="base promo price",max_digits=8 , decimal_places=3,default=0)
     lp_increase = models.DecimalField(verbose_name="Increased LP",max_digits=8 , decimal_places=3)
     rsp_increase = models.DecimalField(verbose_name="Increased RSP",max_digits=8 , decimal_places=3)
     cogs_increase = models.DecimalField(verbose_name="Increased COGS",max_digits=8 , decimal_places=3)
+    promo_increase =  models.DecimalField(verbose_name="Increased promo",max_digits=8 , decimal_places=3,default=0)
     base_price_elasticity = models.DecimalField(verbose_name="Modified base price elasticity",max_digits=8 , decimal_places=3 , default=-2.03)
     
     class Meta:

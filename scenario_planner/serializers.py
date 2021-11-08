@@ -285,11 +285,14 @@ class ScenarioSavedListOptimized(serializers.ModelSerializer):
         obj_r = []
         for i in obj.prefetched_price:
             pricing_save = i
+            # import pdb
+            # pdb.set_trace()
             pricing = i.prefetched_price_week[0]
             obj_t = {
                 "id" : pricing_save.id,
                     "retailer" : pricing_save.account_name,
                     "product_group" : pricing_save.product_group,
+                    
                     "pricing" : False
                 }
             
@@ -297,7 +300,18 @@ class ScenarioSavedListOptimized(serializers.ModelSerializer):
                     "lpi" : pricing.lp_increase,
                     "rsp" : pricing.rsp_increase,
                     "cogs" : pricing.cogs_increase,
-                    "elasticity" : pricing.base_price_elasticity
+                    "promo" : pricing.promo_increase,
+                    "base_lpi" : pricing.base_list_price,
+                    "base_rsp" : pricing.base_retail_price,
+                    "base_cogs" : pricing.base_cogs,
+                    "base_promo" : pricing.base_promo_price,
+                    "cogs_date" : pricing_save.cogs_date,
+                    "list_price_date" : pricing_save.list_price_date,
+                    "rsp_date" : pricing_save.rsp_date,
+                    "promo_date" : pricing_save.promo_date,
+                    "follow_competition" : pricing_save.follow_competition,
+                    "inc_elasticity" : pricing_save.inc_elasticity,
+                    "inc_net_elasticity" : pricing_save.inc_net_elasticity,
                     }
             obj_r.append(obj_t)
         # import pdb
