@@ -2590,6 +2590,8 @@ def process(
         _update_params(config, constraints)
    
     print(config , "after update")
+    # import pdb
+    # pdb.set_trace()
 #     config = {'Retailer': 'Pyaterochka', 'PPG': 'Big Bars', 'Segment': 'Choco', 
 # 'MARS_TPRS': [10, 20], 'Co_investment': [0, 0], 'Promo_Mech': ['TPR', 'TPR'],
 #  'Objective_metric': 'MAC', 'Objective': 'Maximize',

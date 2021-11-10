@@ -71,11 +71,11 @@ class ModelMetaAdmin(admin.ModelAdmin):
                 csv_file = request.FILES["csv_file"]
                  
                 # excel.read_promo_coeff(csv_file)
-                # excel.read_roi_data(csv_file)   
+                excel.read_roi_data(csv_file)   
                 
                 # excel.read_coeff_map(csv_file)
                  
-                excel.read_promo_data(csv_file)
+                # excel.read_promo_data(csv_file)
                 
                 self.message_user(request, "Total {} model data imported".format(total_model))
                 return redirect("..")

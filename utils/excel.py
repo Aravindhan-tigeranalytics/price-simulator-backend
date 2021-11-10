@@ -1333,10 +1333,7 @@ def read_roi_data(file):
             meta.brand_format_filter =_get_sheet_value(sheet ,row , 5)
             meta.strategic_cell_filter =_get_sheet_value(sheet ,row , 6)
             meta.save()
-            # meta.slug = util.generate_slug_string(
-            #     _get_sheet_value(sheet ,row , 1),
-            #    _get_sheet_value(sheet ,row , 2),
-            #     _get_sheet_value(sheet ,row , 3))
+            
         roi = model.ModelROI(
             model_meta = meta,
             neilson_sku_name = _get_sheet_value(sheet ,row , 7),

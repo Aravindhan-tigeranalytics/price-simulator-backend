@@ -5,6 +5,8 @@ from django.db.models.functions import Concat
 from utils import constants as const
 import json
 import pandas as pd
+import math
+import decimal
 from core import models as model
 from scenario_planner import query as cols
 from scenario_planner import calculations as cal
@@ -136,6 +138,17 @@ def convert_query_to_dataframe(model_coeff,model_data_list,roi_data_list,coeff_m
 
     return data_dt,roi_dt,coeff_dt,coeff_map_dt
 
+def _check_if_vat_applied(model_data):
+    
+    if(model_data[data_values.index('model_meta__account_name')] != 'Lenta'):
+        rsp = model_data[data_values.index('median_base_price_log')]
+        rsp = math.exp(rsp)
+        rsp = decimal.Decimal(rsp) * decimal.Decimal(1 - (20/100))
+        model_data[data_values.index('median_base_price_log')] = decimal.Decimal(math.log(rsp))
+        
+    return model_data
+
+
 def get_list_from_db(retailer,ppg , optimizer_save = None , promo_week = None , pricing_week = None,pricing=None):
 
     coeff_map = model.CoeffMap.objects.select_related('model_meta').filter(
@@ -164,7 +177,8 @@ def get_list_from_db(retailer,ppg , optimizer_save = None , promo_week = None , 
             cogs=F('list_price') - (F('list_price') * F('gmac'))
             )
 
-    model_data_list = [list(i) for i in model_data]
+    model_data_list = [_check_if_vat_applied(list(i)) for i in model_data]
+    #  data_list = [_check_if_vat_applied(list(i)) for i in data]
     roi_data_list = [list(i) for i in roi]
     model_coeff_list = [list(i) for i in model_coeff]
     

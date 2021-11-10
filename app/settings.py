@@ -136,7 +136,6 @@ AUTH_PASSWORD_VALIDATORS = [
     #     'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     # },
 ]
-import utils
 
 #Custom Exception 
 REST_FRAMEWORK = {

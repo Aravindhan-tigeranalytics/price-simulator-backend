@@ -111,9 +111,7 @@ def get_list_value_from_query_all(request_id):
     return coeff_list , data_list, roi_list
 
 def _check_if_vat_applied(model_data):
-    # import pdb
-    # pdb.set_trace()
-    # for lenta dont apply vat
+    
     if(model_data[const.DATA_VALUES.index('model_meta__account_name')] != 'Lenta'):
         rsp = model_data[const.DATA_VALUES.index('median_base_price_log')]
         rsp = math.exp(rsp)

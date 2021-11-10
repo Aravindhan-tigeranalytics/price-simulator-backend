@@ -24,15 +24,11 @@ import copy
 
 def equation(predicted_sales , new_retail_price , old_retail_price,price_elasticity,
                                   tpr_coefficient , new_tpr,old_tpr):
-    # import pdb
-    # pdb.set_trace()
-    
+
     price = math.pow(round((1+(round(new_retail_price,2) - round(old_retail_price,2))/round(old_retail_price,2)),2) , price_elasticity)
     discount = math.exp(tpr_coefficient * (new_tpr - old_tpr))
     res = round(decimal.Decimal(predicted_sales),2) * decimal.Decimal(price) * decimal.Decimal(discount)
-    # import pdb
-    # pdb.set_trace()
-    # print(float(res))
+    
     return res
 
 def base_price_const_promo_change():
@@ -643,6 +639,8 @@ def update_from_request(data_list , querydict):
             week = int(util._regex(r'\d{1,2}',week_regex.group()).group())
             index = week -1
             cat = cloned_list[index][data_values.index('catalogue')]
+            # import pdb
+            # pdb.set_trace()
             if cat :
                 cataloge_average = util.average(cataloge_average , cat)
                 cloned_list[index][data_values.index('catalogue')] = 0
@@ -824,6 +822,7 @@ def update_price(data_list,filtered_roi,filtered_coeff,product):
         if cat:
             cataloge_average = util.average(cataloge_average , cat)
             cloned_list[i][data_values.index('catalogue')] = 0
+        cloned_list[i][data_values.index('promo_depth')] = decimal.Decimal(new_tpr) - cloned_list[i][data_values.index('co_investment')]
         cloned_list[i][data_values.index('tpr_discount')] = new_tpr
         if i + 1 < len(cloned_list):
             cloned_list[i+1][data_values.index('tpr_discount_lag1')] = new_tpr
@@ -891,9 +890,10 @@ def update_from_pricing(data_list,filtered_roi,filtered_coeff, pricing_week,prom
         new_rp = current_rp
         tpr = cloned_list[i][data_values.index('tpr_discount')]
         new_tpr = tpr
+        new_rp = current_rp * (1 + (pricing_week[i].rsp_increase)/100)
         
         if(tpr):
-            new_rp = current_rp * (1 + (pricing_week[i].rsp_increase)/100)
+           
             current_promo_price = current_rp * (1 -(tpr/100))
             new_promo_price = current_promo_price * (1 + (pricing_week[i].promo_increase/100))
             new_tpr= ((new_rp - new_promo_price)/new_rp) * 100
