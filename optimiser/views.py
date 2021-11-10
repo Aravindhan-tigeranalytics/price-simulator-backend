@@ -1,4 +1,4 @@
-import pdb
+# import pdb
 from numpy import product
 from scenario_planner import serializers
 from django.http import HttpResponse

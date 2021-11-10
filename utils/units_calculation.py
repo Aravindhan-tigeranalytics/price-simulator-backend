@@ -565,8 +565,8 @@ def list_to_frame_many_bkp(coeff,data , roi):
         # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['Incremental'] = ret_val['Incremental']
         # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['Base'] = ret_val['Base']
         # data_dt[(data_dt['Account Name'] == row['Account Name']) & (data_dt['PPG'] == row['PPG'])]['Predicted_sales'] = ret_val['Predicted_sales']
-        import pdb
-        pdb.set_trace()
+        # import pdb
+        # pdb.set_trace()
     
     
     coeff_dt['cross_elasticity'] = 0.0
