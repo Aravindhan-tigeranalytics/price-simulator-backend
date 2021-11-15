@@ -77,7 +77,15 @@ class PromoSimulatorViewTest(viewsets.GenericViewSet,mixin.CalculationMixin):
         ser = sc.ModelDataSerializer(model.ModelData.objects.filter(
             model_meta = self.get_object()).order_by("week")
                                      , many=True)
-        
+        valid  = False
+        for data in ser.data:
+            
+            if(float(data['promo_depth']) + float(data['co_investment'])):
+                valid = True
+                break
+        if not valid:
+            raise exception.NoPromotionException
+                   
         return Response(ser.data , status=status.HTTP_200_OK)
     def get(self, request, format=None):
         # import pdb
@@ -125,8 +133,7 @@ class SavePromo(viewsets.GenericViewSet):
         # pdb.set_trace()
         # value = ast.literal_eval(request.data['optimizer_data'].strip())
         value = request.data
-        # import pdb
-        # pdb.set_trace()
+       
         # value = savePromo()
         if model.SavedScenario.objects.filter(name =  value['name']).exists():
             # return Response({"error" : scenario.id} , status=status.HTTP_409_CONFLICT)
@@ -145,6 +152,9 @@ class SavePromo(viewsets.GenericViewSet):
                 promo_elasticity = value['promo_elasticity'],
                 saved_scenario = scenario
             )
+        if("pricing_scenario_id" in value):
+            pr_save.saved_pricing__id = value['pricing_scenario_id']
+        
         pr_save.save()
         bulk_pricing_week = []
         for i in value.keys():
@@ -387,21 +397,7 @@ class SaveScenarioViewSet(viewsets.ModelViewSet):
         request.data['name']
         request.data['comments']
         request_dump = request.data['value']
-        # price_change =  request_dump['formArray']
-        # product = request_dump['productFilter']
-        # retailer = request_dump['retailerFilter']
-        # p_r_list = list(itertools.product([i.replace('Magnit','Tander') for i in retailer],product)) # change backend data in pricing scenario
-        # model_meta_set = set(model.ModelMeta.objects.values_list('account_name','product_group'))
-        # model_meta_list = []
-        # for i in model_meta_set:
-        #     r = util.remove_duplicate_spaces(i[0]),util.remove_duplicate_spaces(i[1])
-        #     model_meta_list.append(r)
-        # available = []
-        # for i in p_r_list:
-        #     if (util.remove_duplicate_spaces(i[0]),util.remove_duplicate_spaces(i[1])) in model_meta_list:
-        #         available.append(i)
-        # import pdb
-        # pdb.set_trace()
+         
         scenario = model.SavedScenario(
             scenario_type = 'pricing',
             name =  request.data['name'],
@@ -413,8 +409,7 @@ class SaveScenarioViewSet(viewsets.ModelViewSet):
         bulk_pricing_week = []
         
         for i in request_dump['products']:
-            # import pdb
-            # pdb.set_trace()
+            
             lpdate = util.convert_timestamp(i['list_price_date'])
             cogsdate = util.convert_timestamp(i['cogs_date'])
             rspdate= util.convert_timestamp(i['rsp_date'])
@@ -430,6 +425,14 @@ class SaveScenarioViewSet(viewsets.ModelViewSet):
                 follow_competition = i['follow_competition'],
                 inc_elasticity = i['inc_elasticity'],
                 inc_net_elasticity = i['inc_net_elasticity'],
+                base_elasticity = i['elasticity'],
+                base_net_elasticity = i['net_elasticity'],
+                lp_increase = i['inc_list_price'],
+                rsp_increase = i['inc_rsp'],
+                cogs_increase = i['inc_cogs'],
+                promo_increase = i['inc_promo_price'],
+                is_tpr_constant = i['is_tpr_constant'],
+                
                 saved_scenario = scenario
             )
             pr_save.save()
@@ -666,6 +669,12 @@ class LoadScenario(viewsets.ReadOnlyModelViewSet,mixin.CalculationMixin):
         # pdb.set_trace()
         return super().list(request, *args, **kwargs)
     
+    def load_pricing(self, request, *args, **kwargs):
+        print(request)
+        print(args)
+        print(kwargs)
+        pass
+    
     
     def retrieve_pricing_promo(self, request, *args, **kwargs):
         
@@ -677,9 +686,9 @@ class LoadScenario(viewsets.ReadOnlyModelViewSet,mixin.CalculationMixin):
         if(len(promotions) == 0):
             pass
         else:
-            promo_week = model.PromoWeek.objects.filter(pricing_save = promotions[0])
+            promo_week = model.PromoWeek.objects.filter(pricing_save = promotions[0]).order_by('week')
         
-        pricing_week = model.PricingWeek.objects.select_related('pricing_save').filter(pricing_save__id = pricing_save_id )
+        pricing_week = model.PricingWeek.objects.select_related('pricing_save').filter(pricing_save__id = pricing_save_id ).order_by('week')
         # import pdb #loadscenariopricing
         # pdb.set_trace()
     
@@ -745,7 +754,7 @@ class LoadScenario(viewsets.ReadOnlyModelViewSet,mixin.CalculationMixin):
             # pdb.set_trace()
             # parsed_summary = json.loads(res.to_json(orient="records"))
             # payload = mixin.calculate_pricing_metrics_loading(parsed_summary , pricing_list , pricing_week)
-            print(payload , "parsed summary")
+            # print(payload , "parsed summary")
             meta = {
                 "scenario_id" : obj.id,
                 "scenario_name" : obj.name,
@@ -1331,10 +1340,14 @@ class CompareScenarioExcelDownloadView(APIView):
         try:
             if 'download' in request.stream.path:
                 filename = 'compare_scenario.xlsx'
+                # import pdb
+                # pdb.set_trace()
                 if 'pricing' in request.stream.path:
-                    result = excel.download_excel_compare_scenario(request.data)
+                    print("inside pricing..........")
+                    result = excel.download_excel_compare_scenario_pricing(request.data)
                 else:
-                    result = excel.download_excel_pricing(request.data)
+                    print("inside not pricing..........")
+                    result = excel.download_excel_compare_scenario(request.data)
                 response = HttpResponse(
                     #  excel.download_excel_pricing(request.data),
                     result,

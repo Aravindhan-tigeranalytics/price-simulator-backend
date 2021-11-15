@@ -29,3 +29,8 @@ class PricingROIException(APIException):
     status_code = 400
     default_detail = "Price information not available for one of the selected products "
     default_code = 'pricing_error'
+    
+class NoPromotionException(APIException):
+    status_code = 400
+    default_detail = "Retailer doesnot have promotions"
+    default_code = 'promotion_error'

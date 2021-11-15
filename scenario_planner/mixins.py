@@ -10,6 +10,8 @@ from . import query as pd_query
 from . import calculations as cal
 from itertools import groupby
 from operator import itemgetter
+from utils import constants as const
+from utils import exceptions as exception
 class CalculationMixin():
     
     '''
@@ -97,10 +99,15 @@ class CalculationMixin():
                                                                               model.ModelROI,
                                                                               account_name,
                                            product_group )
+        
         if len(data_list) == 0:
             raise ObjectDoesNotExist("Account name {} and Product {} does not exists.".format(
                 account_name,product_group)
                                      )
+        if(len(coeff_list) > 0):
+            if not coeff_list[0][const.COEFFICIENT_VALUES.index('tpr_discount')]:
+                raise exception.NoPromotionException
+                
       
         base_incremental_split = json.loads(uc.list_to_frame(coeff_list , data_list).to_json(orient="records"))
         
@@ -110,8 +117,7 @@ class CalculationMixin():
         # cloned_list,cloned_roi,cloned_coeff = cal.update_price(filtered_list ,filtered_roi,filtered_coeff, filtered_form) # tobe update coefficient also
         cloned_list,cloned_roi,cloned_coeff,form = cal.update_from_pricing(data_list,roi_list,coeff_list , pricing_week, promo_week)
         
-        
-        
+       
         simulated_incremental_split = json.loads(uc.list_to_frame(cloned_coeff , cloned_list,tpr_updated = True).to_json(orient="records"))
         # print(base_incremental_split , "Base incremental split")
         # print(simulated_incremental_split , "simulated incremental split")
@@ -218,6 +224,8 @@ class CalculationMixin():
                                                simulated_incremental_split , 'simulated',value_dict['promo_elasticity'],
                                                value_dict["pricing"] if "pricing" in value_dict else None)
         # print(coeff_map , "coeff map")
+        # import pdb
+        # pdb.set_trace()
        
         
         return {**meta,**base_finalcial_metrics , **simulated_financial_metrics , **{

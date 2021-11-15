@@ -347,7 +347,15 @@ class PricingSave(MetaSave):
     follow_competition =  models.BooleanField(default=False)
     inc_elasticity = models.DecimalField(verbose_name="Increased base price elasticity",max_digits=8 , decimal_places=3 , blank=True,null=True)
     inc_net_elasticity =models.DecimalField(verbose_name="Increased net price elasticity",max_digits=8 , decimal_places=3, blank=True,null=True)
-    
+    base_elasticity = models.DecimalField(verbose_name="base price elasticity",max_digits=8 , decimal_places=3 , blank=True,null=True)
+    base_net_elasticity =models.DecimalField(verbose_name="base net price elasticity",max_digits=8 , decimal_places=3, blank=True,null=True)
+    lp_increase = models.DecimalField(verbose_name="Increased LP",max_digits=8 , decimal_places=3,default=0)
+    rsp_increase = models.DecimalField(verbose_name="Increased RSP",max_digits=8 , decimal_places=3,default=0)
+    cogs_increase = models.DecimalField(verbose_name="Increased COGS",max_digits=8 , decimal_places=3,default=0)
+    promo_increase =  models.DecimalField(verbose_name="Increased promo",max_digits=8 , decimal_places=3,default=0)
+    is_tpr_constant =  models.BooleanField(default=False)
+
+
     class Meta:
         db_table = 'pricing_save'
         

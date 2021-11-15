@@ -12,12 +12,23 @@ def week_from_date(datestr):
     return a_date.isocalendar()[1] + 1
 
 def is_date_greater_or_equal(price_date_str,form_date_str):
+   
     format = "%Y-%m-%d"
     if not form_date_str:
         return True
-    return datetime.datetime.strptime(convert_timestamp(price_date_str) , format) >= datetime.datetime.strptime(convert_timestamp(form_date_str),format)
+    if(type(price_date_str).__name__ == 'date'):
+        d1 = datetime.datetime(price_date_str.year, price_date_str.month, price_date_str.day) 
+    else:
+        d1 = datetime.datetime.strptime(convert_timestamp(price_date_str) , format) 
+    if(type(form_date_str).__name__ == 'date'):
+        d2 = datetime.datetime(form_date_str.year, form_date_str.month, form_date_str.day) 
+    else:
+        d2 = datetime.datetime.strptime(convert_timestamp(form_date_str) , format) 
+    # d2 = datetime.datetime.strptime(convert_timestamp(form_date_str),format)
+    return  d1 >= d2 
 
 def convert_timestamp(str):
+     
     if(str):
         spl = str.split("T")
         if(len(spl) > 0):

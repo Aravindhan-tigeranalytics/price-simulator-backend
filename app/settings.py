@@ -118,7 +118,16 @@ DATABASES = {
 #     }
 # }
 # AZURE
-
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'NAME': 'mars-promo-test',
+#         'USER':'marspromoadmin@marspromodatabase',
+#         'PASSWORD': 'marspromo@123',
+#         'HOST': 'marspromodatabase.postgres.database.azure.com',
+#         'PORT':5432,
+#     }
+# }
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
 

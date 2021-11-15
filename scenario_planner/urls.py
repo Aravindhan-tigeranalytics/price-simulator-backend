@@ -20,6 +20,7 @@ urlpatterns = [
     path('update/',views.UpdatePromo.as_view({'get':'get','post' : 'post'})),
     path('list-saved-promo/', views.LoadScenario.as_view({'get' : 'list',})),
     path('list-saved-promo/<int:id>/', views.LoadScenario.as_view({'get' : 'retrieve'})),
+    path('load-pricing/<int:id>/', views.LoadScenario.as_view({'get' : 'load_pricing'})),
     path('list-saved-promo/<int:id>/<int:_id>/', views.LoadScenario.as_view({'get' : 'retrieve_pricing_promo'})),
     path('downloads/', views.ExampleViewSet.as_view({'post' : 'download'})),
     path('getExcel/', views.ExampleViewSet.as_view({'post' : 'getData'})),

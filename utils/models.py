@@ -73,7 +73,7 @@ class UnitModel:
         self.simulate_predicted_units = self.base_unit * (((1 - ((promo_depth + co_investment)/100))** decimal.Decimal(promo_elasticity)))
         # print()
         self.predicted_units = self.simulate_predicted_units if promo_elasticity else predicted_units
-        print(self.predicted_units )
+        # print(self.predicted_units )
         self.incremental_unit = round(self.predicted_units,5)  - round(self.base_unit,5)
         self.lift = (self.incremental_unit / self.base_unit )
         # inc = new_pre - base

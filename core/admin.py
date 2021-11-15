@@ -12,7 +12,9 @@ from utils import util as util
 import openpyxl
 # Register your models here.
 class CsvImportForm(forms.Form):
-    csv_file = forms.FileField()
+    model_file = forms.FileField(required=False)
+    roi = forms.FileField(required=False)
+    # csv_file = forms.FileField()
     # roi_file  = forms.FileField()
 # @admin.register(models.Scenario)
 
@@ -32,7 +34,7 @@ class HolidayCalendarAdmin(admin.ModelAdmin):
         if request.method == "POST":
             try:
                 total_model = 0
-                csv_file = request.FILES["csv_file"]
+                csv_file = request.FILES["model_file"]
                 # roi_file = request.FILES["roi_file"]
                 total_model= excel.read_holiday(csv_file)
         
@@ -56,6 +58,19 @@ class ModelMetaAdmin(admin.ModelAdmin):
     list_display = [field.name for field in models.ModelMeta._meta.fields]
     list_filter = ('account_name','corporate_segment','product_group')
     change_list_template = "admin/promo_upload.html"
+    actions = ['remove_non_model_meta']
+     
+    def remove_non_model_meta(self, request, queryset):
+        for q in queryset:
+            if(not q.data.exists()):
+                q.delete()
+        # print(queryset)
+        # import pdb
+        # pdb.set_trace()
+        # for q in queryset:
+        #     q.delete()
+        # models.ScenarioPlannerMetrics.objects.all().delete()
+    remove_non_model_meta.short_description = "Remove non model meta"
     
     def get_urls(self):
         urls = super().get_urls()
@@ -68,14 +83,13 @@ class ModelMetaAdmin(admin.ModelAdmin):
         if request.method == "POST":
             try:
                 total_model = 0
-                csv_file = request.FILES["csv_file"]
-                 
-                # excel.read_promo_coeff(csv_file)
-                excel.read_roi_data(csv_file)   
-                
-                # excel.read_coeff_map(csv_file)
-                 
-                # excel.read_promo_data(csv_file)
+                if('model_file' in request.FILES):
+                    
+                    csv_file = request.FILES["model_file"]
+                    excel.read_model_files(csv_file)
+                if('roi'in request.FILES):
+                    roi =  request.FILES["roi"]
+                    excel.read_roi_data(roi)
                 
                 self.message_user(request, "Total {} model data imported".format(total_model))
                 return redirect("..")

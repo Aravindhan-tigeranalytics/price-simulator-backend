@@ -225,12 +225,15 @@ def calculate_financial_mertrics(data_list ,roi_list,unit_info , flag,promo_elas
     
     
     for i in range(0,len(data_list)):
-        # import pdb
-        # pdb.set_trace()
+        
       
         roi = roi_list[i]
         unit = unit_info[i]
         data = data_list[i]
+        if(flag == 'simulated'):
+            # import pdb
+            # pdb.set_trace()
+            print(data[data_values.index('promo_depth')] , "depth...........")
         
         retail_price = decimal.Decimal(math.exp(data[data_values.index('median_base_price_log')]))
         list_price =roi[roi_values.index('list_price')]
@@ -340,6 +343,8 @@ def calculate_financial_mertrics_equation( data_list ,roi_list,unit_info , flag,
         # retail_price = retail_price * decimal.Decimal(1 - (20/100)) if is_vat_applied else retail_price
         # 
         list_price =roi[roi_values.index('list_price')]
+        if(flag=='simulated'):
+            print(list_price , "simlp")
         # import pdb
         # pdb.set_trace()
         gmac_percent_lsv = roi[roi_values.index('gmac')] * 100
@@ -628,8 +633,7 @@ def _get_promotion_flag(promo_from_req):
     return val.get(promo_from_req)
 
 def update_from_request(data_list , querydict):
-    # import pdb
-    # pdb.set_trace()
+    
     cloned_list = copy.deepcopy(data_list)
     cataloge_average = 0
     catalogue_index = []
@@ -639,8 +643,7 @@ def update_from_request(data_list , querydict):
             week = int(util._regex(r'\d{1,2}',week_regex.group()).group())
             index = week -1
             cat = cloned_list[index][data_values.index('catalogue')]
-            # import pdb
-            # pdb.set_trace()
+            
             if cat :
                 cataloge_average = util.average(cataloge_average , cat)
                 cloned_list[index][data_values.index('catalogue')] = 0
@@ -867,7 +870,7 @@ def update_tpr_from_pricing(tpr_list , pricing_week):
 
 
 def update_from_pricing(data_list,filtered_roi,filtered_coeff, pricing_week,promo_week : QuerySet[db_model.PromoWeek] ):
-   
+    
     cloned_list = copy.deepcopy(data_list)
     cloned_roi = copy.deepcopy(filtered_roi)
     cloned_coeff = copy.deepcopy(filtered_coeff)
@@ -893,11 +896,12 @@ def update_from_pricing(data_list,filtered_roi,filtered_coeff, pricing_week,prom
         new_rp = current_rp * (1 + (pricing_week[i].rsp_increase)/100)
         
         if(tpr):
+            if util.is_date_greater_or_equal(cloned_list[i][data_values.index('date')] , pricing_save_obj.promo_date):
            
-            current_promo_price = current_rp * (1 -(tpr/100))
-            new_promo_price = current_promo_price * (1 + (pricing_week[i].promo_increase/100))
-            new_tpr= ((new_rp - new_promo_price)/new_rp) * 100
-            new_tpr =round(decimal.Decimal(new_tpr),2)
+                current_promo_price = current_rp * (1 -(tpr/100))
+                new_promo_price = current_promo_price * (1 + (pricing_week[i].promo_increase/100))
+                new_tpr= ((new_rp - new_promo_price)/new_rp) * 100
+                new_tpr =round(decimal.Decimal(new_tpr),2)
             # print(new_tpr , "newtPR" , type(new_tpr))
         cat = cloned_list[i][data_values.index('catalogue')]
         if cat:
@@ -911,9 +915,18 @@ def update_from_pricing(data_list,filtered_roi,filtered_coeff, pricing_week,prom
             cloned_list[i+2][data_values.index('tpr_discount_lag2')] =new_tpr
         if new_tpr:
             catalogue_index.append(i)
-        cloned_list[i][data_values.index('median_base_price_log')] = math.log(new_rp)
+        if util.is_date_greater_or_equal(cloned_list[i][data_values.index('date')] , pricing_save_obj.rsp_date):
+            cloned_list[i][data_values.index('median_base_price_log')] = math.log(new_rp)
+        # if(flag=="simulated")
+        
         baselp = cloned_roi[i][roi_values.index('list_price')]
-        cloned_roi[i][roi_values.index('list_price')] = baselp + baselp * (pricing_week[i].lp_increase/100)
+        
+        
+        if util.is_date_greater_or_equal(cloned_list[i][data_values.index('date')] , pricing_save_obj.list_price_date):
+            # print( cloned_roi[i][roi_values.index('list_price')] , "listpriceupdateinclone" , i)
+            cloned_roi[i][roi_values.index('list_price')] = baselp + baselp * (pricing_week[i].lp_increase/100)
+            # print( cloned_roi[i][roi_values.index('list_price')] , "listpriceupdateinclone" , i)
+        
     for value in catalogue_index:
         cloned_list[value][data_values.index('catalogue')] = cataloge_average    
     return cloned_list , cloned_roi , cloned_coeff , form

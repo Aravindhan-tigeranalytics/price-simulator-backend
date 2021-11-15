@@ -1,3 +1,4 @@
+from operator import imod
 from numpy import product, save
 from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
@@ -1065,6 +1066,127 @@ def read_holiday(file):
     # pass
     
 def read_promo_coeff(file):
+    model.ModelCoefficient.objects.all().delete()
+    headers = const.COEFF_HEADER
+
+    book = openpyxl.load_workbook(file,data_only=True)
+    sheet = book['MODEL_COEFFICIENT']
+    columns = sheet.max_column
+    rows = sheet.max_row
+    col_= []
+    row_ =1
+    header_found = False
+    for row in range(1,rows+1):
+        print(row , "row count")
+        for col in range(1,columns+1):
+            print(col , "column count")
+            cell_obj = sheet.cell(row = row, column = col)
+            if cell_obj.value in headers:
+                header_found = True
+                print(cell_obj.value , 'object value')
+                col_.append(col)
+        if header_found:
+           break 
+    # print(col_ , "coldddd")
+    
+    bulk_obj = [] 
+    slug_memory = {
+        
+    }
+    for row in range(row_+1 , rows+1):
+        slg = util.generate_slug_string(
+                    _get_sheet_value(sheet ,row , 1),
+                _get_sheet_value(sheet ,row , 2),
+                    _get_sheet_value(sheet ,row , 3)
+                )
+        
+             
+        if slg in slug_memory:
+            meta = slug_memory[slg]
+        else:
+            try:
+                print("hitting query")
+                meta = model.ModelMeta.objects.get(
+                    slug = slg
+                )
+                slug_memory[slg] = meta
+            except:
+                meta = model.ModelMeta(
+                    account_name = _get_sheet_value(sheet ,row , 1),
+                    corporate_segment =_get_sheet_value(sheet ,row , 2),
+                    product_group =  _get_sheet_value(sheet ,row , 3),
+                    brand_filter =  _get_sheet_value(sheet ,row , 4),
+                    brand_format_filter =  _get_sheet_value(sheet ,row , 5),
+                    strategic_cell_filter =  _get_sheet_value(sheet ,row , 6),
+                    slug =  slg
+                    
+                ).save()
+                slug_memory[slg] = meta
+            
+        print("creating bulkobject")
+        bulk_obj.append(model.ModelCoefficient(
+            model_meta = meta,
+            wmape = _get_sheet_value(sheet ,row , 7),
+            rsq= _get_sheet_value(sheet ,row , 8),
+            intercept = _get_sheet_value(sheet ,row , 9),
+            median_base_price_log = _get_sheet_value(sheet ,row , 10),
+        tpr_discount =  _get_sheet_value(sheet ,row , 11),
+        tpr_discount_lag1 =  _get_sheet_value(sheet ,row , 12),
+        tpr_discount_lag2 = _get_sheet_value(sheet ,row , 13),
+        catalogue = _get_sheet_value(sheet ,row , 14),
+        display = _get_sheet_value(sheet ,row , 15),
+        acv = _get_sheet_value(sheet ,row , 16),
+        si = _get_sheet_value(sheet ,row , 17),
+        si_month = _get_sheet_value(sheet ,row , 18),
+        si_quarter = _get_sheet_value(sheet ,row , 19),
+        c_1_crossretailer_discount = _get_sheet_value(sheet ,row , 20),
+        c_1_crossretailer_log_price = _get_sheet_value(sheet ,row , 21),
+        c_1_intra_discount = _get_sheet_value(sheet ,row , 22),
+        c_2_intra_discount = _get_sheet_value(sheet ,row , 23),
+        c_3_intra_discount = _get_sheet_value(sheet ,row , 24),
+        c_4_intra_discount = _get_sheet_value(sheet ,row , 25),
+        c_5_intra_discount = _get_sheet_value(sheet ,row , 26),
+        c_1_intra_log_price = _get_sheet_value(sheet ,row , 27),
+        c_2_intra_log_price = _get_sheet_value(sheet ,row , 28),
+        c_3_intra_log_price = _get_sheet_value(sheet ,row , 29),
+        c_4_intra_log_price = _get_sheet_value(sheet ,row , 30),
+        c_5_intra_log_price = _get_sheet_value(sheet ,row , 31),
+        category_trend = _get_sheet_value(sheet ,row , 32),
+        trend_month = _get_sheet_value(sheet ,row , 33),
+        trend_quarter = _get_sheet_value(sheet ,row , 34),
+        trend_year = _get_sheet_value(sheet ,row , 35),
+        month_no = _get_sheet_value(sheet ,row , 36),
+        flag_promotype_motivation = _get_sheet_value(sheet ,row , 37),
+        flag_promotype_n_pls_1 = _get_sheet_value(sheet ,row , 38),
+        flag_promotype_traffic = _get_sheet_value(sheet ,row , 39),
+        flag_nonpromo_1 = _get_sheet_value(sheet ,row , 40),
+        flag_nonpromo_2 = _get_sheet_value(sheet ,row , 41),
+        flag_nonpromo_3 = _get_sheet_value(sheet ,row , 42),
+        flag_promo_1 = _get_sheet_value(sheet ,row , 43),
+        flag_promo_2 = _get_sheet_value(sheet ,row , 44),
+        flag_promo_3 = _get_sheet_value(sheet ,row , 45),
+        holiday_flag_1 = _get_sheet_value(sheet ,row , 46),
+        holiday_flag_2 = _get_sheet_value(sheet ,row , 47),
+        holiday_flag_3 = _get_sheet_value(sheet ,row , 48),
+        holiday_flag_4 = _get_sheet_value(sheet ,row , 49),
+        holiday_flag_5 = _get_sheet_value(sheet ,row , 50),
+        holiday_flag_6 = _get_sheet_value(sheet ,row , 51),
+        holiday_flag_7 = _get_sheet_value(sheet ,row , 52),
+        holiday_flag_8 = _get_sheet_value(sheet ,row , 53),
+        holiday_flag_9 = _get_sheet_value(sheet ,row , 54),
+        holiday_flag_10 = _get_sheet_value(sheet ,row , 55)
+            
+        )
+        )
+    
+            
+    model.ModelCoefficient.objects.bulk_create(bulk_obj) 
+          
+    print( " updated ")
+      
+    book.close() 
+    
+def read_promo_coeff_bkp(file):
     headers = const.COEFF_HEADER
     book = openpyxl.load_workbook(file,data_only=True)
     sheet = book['MODEL_COEFFICIENT']
@@ -1283,12 +1405,37 @@ def read_promo_data(file):
     print(validation_dict , "Validation dictionary values")
     book.close()
     return validation_dict
+def read_model_files(file):
+    read_promo_coeff(file)           
+    # read_coeff_map(file)            
+    # read_promo_data(file)
+    
 def read_roi_data(file):
     # import pdb
     # pdb.set_trace()
-    headers = const.ROI_HEADER
+    # import csv
+    # from io import BytesIO
+    # headers = const.ROI_HEADER
+    # wb = openpyxl.Workbook()
+    # ws = wb.active
+    # # import pdb
+    # # pdb.set_trace()
+    # file = file.read().decode('utf-8')
+   
+    # reader = csv.DictReader(io.StringIO(file))
+    # reader = csv.reader(file)
+    # headappend = 1
+    # for row in reader:
+    #     if(headappend):
+    #         li = list(row.keys())
+    #         ws.append(li)
+    #         headappend = 0
+    #     else:
+    #         ws.append(row)
     # import pdb
-    # pdb.set_trace()
+    # pdb.set_trace() 
+    headers = const.ROI_HEADER
+
     book = openpyxl.load_workbook(file,data_only=True)
     sheet = book['ROI_Data_All_retailers_flag_N_p']
     columns = sheet.max_column
@@ -1304,53 +1451,61 @@ def read_roi_data(file):
             if cell_obj.value in headers:
                 header_found = True
                 print(cell_obj.value , 'object value')
-                # col_taken = True
                 col_.append(col)
         if header_found:
            break 
     print(col_ , "coldddd")
-    # import pdb
-    # pdb.set_trace()
-    for row in range(row_+1 , rows+1):
+    black_listslugs = []
+    bulk_obj = [] 
+    slug_memory = {
         
-        meta , created = model.ModelMeta.objects.get_or_create(
-            account_name = _get_sheet_value(sheet ,row , 1),
-            corporate_segment = _get_sheet_value(sheet ,row , 2),
-            product_group = _get_sheet_value(sheet ,row , 3),
-            # brand_filter = _get_sheet_value(sheet ,row , 4),
-            # brand_format_filter = _get_sheet_value(sheet ,row , 5),
-            # strategic_cell_filter = _get_sheet_value(sheet ,row , 5),
-            slug = util.generate_slug_string(
-                _get_sheet_value(sheet ,row , 1),
-               _get_sheet_value(sheet ,row , 2),
-                _get_sheet_value(sheet ,row , 3)
-            )
-        )
-        if created:
-            # print(created , "created")
-            # print(meta , "meta")
-            meta.brand_filter = _get_sheet_value(sheet ,row , 4)
-            meta.brand_format_filter =_get_sheet_value(sheet ,row , 5)
-            meta.strategic_cell_filter =_get_sheet_value(sheet ,row , 6)
-            meta.save()
+    }  
+    
+    for row in range(row_+1 , rows+1):
+        slg = util.generate_slug_string(
+                    _get_sheet_value(sheet ,row , 1),
+                _get_sheet_value(sheet ,row , 2),
+                    _get_sheet_value(sheet ,row , 3)
+                )
+        try:
+            if slg not in black_listslugs:
+                if slg in slug_memory:
+                    meta = slug_memory[slg]
+                else:
+                    meta = model.ModelMeta.objects.get(
+                        slug = slg
+                    )
+                    slug_memory[slg] = meta
+                
+                bulk_obj.append(model.ModelROI(
+                    model_meta = meta,
+                    week = _get_sheet_value(sheet ,row , 12),
+                year = _get_sheet_value(sheet ,row , 9),
+                neilson_sku_name =_get_sheet_value(sheet ,row , 7),
+                date=_get_sheet_value(sheet ,row , 8),
+                    
+                
+                activity_name=_get_sheet_value(sheet ,row , 14),
+                mechanic=_get_sheet_value(sheet ,row , 15),
+                discount_nrv=_get_sheet_value(sheet ,row , 16),
+                on_inv=_get_sheet_value(sheet ,row , 18),
+                off_inv=_get_sheet_value(sheet ,row , 17),
+                gmac=_get_sheet_value(sheet ,row , 20),
+                list_price=_get_sheet_value(sheet ,row , 23)
+                
+                )
+                )
+        except:
+            print("black listing slug" , slg)
+            black_listslugs.append(slg)
             
-        roi = model.ModelROI(
-            model_meta = meta,
-            neilson_sku_name = _get_sheet_value(sheet ,row , 7),
-            date = _get_sheet_value(sheet ,row , 8),
-            year = _get_sheet_value(sheet ,row , 9),
-            week = _get_sheet_value(sheet ,row , 12),
-            activity_name = _get_sheet_value(sheet ,row , 14),
-            mechanic = _get_sheet_value(sheet ,row , 15),
-            discount_nrv = _get_sheet_value(sheet ,row , 16),
-            on_inv = _get_sheet_value(sheet ,row , 18),
-            off_inv = _get_sheet_value(sheet ,row , 17),
-             gmac = _get_sheet_value(sheet ,row , 20),
-            list_price = _get_sheet_value(sheet ,row , 23),
-        )
-        roi.save() 
+    model.ModelROI.objects.bulk_create(bulk_obj) 
+        
+    print(black_listslugs , "black listed slugs")   
+    print( " updated ")
+      
     book.close()            
-    # print(col_ , "final col_")
+  
 
 def read_excel(loc):
     
@@ -1722,8 +1877,280 @@ def lift_test():
     print(max_promo , "max promo")
     print(min_promo , "min promo")
 
-
 def download_excel_compare_scenario(data):
+    output = io.BytesIO()
+    no_format_header = ['date', 'week']
+    currency_header = ['asp', 'total_rsv_w_o_vat', 'promo_asp','total_lsv','total_nsv','mars_mac', 'trade_expense',
+     'retailer_margin','avg_promo_selling_price','lsv','nsv','mac','te','rp']
+    percent_header = [ 'retailer_margin_percent_of_nsv','mars_mac_percent_of_nsv','te_percent_of_lsv'
+    ,'rp_percent','mac_percent','roi']
+
+    ROW_CONST = 6
+    COL_CONST = 1
+
+    compare_scenario_data = data
+
+    # from scenario_planner import test as t
+    # compare_scenario_data = t.RESPONSE_PROMO
+    
+    workbook = xlsxwriter.Workbook(output)
+
+    merge_format_date = workbook.add_format({
+        'bold': 1,
+        'align': 'center',
+        'valign': 'vcenter',
+         })
+
+    merge_format_app = workbook.add_format({
+        'bold': 1,
+        'align': 'center',
+        'valign': 'vcenter'
+    })
+    merge_format_app.set_font_size(20)
+
+    format_header = workbook.add_format({'bold': 1,
+        'border': 1,
+        'align': 'center',
+        'valign': 'vcenter'})
+    format_header.set_font_size(14)
+    
+    format_name = workbook.add_format({'bold': 1,
+        'border': 1,
+        'align': 'center',
+        'valign': 'vcenter'})
+    format_name.set_font_size(20)
+    format_value = workbook.add_format({
+        'border': 1,
+        'align': 'center',
+        'text_wrap': True,
+        'valign': 'vcenter'})
+    format_value_raw = workbook.add_format({
+        'bold': 1,
+        'border': 1,
+        'align': 'center',
+        'text_wrap': True,
+        'valign': 'vcenter'})
+    format_value_raw.set_font_size(14)
+    format_value_left = workbook.add_format({
+    'border': 1,
+    'align': 'left',
+    'text_wrap': True,
+    'valign': 'vcenter'})
+    format_value_left.set_indent(6)
+
+    summary_value_bold = workbook.add_format({'bold': True})
+    summary_value_bold.set_font_size(14)
+
+    format_value_percentage = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '0.00 %' })
+
+    format_value_currency = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K ₽";[<999950000]0.0,,"M ₽";0.0,,,"B ₽"' })
+
+    format_value_number = workbook.add_format({ 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K";[<999950000]0.0,,"M";0.0,,,"B"' })
+
+    summary_value_percentage = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '0.00 %' })
+    summary_value_percentage.set_font_size(14)
+
+    summary_value_currency = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K ₽";[<999950000]0.0,,"M ₽";0.0,,,"B ₽"' })
+    summary_value_currency.set_font_size(14)
+
+    summary_value_number = workbook.add_format({ 'bold': 1, 'border': 1, 'align': 'center', 'text_wrap': True, 'valign': 'vcenter', 'num_format': '[<999950]0.0,"K";[<999950000]0.0,,"M";0.0,,,"B"' })
+    summary_value_number.set_font_size(14)
+
+    header_key =  ['date','week', 'promotions', 'predicted_units','base_unit','incremental_unit','total_weight_in_tons', 'total_rsv_w_o_vat', 'retailer_margin','retailer_margin_percent_of_nsv','asp','promo_asp', 'total_lsv','total_nsv','mars_mac_percent_of_nsv','trade_expense','te_percent_of_lsv', 'te_per_units', 'roi']
+
+    header_title = ['Date','Week','Promotion(Base)','Promotion(Simulated)','Units(Base)','Units(Simulated)','Base units(Base)','Base units(Simulated)','Incremental units(Base)','Incremental units(Simulated)','Volume(Base)','Volume(Simulated)','RSV w/o VAT(Base)','RSV w/o VAT(Simulated)','Trade Margin(Base)','Trade Margin(Simulated)','Trade Margin,%RSV(Base)', 'Trade Margin,%RSV(Simulated)','ASP(Base)','ASP(Simulated)','Promo ASP(Base)','Promo ASP(Simulated)','LSV(Base)','LSV(Simulated)','NSV(Base)','NSV(Simulated)', 'MAC, %NSV(Base)','MAC, %NSV(Simulated)','Trade expense(Base)','Trade expense(Simulated)','TE, % LSV(Base)','TE, % LSV(Simulated)','TE / Unit(Base)','TE / Unit(Simulated)','ROI(Base)','ROI(Simulated)',]
+
+    if len(compare_scenario_data) > 0:
+        for data in compare_scenario_data:
+            row = ROW_CONST
+            col = COL_CONST
+
+            scenario_name = (data['scenario_name'][:29] + '..') if len(data['scenario_name']) > 31 else data['scenario_name']
+            worksheet = workbook.add_worksheet(scenario_name)
+            worksheet.hide_gridlines(2)
+
+            worksheet.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
+            worksheet.merge_range('B3:D3', 'Promo Simulator Tool' , merge_format_app)
+            worksheet.set_column('B:D', 20)
+            worksheet.merge_range('B4:D4', "Retailer : {}".format(data['account_name']),merge_format_app)
+            worksheet.merge_range('B5:D5', "Product Group : {}".format(data['product_group']),merge_format_app)
+
+
+            for key in header_title:
+                _writeExcel(worksheet,row, col,key,format_header)
+                col+=1
+
+            col = COL_CONST
+            row+=1
+
+            simulated_weekly = data['simulated']['weekly']
+            base_weekly = data['base']['weekly']
+
+            for base,simulated in zip(base_weekly,simulated_weekly):
+                for k in header_key:
+                    if k == 'date' or k == 'week':
+                        value = simulated[k]
+                        _writeExcel(worksheet,row, col, value ,format_value)
+                        col+=1
+                    elif k == 'promotions':
+                        promotion_value = util.format_promotions(
+                            base['flag_promotype_motivation'],
+                            base['flag_promotype_n_pls_1'],
+                            base['flag_promotype_traffic'],
+                            base['promo_depth'],
+                            base['co_investment']
+                        )
+                        promotion_value_simulated = util.format_promotions(
+                            simulated['flag_promotype_motivation'],
+                            simulated['flag_promotype_n_pls_1'],
+                            simulated['flag_promotype_traffic'],
+                            simulated['promo_depth'],
+                            simulated['co_investment']
+                        )
+                        _writeExcel(worksheet,row, col, promotion_value ,format_value)
+                        col+=1
+                        _writeExcel(worksheet,row, col, promotion_value_simulated ,format_value)
+                        col+=1
+                    elif k in percent_header:
+                        _writeExcel(worksheet,row, col, base[k]/100, format_value_percentage)
+                        col+=1
+                        _writeExcel(worksheet,row, col, simulated[k]/100, format_value_percentage)
+                        col+=1
+                    elif k in currency_header:
+                        _writeExcel(worksheet,row, col, base[k], format_value_currency)
+                        col+=1
+                        _writeExcel(worksheet,row, col, simulated[k], format_value_currency)
+                        col+=1
+                    else:
+                        _writeExcel(worksheet,row, col, base[k], format_value_number)
+                        col+=1
+                        _writeExcel(worksheet,row, col, simulated[k], format_value_number)
+                        col+=1
+                row+=1
+                col = COL_CONST
+
+            simulated_total = data['simulated']['total']
+            base_total = data['base']['total']
+
+            total_header = ['units','base_units','increment_units','volume','lsv','nsv','mac_percent','te','te_percent_of_lsv','te_per_unit','roi','asp','avg_promo_selling_price','total_rsv_w_o_vat','rp','rp_percent','mac']
+            worksheet.merge_range('B{}:E{}'.format(row+1,row+1), 'Total ' , format_header)
+            col = 5
+            for k in total_header:
+                if k in percent_header:
+                    _writeExcel(worksheet,row, col,base_total[k]/100,summary_value_percentage)
+                    col+=1
+                    _writeExcel(worksheet,row, col,simulated_total[k]/100,summary_value_percentage)
+                    col+=1
+                elif k in currency_header:
+                    _writeExcel(worksheet,row, col,base_total[k],summary_value_currency)
+                    col+=1
+                    _writeExcel(worksheet,row, col,simulated_total[k],summary_value_currency)
+                    col+=1
+                else:
+                    _writeExcel(worksheet,row, col,base_total[k],summary_value_number)
+                    col+=1
+                    _writeExcel(worksheet,row, col,simulated_total[k],summary_value_number)
+                    col+=1
+            col = COL_CONST
+    
+
+    if len(compare_scenario_data) > 0:
+        for data in compare_scenario_data:
+            row = ROW_CONST
+            col = COL_CONST
+
+            scenario_name = (data['scenario_name'][:21] + '_raw_val..') if len(data['scenario_name']) > 21 else data['scenario_name'] + '_raw_val..'
+            worksheet = workbook.add_worksheet(scenario_name)
+            worksheet.hide_gridlines(2)
+
+            worksheet.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
+            worksheet.merge_range('B3:D3', 'Promo Simulator Tool' , merge_format_app)
+            worksheet.set_column('B:D', 20)
+            worksheet.merge_range('B4:D4', "Retailer : {}".format(data['account_name']),merge_format_app)
+            worksheet.merge_range('B5:D5', "Product Group : {}".format(data['product_group']),merge_format_app)
+
+
+            for key in header_title:
+                _writeExcel(worksheet,row, col,key,format_header)
+                col+=1
+
+            col = COL_CONST
+            row+=1
+
+            simulated_weekly = data['simulated']['weekly']
+            base_weekly = data['base']['weekly']
+
+            for base,simulated in zip(base_weekly,simulated_weekly):
+                for k in header_key:
+                    if k == 'date' or k == 'week':
+                        value = simulated[k]
+                        _writeExcel(worksheet,row, col, value ,format_value)
+                        col+=1
+                    elif k == 'promotions':
+                        promotion_value = util.format_promotions(
+                            base['flag_promotype_motivation'],
+                            base['flag_promotype_n_pls_1'],
+                            base['flag_promotype_traffic'],
+                            base['promo_depth'],
+                            base['co_investment']
+                        )
+                        promotion_value_simulated = util.format_promotions(
+                            simulated['flag_promotype_motivation'],
+                            simulated['flag_promotype_n_pls_1'],
+                            simulated['flag_promotype_traffic'],
+                            simulated['promo_depth'],
+                            simulated['co_investment']
+                        )
+                        _writeExcel(worksheet,row, col, promotion_value ,format_value)
+                        col+=1
+                        _writeExcel(worksheet,row, col, promotion_value_simulated ,format_value)
+                        col+=1
+                    elif k in percent_header:
+                        _writeExcel(worksheet,row, col, base[k]/100, format_value)
+                        col+=1
+                        _writeExcel(worksheet,row, col, simulated[k]/100, format_value)
+                        col+=1
+                    elif k in currency_header:
+                        _writeExcel(worksheet,row, col, base[k], format_value)
+                        col+=1
+                        _writeExcel(worksheet,row, col, simulated[k], format_value)
+                        col+=1
+                    else:
+                        _writeExcel(worksheet,row, col, base[k], format_value)
+                        col+=1
+                        _writeExcel(worksheet,row, col, simulated[k], format_value)
+                        col+=1
+                row+=1
+                col = COL_CONST
+
+            simulated_total = data['simulated']['total']
+            base_total = data['base']['total']
+
+            total_header = ['units','base_units','increment_units','volume', 'total_rsv_w_o_vat','rp','rp_percent','asp','avg_promo_selling_price', 'lsv','nsv','mac_percent','te','te_percent_of_lsv','te_per_unit', 'roi']
+            worksheet.merge_range('B{}:E{}'.format(row+1,row+1), 'Total ' , format_header)
+            col = 5
+            for k in total_header:
+                if k in percent_header:
+                    _writeExcel(worksheet,row, col,base_total[k]/100,format_value_raw)
+                    col+=1
+                    _writeExcel(worksheet,row, col,simulated_total[k]/100,format_value_raw)
+                    col+=1
+                elif k in currency_header:
+                    _writeExcel(worksheet,row, col,base_total[k],format_value_raw)
+                    col+=1
+                    _writeExcel(worksheet,row, col,simulated_total[k],format_value_raw)
+                    col+=1
+                else:
+                    _writeExcel(worksheet,row, col,base_total[k],format_value_raw)
+                    col+=1
+                    _writeExcel(worksheet,row, col,simulated_total[k],format_value_raw)
+                    col+=1
+            col = COL_CONST
+    workbook.close()
+    output.seek(0)
+    return output
+
+def download_excel_compare_scenario_pricing(data):
     output = io.BytesIO()
     no_format_header = ['date', 'week']
     currency_header = ['asp', 'total_rsv_w_o_vat', 'promo_asp','total_lsv','total_nsv','mars_mac', 'trade_expense',

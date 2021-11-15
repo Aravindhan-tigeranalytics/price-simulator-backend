@@ -297,10 +297,10 @@ class ScenarioSavedListOptimized(serializers.ModelSerializer):
                 }
             
             obj_t['pricing'] = {
-                    "lpi" : pricing.lp_increase,
-                    "rsp" : pricing.rsp_increase,
-                    "cogs" : pricing.cogs_increase,
-                    "promo" : pricing.promo_increase,
+                    "lpi" : pricing_save.lp_increase,
+                    "rsp" : pricing_save.rsp_increase,
+                    "cogs" : pricing_save.cogs_increase,
+                    "promo" : pricing_save.promo_increase,
                     "base_lpi" : pricing.base_list_price,
                     "base_rsp" : pricing.base_retail_price,
                     "base_cogs" : pricing.base_cogs,
@@ -312,6 +312,9 @@ class ScenarioSavedListOptimized(serializers.ModelSerializer):
                     "follow_competition" : pricing_save.follow_competition,
                     "inc_elasticity" : pricing_save.inc_elasticity,
                     "inc_net_elasticity" : pricing_save.inc_net_elasticity,
+                     "base_elasticity" : pricing_save.base_elasticity,
+                    "base_net_elasticity" : pricing_save.base_net_elasticity,
+                    "is_tpr_constant" : pricing_save.is_tpr_constant
                     }
             obj_r.append(obj_t)
         # import pdb
