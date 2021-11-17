@@ -186,9 +186,11 @@ def download_excel_pricing(data):
    
     worksheet = workbook.add_worksheet()
     worksheet_raw = workbook.add_worksheet()
+    worksheet_weekly = workbook.add_worksheet("weekly")
 
     worksheet.hide_gridlines(2)
     worksheet_raw.hide_gridlines(2)
+    worksheet_weekly.hide_gridlines(2)
 
     format_header = workbook.add_format({'bold': 1,
         'border': 1,
@@ -242,7 +244,7 @@ def download_excel_pricing(data):
     summary_value_number.set_font_size(14)
     
     worksheet.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
-    worksheet.merge_range('B3:D3', 'Promo Simulator Tool' , merge_format_app)
+    worksheet.merge_range('B3:D3', 'Pricing Simulator Tool' , merge_format_app)
     worksheet.set_column('B:D', 20)
     # worksheet.merge_range('B4:D4', "Account Name : {}".format("Account NAme"),merge_format_app)
     # worksheet.merge_range('B5:D5', "Product Group : {}".format("Product"),merge_format_app)
@@ -250,12 +252,16 @@ def download_excel_pricing(data):
     worksheet_raw.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
     worksheet_raw.merge_range('B3:D3', 'Pricing Simulator Tool' , merge_format_app)
     worksheet_raw.set_column('B:D', 20)
+    
+    worksheet_weekly.merge_range('B2:D2', 'Downloaded on {}'.format(dateformat()) , merge_format_date)
+    worksheet_weekly.merge_range('B3:D3', 'Pricing Simulator Tool Weekly' , merge_format_app)
+    worksheet_weekly.set_column('B:D', 20)
     # worksheet_raw.merge_range('B4:D4', "Account Name : {}".format("Account name "),merge_format_app)
     # worksheet_raw.merge_range('B5:D5', "Product Group : {}".format("Product"),merge_format_app)
     
     # data_val = data['simulated']['weekly'][0]
 
-    # header_key =  ['date','week','promotions', 'predicted_units','base_unit','incremental_unit','total_weight_in_tons', 'total_rsv_w_o_vat', 'retailer_margin','retailer_margin_percent_of_nsv', 'asp','promo_asp', 'total_lsv','total_nsv','mars_mac_percent_of_nsv','trade_expense','te_percent_of_lsv', 'te_per_units', 'roi']
+   
 # total_header = ['units','base_units','increment_units','volume','total_rsv_w_o_vat','rp','rp_percent','asp','lsv','nsv','mac_percent','te','te_percent_of_lsv','te_per_unit', 'roi',]
     header_title = ["Retailer","Product",'Units(Base)','Units(Simulated)','Base units(Base)','Base units(Simulated)','Incremental units(Base)', 'Incremental units(Simulated)','Volume(Base)','Volume(Simulated)',
     'RSV w/o VAT(Base)','RSV w/o VAT(Simulated)','Trade Margin(Base)','Trade Margin(Simulated)','Trade Margin,%RSV(Base)', 'Trade Margin,%RSV(Simulated)','ASP(Base)','ASP(Simulated)', 'LSV(Base)','LSV(Simulated)','NSV(Base)','NSV(Simulated)',
@@ -264,78 +270,20 @@ def download_excel_pricing(data):
     for key in header_title:
         _writeExcel(worksheet,row, col,key,format_header)
         _writeExcel(worksheet_raw,row, col,key,format_header)
+         
         col+=1
 
     col = COL_CONST
     row+=1
+    
 
-    # simulated_weekly = data['simulated']['weekly']
-    # base_weekly = data['base']['weekly']
-    # bold = workbook.add_format({'bold': True})
-    # red = workbook.add_format({'color': 'red'})
-    # for base,simulated in zip(base_weekly,simulated_weekly):
-    #     for k in header_key:
-    #         if k == 'date' or k == 'week':
-    #             value = simulated[k]
-    #             _writeExcel(worksheet,row, col, value ,format_value)
-    #             _writeExcel(worksheet_raw,row, col, value ,format_value)
-    #             col+=1
-    #         elif k == 'promotions':
-    #             promotion_value = util.format_promotions(
-    #                 base['flag_promotype_motivation'],
-    #                 base['flag_promotype_n_pls_1'],
-    #                 base['flag_promotype_traffic'],
-    #                 base['promo_depth'],
-    #                 base['co_investment']
-    #             )
-    #             promotion_value_simulated = util.format_promotions(
-    #                 simulated['flag_promotype_motivation'],
-    #                 simulated['flag_promotype_n_pls_1'],
-    #                 simulated['flag_promotype_traffic'],
-    #                 simulated['promo_depth'],
-    #                 simulated['co_investment']
-    #             )
-    #             _writeExcel(worksheet,row, col, promotion_value ,format_value)
-    #             _writeExcel(worksheet_raw,row, col, promotion_value ,format_value)
-    #             col+=1
-    #             _writeExcel(worksheet,row, col, promotion_value_simulated ,format_value)
-    #             _writeExcel(worksheet_raw,row, col, promotion_value_simulated ,format_value)
-    #             col+=1
-    #         elif k in percent_header:
-    #             _writeExcel(worksheet,row, col, base[k]/100, format_value_percentage)
-    #             _writeExcel(worksheet_raw,row, col, base[k]/100, format_value)
-    #             col+=1
-    #             _writeExcel(worksheet,row, col, simulated[k]/100, format_value_percentage)
-    #             _writeExcel(worksheet_raw,row, col, simulated[k]/100, format_value)
-    #             col+=1
-    #         elif k in currency_header:
-    #             _writeExcel(worksheet,row, col, base[k], format_value_currency)
-    #             _writeExcel(worksheet_raw,row, col, base[k], format_value)
-    #             col+=1
-    #             _writeExcel(worksheet,row, col, simulated[k], format_value_currency)
-    #             _writeExcel(worksheet_raw,row, col, simulated[k], format_value)
-    #             col+=1
-    #         else:
-                
-    #             _writeExcel(worksheet,row, col, base[k], format_value_number)
-    #             _writeExcel(worksheet_raw,row, col, base[k], format_value)
-    #             col+=1
-    #             _writeExcel(worksheet,row, col, simulated[k], format_value_number)
-    #             _writeExcel(worksheet_raw,row, col, simulated[k], format_value)
-    #             col+=1
-    #     row+=1
-    #     col = COL_CONST
-    # import pdb
-    # pdb.set_trace()
-
+   
+    bold = workbook.add_format({'bold': True})
+    red = workbook.add_format({'color': 'red'})
     
 
     total_header = ['units','base_units','increment_units','volume','total_rsv_w_o_vat','rp','rp_percent','asp','lsv','nsv','mac_percent','te','te_percent_of_lsv','te_per_unit', 'roi',]
-    # worksheet.merge_range('B{}:E{}'.format(row+1,row+1), 'Total ' , format_header)
-    # worksheet_raw.merge_range('B{}:E{}'.format(row+1,row+1), 'Total ' , format_header)
-    print(col , "col before")
-    # import pdb
-    # pdb.set_trace()
+   
     for cn in range(0,len(data['base'])):
         _writeExcel(worksheet,row+cn, col,data['base'][cn]['account_name'],format_value_raw)
         _writeExcel(worksheet_raw,row+cn, col,data['base'][cn]['account_name'],format_value_raw)
@@ -374,6 +322,96 @@ def download_excel_pricing(data):
                 col+=1
         print(col , "col after loop")
         col = COL_CONST
+    header_key_title =  ['Retailer','product','date','week','promotions','promotions_simulated', 
+                   'predicted_units','predicted_units_simulated','base_unit','base_unit_simulated',
+                   'incremental_unit','incremental_unit_simulated','total_weight_in_tons','total_weight_in_tons_simulated',
+                   'total_rsv_w_o_vat','total_rsv_w_o_vat_simulated', 'retailer_margin','retailer_margin_simulated',
+                   'retailer_margin_percent_of_nsv','retailer_margin_percent_of_nsv_simulated',
+                   'asp','asp_simulated','promo_asp','promo_asp_simulated',
+                   'total_lsv','total_lsv_simulated','total_nsv','total_nsv_simulated',
+                   'mars_mac_percent_of_nsv','mars_mac_percent_of_nsv_simulated',
+                   'trade_expense','trade_expense_simulated',
+                   'te_percent_of_lsv','te_percent_of_lsv_simulated',
+                   'te_per_units','te_per_units_simulated', 'roi','roi_simulated']
+    header_key =  ['date','week','promotions', 
+                   'predicted_units','base_unit',
+                   'incremental_unit','total_weight_in_tons',
+                   'total_rsv_w_o_vat', 'retailer_margin','retailer_margin_percent_of_nsv',
+                   'asp','promo_asp', 'total_lsv','total_nsv','mars_mac_percent_of_nsv','trade_expense',
+                   'te_percent_of_lsv', 'te_per_units', 'roi']
+    for key in header_key_title:
+        _writeExcel(worksheet_weekly,row, col,key,format_header)
+        col+=1
+    row+=1
+    col = COL_CONST
+    # weekly starts
+    for i in range(0,len(data['simulated'])):
+        simulated_weekly = data['simulated'][i]['weekly']
+        base_weekly = data['base'][i]['weekly']
+        retailer = data['base'][i]['account_name']
+        prod = data['base'][i]['product']
+        for base,simulated in zip(base_weekly,simulated_weekly):
+             
+            
+            _writeExcel(worksheet_weekly,row, col, retailer ,format_value)
+            col+=1
+            _writeExcel(worksheet_weekly,row, col, prod ,format_value)
+            col+=1
+            # _writeExcel(worksheet_raw,row, col, value ,format_value)
+           
+            for k in header_key:
+                if k == 'date' or k == 'week':
+                    value = simulated[k]
+                    _writeExcel(worksheet_weekly,row, col, value ,format_value)
+                    # _writeExcel(worksheet_raw,row, col, value ,format_value)
+                    col+=1
+                elif k == 'promotions':
+                    promotion_value = util.format_promotions(
+                        base['flag_promotype_motivation'],
+                        base['flag_promotype_n_pls_1'],
+                        base['flag_promotype_traffic'],
+                        base['promo_depth'],
+                        base['co_investment']
+                    )
+                    promotion_value_simulated = util.format_promotions(
+                        simulated['flag_promotype_motivation'],
+                        simulated['flag_promotype_n_pls_1'],
+                        simulated['flag_promotype_traffic'],
+                        simulated['promo_depth'],
+                        simulated['co_investment']
+                    )
+                    _writeExcel(worksheet_weekly,row, col, promotion_value ,format_value)
+                    # _writeExcel(worksheet_raw,row, col, promotion_value ,format_value)
+                    col+=1
+                    _writeExcel(worksheet_weekly,row, col, promotion_value_simulated ,format_value)
+                    # _writeExcel(worksheet_raw,row, col, promotion_value_simulated ,format_value)
+                    col+=1
+                elif k in percent_header:
+                    _writeExcel(worksheet_weekly,row, col, base[k]/100, format_value_percentage)
+                    # _writeExcel(worksheet_raw,row, col, base[k]/100, format_value)
+                    col+=1
+                    _writeExcel(worksheet_weekly,row, col, simulated[k]/100, format_value_percentage)
+                    # _writeExcel(worksheet_raw,row, col, simulated[k]/100, format_value)
+                    col+=1
+                elif k in currency_header:
+                    _writeExcel(worksheet_weekly,row, col, base[k], format_value_currency)
+                    # _writeExcel(worksheet_raw,row, col, base[k], format_value)
+                    col+=1
+                    _writeExcel(worksheet_weekly,row, col, simulated[k], format_value_currency)
+                    # _writeExcel(worksheet_raw,row, col, simulated[k], format_value)
+                    col+=1
+                else:
+                    
+                    _writeExcel(worksheet_weekly,row, col, base[k], format_value_number)
+                    # _writeExcel(worksheet_raw,row, col, base[k], format_value)
+                    col+=1
+                    _writeExcel(worksheet_weekly,row, col, simulated[k], format_value_number)
+                    # _writeExcel(worksheet_raw,row, col, simulated[k], format_value)
+                    col+=1
+            row+=1
+            col = COL_CONST
+    # weekly ends
+
     
     workbook.close()
     output.seek(0)
@@ -2534,9 +2572,11 @@ def excel_download_input(account_name , product_group):
 
 def excel_download_input_pricing(data):
     # print(data , "data weekly input ")
+    
     products = data['products']
     output = io.BytesIO()
     workbook = xlsxwriter.Workbook(output)
+    percentage_format = workbook.add_format({ 'border': 1, 'text_wrap': True, 'valign': 'vcenter', 'num_format': '0.00 %' })
     worksheet = workbook.add_worksheet()
     header_format = workbook.add_format({
     'border': 1,
@@ -2545,7 +2585,21 @@ def excel_download_input_pricing(data):
     'text_wrap': True,
     'valign': 'vcenter',
     'indent': 1,
+    
     })
+    header_format_grey = workbook.add_format({
+    'border': 1,
+     
+    'bold': True,
+    'text_wrap': True,
+    'valign': 'vcenter',
+    'indent': 1,
+    'bg_color': '#808080'
+    
+    })
+    # worksheet.write('A1', 'Column name', cf)
+    # cf = workbook.add_format({'bg_color': 'green'})
+    
     worksheet.set_column('A:A', 25)
     worksheet.set_column('B:B', 25)
     worksheet.set_column('C:C', 25)
@@ -2562,40 +2616,87 @@ def excel_download_input_pricing(data):
     worksheet.write('A1', "Account name", header_format)
     worksheet.write('B1', "Product group", header_format)
     
-    worksheet.write('C1', "Base List Price", header_format)
-    worksheet.write('D1', "Inc List Price %", header_format)
+    worksheet.write('C1', "List Price", header_format)
+    worksheet.write('D1', "List Price Increase %", header_format_grey)
     
-    worksheet.write('E1', "Base COGS", header_format)
-    worksheet.write('F1', "Inc COGS %", header_format)
+    worksheet.write('E1', "COGS", header_format)
+    worksheet.write('F1', "COGS Increase %", header_format_grey)
     
-    worksheet.write('G1', "Base Retail Price", header_format)
-    worksheet.write('H1', "Inc Retail Price %", header_format)
+    worksheet.write('G1', "Retail Price", header_format)
+    worksheet.write('H1', "Retail Price Increase %", header_format_grey)
     
-    worksheet.write('I1', "Base Price Elasticity", header_format)
-    worksheet.write('J1', "Change Base Price Elasticity", header_format)
+    worksheet.write('I1', "Price Elasticity", header_format)
+    worksheet.write('J1', "New Base Price Elasticity", header_format_grey)
     
     worksheet.write('K1', "Net Elasticity", header_format)
-    worksheet.write('L1', "Change Net Elasticity", header_format)
-    worksheet.write('M1', "Competition", header_format)
+    worksheet.write('L1', "New Net Elasticity", header_format_grey)
+    worksheet.write('M1', "Competition", header_format_grey)
     col =0
     # import pdb
     # pdb.set_trace()
     for i in range(0,len(products)):
         
-        print(i , "iiiiiiiiiiiiii")
+        
         worksheet.write(i+1, col,products[i]['account_name'])
+        worksheet.data_validation(i+1, col,i+1, col, {'validate': 'custom',
+                                                    'value': '={}'.format(xl_rowcol_to_cell(i+1, col)),
+                                                    'error_title': 'Cannot change account name',
+                                                    'error_message':'Cannot change account name'
+                                    })
         worksheet.write(i+1, col+1,products[i]['product_group'])
+        worksheet.data_validation(i+1, col+1,i+1, col+1, {'validate': 'custom',
+                                                    'value': '={}'.format(xl_rowcol_to_cell(i+1, col+1)),
+                                                     'error_title': 'Cannot change product name',
+                                                     'error_message':'Cannot change product name'
+                                    })
         worksheet.write(i+1, col+2,products[i]['list_price'])
-        worksheet.write(i+1, col+3,0)
+        worksheet.data_validation(i+1, col+2,i+1, col+2, {'validate': 'decimal',
+                                                          'criteria': '=',
+                                                    'value': '={}'.format(xl_rowcol_to_cell(i+1, col+2))
+                                                     
+                                    })
+        worksheet.write(i+1, col+3,0,percentage_format)
+        worksheet.data_validation(i+1, col+3,i+1, col+3, {'validate': 'integer',
+                                    'criteria': 'between',
+                                    'minimum': 0,
+                                    'maximum': 100,
+                                    'input_title': 'Enter an integer:',
+                                    'input_message': 'between 1 and 100',
+                                    'error_title': 'Input value is not valid!',
+                                    'error_message':
+                                    'list price should be an integer between 1 and 100'})
         worksheet.write(i+1, col+4,products[i]['cogs'])
-        worksheet.write(i+1, col+5,0)
+        worksheet.data_validation(i+1, col+4,i+1, col+4, {'validate': 'custom',
+                                                    'value': '={}'.format(xl_rowcol_to_cell(i+1, col+4)),
+                                                     'error_title': 'Cannot change base COGS price',
+                                                     'error_message':'Cannot change  base COGS price'
+                                    })
+        worksheet.write(i+1, col+5,0,percentage_format)
+        worksheet.data_validation(i+1, col+5,i+1, col+5, {'validate': 'integer',
+                                    'criteria': 'between',
+                                    'minimum': 0,
+                                    'maximum': 100,
+                                    'input_title': 'Enter an integer:',
+                                    'input_message': 'between 1 and 100',
+                                    'error_title': 'Input value is not valid!',
+                                    'error_message':
+                                    'cogs should be an integer between 1 and 100'})
         worksheet.write(i+1, col+6,products[i]['rsp'])
-        worksheet.write(i+1, col+7,0)
+        worksheet.write(i+1, col+7,0,percentage_format)
+        worksheet.data_validation(i+1, col+7,i+1, col+7, {'validate': 'integer',
+                                    'criteria': 'between',
+                                    'minimum': 0,
+                                    'maximum': 100,
+                                    'input_title': 'Enter an integer:',
+                                    'input_message': 'between 1 and 100',
+                                    'error_title': 'Input value is not valid!',
+                                    'error_message':
+                                    'Retail price increase should be an integer between 1 and 100'})
         worksheet.write(i+1, col+8,products[i]['elasticity'])
         worksheet.write(i+1, col+9,0)
         worksheet.write(i+1, col+10,products[i]['net_elasticity'])
         worksheet.write(i+1, col+11,0)
-        worksheet.write(i+1, col+12, '') #mechanic
+        worksheet.write(i+1, col+12, 'Not follows') #mechanic
         worksheet.data_validation(i+1, col+12,i+1, col+12, {'validate': 'list',
                                     'source': ['Follows', 'Not follows']})
         

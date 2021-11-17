@@ -512,7 +512,7 @@ def list_to_frame(coeff,data , tpr_updated = False):
    
     print(val[['Incremental' , 'Base' , 'Predicted_sales']] , "val")
 
-    return val
+    return val.round(1)
 
 
 def list_to_frame_many_bkp(coeff,data , roi):
