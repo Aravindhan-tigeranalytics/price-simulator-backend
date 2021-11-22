@@ -1103,7 +1103,7 @@ def read_holiday(file):
     
     # pass
     
-def read_promo_coeff(file):
+def read_promo_coeff(file,slug_memory):
     model.ModelCoefficient.objects.all().delete()
     headers = const.COEFF_HEADER
 
@@ -1128,9 +1128,6 @@ def read_promo_coeff(file):
     # print(col_ , "coldddd")
     
     bulk_obj = [] 
-    slug_memory = {
-        
-    }
     for row in range(row_+1 , rows+1):
         slg = util.generate_slug_string(
                     _get_sheet_value(sheet ,row , 1),
@@ -1223,6 +1220,7 @@ def read_promo_coeff(file):
     print( " updated ")
       
     book.close() 
+    return slug_memory
     
 def read_promo_coeff_bkp(file):
     headers = const.COEFF_HEADER
@@ -1410,68 +1408,150 @@ def _update_model_data_object(model_data : model.ModelData , sheet:Worksheet,row
     # pass
 
 
-def read_promo_data(file):
+def read_promo_data(file,slug_memory):
+    model.ModelData.objects.all().delete()
     headers = const.DATA_HEADER
+
     book = openpyxl.load_workbook(file,data_only=True)
     sheet = book['MODEL_DATA']
     columns = sheet.max_column
     rows = sheet.max_row
-     
-    col_map = _get_col_map(rows,columns,sheet,headers)
+    col_= []
+    row_ =1
+    header_found = False
+    for row in range(1,rows+1):
+        print(row , "row count")
+        for col in range(1,columns+1):
+            print(col , "column count")
+            cell_obj = sheet.cell(row = row, column = col)
+            if cell_obj.value in headers:
+                header_found = True
+                print(cell_obj.value , 'object value')
+                col_.append(col)
+        if header_found:
+           break 
+    # print(col_ , "coldddd")
     
-    row_ =0
-    validation_dict = {}
-    for row in range(row_+2 , rows+1):    
-        db_data = model.ModelData()
-        _update_model_data_object(db_data , sheet , row , col_map)
-        if not _get_sheet_value(sheet , row,col_map['Account Name']):
-            break
-        slug = util.generate_slug_string( _get_sheet_value(sheet , row,col_map['Account Name']),
-                                            _get_sheet_value(sheet , row,col_map['Corporate Segment']),
-                                           _get_sheet_value(sheet , row,col_map['PPG']))
-        # db_data.full_clean()
-        db_data.save()
-        if slug not in validation_dict:
-            validation_dict[slug] = {
-                'count' : 1,
-                'account_name' : _get_sheet_value(sheet , row,col_map['Account Name']),
-                'corporate_segment' :  _get_sheet_value(sheet , row,col_map['Corporate Segment']),
-                'product_group' : _get_sheet_value(sheet , row,col_map['PPG'])
-            }
+    bulk_obj = [] 
+    for row in range(row_+1 , rows+1):
+        slg = util.generate_slug_string(
+                    _get_sheet_value(sheet ,row , 1),
+                _get_sheet_value(sheet ,row , 2),
+                    _get_sheet_value(sheet ,row , 3)
+                )
+        
+             
+        if slg in slug_memory:
+            meta = slug_memory[slg]
         else:
-            validation_dict[slug]['count'] = validation_dict[slug]['count'] + 1
-    print(validation_dict , "Validation dictionary values")
-    book.close()
-    return validation_dict
-def read_model_files(file):
-    read_promo_coeff(file)           
-    # read_coeff_map(file)            
-    # read_promo_data(file)
+            try:
+                print("hitting query")
+                meta = model.ModelMeta.objects.get(
+                    slug = slg
+                )
+                slug_memory[slg] = meta
+            except:
+                meta = model.ModelMeta(
+                    account_name = _get_sheet_value(sheet ,row , 1),
+                    corporate_segment =_get_sheet_value(sheet ,row , 2),
+                    product_group =  _get_sheet_value(sheet ,row , 3),
+                    brand_filter =  _get_sheet_value(sheet ,row , 4),
+                    brand_format_filter =  _get_sheet_value(sheet ,row , 5),
+                    strategic_cell_filter =  _get_sheet_value(sheet ,row , 6),
+                    slug =  slg
+                    
+                ).save()
+                slug_memory[slg] = meta
+            
+        print("creating bulkobject")
+        bulk_obj.append(model.ModelData(
+            model_meta = meta,
+            year = _get_sheet_value(sheet ,row , 7),
+            quater= _get_sheet_value(sheet ,row , 8),
+            month = _get_sheet_value(sheet ,row , 9),
+            period= _get_sheet_value(sheet ,row , 10),
+             date= _get_sheet_value(sheet ,row , 11),
+            week= _get_sheet_value(sheet ,row , 12),
+            intercept = _get_sheet_value(sheet ,row , 13),
+            median_base_price_log = _get_sheet_value(sheet ,row , 14),
+        tpr_discount =  _get_sheet_value(sheet ,row , 15),
+        tpr_discount_lag1 =  _get_sheet_value(sheet ,row , 16),
+        tpr_discount_lag2 = _get_sheet_value(sheet ,row , 17),
+        catalogue = _get_sheet_value(sheet ,row , 18),
+        display = _get_sheet_value(sheet ,row , 19),
+        acv = _get_sheet_value(sheet ,row , 20),
+        si = _get_sheet_value(sheet ,row , 21),
+        si_month = _get_sheet_value(sheet ,row , 22),
+        si_quarter = _get_sheet_value(sheet ,row , 23),
+        c_1_crossretailer_discount = _get_sheet_value(sheet ,row , 24),
+        c_1_crossretailer_log_price = _get_sheet_value(sheet ,row , 25),
+        c_1_intra_discount = _get_sheet_value(sheet ,row , 26),
+        c_2_intra_discount = _get_sheet_value(sheet ,row , 27),
+        c_3_intra_discount = _get_sheet_value(sheet ,row , 28),
+        c_4_intra_discount = _get_sheet_value(sheet ,row , 29),
+        c_5_intra_discount = _get_sheet_value(sheet ,row , 30),
+        c_1_intra_log_price = _get_sheet_value(sheet ,row , 31),
+        c_2_intra_log_price = _get_sheet_value(sheet ,row , 32),
+        c_3_intra_log_price = _get_sheet_value(sheet ,row , 33),
+        c_4_intra_log_price = _get_sheet_value(sheet ,row , 34),
+        c_5_intra_log_price = _get_sheet_value(sheet ,row , 35),
+        category_trend = _get_sheet_value(sheet ,row , 36),
+        trend_month = _get_sheet_value(sheet ,row , 37),
+        trend_quarter = _get_sheet_value(sheet ,row , 38),
+        trend_year = _get_sheet_value(sheet ,row , 39),
+        month_no = _get_sheet_value(sheet ,row , 40),
+        flag_promotype_motivation = _get_sheet_value(sheet ,row , 41),
+        flag_promotype_n_pls_1 = _get_sheet_value(sheet ,row , 42),
+        flag_promotype_traffic = _get_sheet_value(sheet ,row , 43),
+        flag_nonpromo_1 = _get_sheet_value(sheet ,row , 44),
+        flag_nonpromo_2 = _get_sheet_value(sheet ,row , 45),
+        flag_nonpromo_3 = _get_sheet_value(sheet ,row , 46),
+        flag_promo_1 = _get_sheet_value(sheet ,row , 47),
+        flag_promo_2 = _get_sheet_value(sheet ,row , 48),
+        flag_promo_3 = _get_sheet_value(sheet ,row , 49),
+        holiday_flag_1 = _get_sheet_value(sheet ,row , 50),
+        holiday_flag_2 = _get_sheet_value(sheet ,row , 51),
+        holiday_flag_3 = _get_sheet_value(sheet ,row , 52),
+        holiday_flag_4 = _get_sheet_value(sheet ,row , 53),
+        holiday_flag_5 = _get_sheet_value(sheet ,row , 54),
+        holiday_flag_6 = _get_sheet_value(sheet ,row , 55),
+        holiday_flag_7 = _get_sheet_value(sheet ,row , 56),
+        holiday_flag_8 = _get_sheet_value(sheet ,row , 57),
+        holiday_flag_9 = _get_sheet_value(sheet ,row , 58),
+        holiday_flag_10 = _get_sheet_value(sheet ,row , 59),
+         wk_sold_avg_price_byppg =  _get_sheet_value(sheet ,row , 60),
+         average_weight_in_grams=  _get_sheet_value(sheet ,row , 61),
+          weighted_weight_in_grams=  _get_sheet_value(sheet ,row , 62),
+          death_rate=  _get_sheet_value(sheet ,row , 63),
+         promo_depth=  _get_sheet_value(sheet ,row , 65),
+            co_investment=  _get_sheet_value(sheet ,row , 66),
+            
+            optimiser_flag=  _get_sheet_value(sheet ,row , 67),
+            
+            incremental_unit=  0,
+            base_unit=  0,
+           
+            
+        )
+        )
     
-def read_roi_data(file):
-    # import pdb
-    # pdb.set_trace()
-    # import csv
-    # from io import BytesIO
-    # headers = const.ROI_HEADER
-    # wb = openpyxl.Workbook()
-    # ws = wb.active
-    # # import pdb
-    # # pdb.set_trace()
-    # file = file.read().decode('utf-8')
-   
-    # reader = csv.DictReader(io.StringIO(file))
-    # reader = csv.reader(file)
-    # headappend = 1
-    # for row in reader:
-    #     if(headappend):
-    #         li = list(row.keys())
-    #         ws.append(li)
-    #         headappend = 0
-    #     else:
-    #         ws.append(row)
-    # import pdb
-    # pdb.set_trace() 
+            
+    model.ModelData.objects.bulk_create(bulk_obj) 
+          
+    print( " updated ")
+      
+    book.close()
+    return slug_memory 
+
+def read_model_files(file , slug_memory):
+    slug_memory = read_promo_coeff(file ,slug_memory) 
+    slug_memory = read_promo_data(file,slug_memory)          
+    slug_memory = read_coeff_map(file,slug_memory) 
+    return slug_memory           
+    
+    
+def read_roi_data(file , slug_memory):
+    model.ModelROI.objects.all().delete()
     headers = const.ROI_HEADER
 
     book = openpyxl.load_workbook(file,data_only=True)
@@ -1495,10 +1575,7 @@ def read_roi_data(file):
     print(col_ , "coldddd")
     black_listslugs = []
     bulk_obj = [] 
-    slug_memory = {
-        
-    }  
-    
+
     for row in range(row_+1 , rows+1):
         slg = util.generate_slug_string(
                     _get_sheet_value(sheet ,row , 1),
@@ -1818,7 +1895,8 @@ def lift(file1,file2):
     # import pdb
     # pdb.set_trace()
     
-def read_coeff_map(file):
+def read_coeff_map(file,slug_memory):
+    model.CoeffMap.objects.all().delete()
     headers = const.COEFF_MAP_HEADER
     book = openpyxl.load_workbook(file,data_only=True)
     sheet = book['COEFF_MAPPING']
@@ -1830,55 +1908,65 @@ def read_coeff_map(file):
     for row in range(1,rows+1):
         print(row , "row count")
         for col in range(1,columns+1):
-            # print(col , "column count")
+            print(col , "column count")
             cell_obj = sheet.cell(row = row, column = col)
             if cell_obj.value in headers:
                 header_found = True
-                # print(cell_obj.value , 'object value')
-                # col_taken = True
+                print(cell_obj.value , 'object value')
                 col_.append(col)
         if header_found:
            break 
-    print(col_ , "coldddd")
-    # import pdb
-    # pdb.set_trace()
+    # print(col_ , "coldddd")
+    
+    bulk_obj = [] 
     for row in range(row_+1 , rows+1):
+        slg = util.generate_slug_string(
+                    _get_sheet_value(sheet ,row , 1),
+                _get_sheet_value(sheet ,row , 2),
+                    _get_sheet_value(sheet ,row , 3)
+                )
         
-        meta , created = model.ModelMeta.objects.get_or_create(
-            account_name = _get_sheet_value(sheet ,row , 1),
-            corporate_segment = _get_sheet_value(sheet ,row , 2),
-            product_group = _get_sheet_value(sheet ,row , 3),
-            # brand_filter = _get_sheet_value(sheet ,row , 4),
-            # brand_format_filter = _get_sheet_value(sheet ,row , 5),
-            # strategic_cell_filter = _get_sheet_value(sheet ,row , 5),
-            slug = util.generate_slug_string(
-                _get_sheet_value(sheet ,row , 1),
-               _get_sheet_value(sheet ,row , 2),
-                _get_sheet_value(sheet ,row , 3)
-            )
-        )
-        if created:
-            # print(created , "created")
-            # print(meta , "meta")
-            meta.brand_filter = _get_sheet_value(sheet ,row , 4)
-            meta.brand_format_filter =_get_sheet_value(sheet ,row , 5)
-            meta.strategic_cell_filter =_get_sheet_value(sheet ,row , 6)
-            meta.save()
-            # meta.slug = util.generate_slug_string(
-            #     _get_sheet_value(sheet ,row , 1),
-            #    _get_sheet_value(sheet ,row , 2),
-            #     _get_sheet_value(sheet ,row , 3))
-        c_map = model.CoeffMap(
+             
+        if slg in slug_memory:
+            meta = slug_memory[slg]
+        else:
+            try:
+                print("hitting query")
+                meta = model.ModelMeta.objects.get(
+                    slug = slg
+                )
+                slug_memory[slg] = meta
+            except:
+                meta = model.ModelMeta(
+                    account_name = _get_sheet_value(sheet ,row , 1),
+                    corporate_segment =_get_sheet_value(sheet ,row , 2),
+                    product_group =  _get_sheet_value(sheet ,row , 3),
+                    brand_filter =  _get_sheet_value(sheet ,row , 4),
+                    brand_format_filter =  _get_sheet_value(sheet ,row , 5),
+                    strategic_cell_filter =  _get_sheet_value(sheet ,row , 6),
+                    slug =  slg
+                    
+                ).save()
+                slug_memory[slg] = meta
+            
+        print("creating bulkobject")
+        bulk_obj.append(model.CoeffMap(
             model_meta = meta,
             coefficient_old = _get_sheet_value(sheet ,row , 7),
-            coefficient_new = _get_sheet_value(sheet ,row , 8),
-            value = _get_sheet_value(sheet ,row , 9),
-            # off_inv = _get_sheet_value(sheet ,row , 18),
-            #  gmac = _get_sheet_value(sheet ,row , 20),
-            # list_price = _get_sheet_value(sheet ,row , 23),
+             coefficient_new = _get_sheet_value(sheet ,row , 8),
+           value = _get_sheet_value(sheet ,row , 9),
+             
+            
         )
-        c_map.save() 
-    book.close()
+        )
+    
+            
+    model.CoeffMap.objects.bulk_create(bulk_obj) 
+          
+    print( " updated ")
+      
+    book.close() 
+    return slug_memory
 
 def lift_test():
     from django.db.models.query import Prefetch
@@ -2704,4 +2792,104 @@ def excel_download_input_pricing(data):
     workbook.close()
     output.seek(0)
     return output
+
+
+
+# def read_promo_data(file):
+#     headers = const.DATA_HEADER
+#     book = openpyxl.load_workbook(file,data_only=True)
+#     sheet = book['MODEL_DATA']
+#     columns = sheet.max_column
+#     rows = sheet.max_row
+     
+#     col_map = _get_col_map(rows,columns,sheet,headers)
+    
+#     row_ =0
+#     validation_dict = {}
+#     for row in range(row_+2 , rows+1):    
+#         db_data = model.ModelData()
+#         _update_model_data_object(db_data , sheet , row , col_map)
+#         if not _get_sheet_value(sheet , row,col_map['Account Name']):
+#             break
+#         slug = util.generate_slug_string( _get_sheet_value(sheet , row,col_map['Account Name']),
+#                                             _get_sheet_value(sheet , row,col_map['Corporate Segment']),
+#                                            _get_sheet_value(sheet , row,col_map['PPG']))
+#         # db_data.full_clean()
+#         db_data.save()
+#         if slug not in validation_dict:
+#             validation_dict[slug] = {
+#                 'count' : 1,
+#                 'account_name' : _get_sheet_value(sheet , row,col_map['Account Name']),
+#                 'corporate_segment' :  _get_sheet_value(sheet , row,col_map['Corporate Segment']),
+#                 'product_group' : _get_sheet_value(sheet , row,col_map['PPG'])
+#             }
+#         else:
+#             validation_dict[slug]['count'] = validation_dict[slug]['count'] + 1
+#     print(validation_dict , "Validation dictionary values")
+#     book.close()
+#     return validation_dict
+
+
+# def read_coeff_map(file):
+#     headers = const.COEFF_MAP_HEADER
+#     book = openpyxl.load_workbook(file,data_only=True)
+#     sheet = book['COEFF_MAPPING']
+#     columns = sheet.max_column
+#     rows = sheet.max_row
+#     col_= []
+#     row_ =1
+#     header_found = False
+#     for row in range(1,rows+1):
+#         print(row , "row count")
+#         for col in range(1,columns+1):
+#             # print(col , "column count")
+#             cell_obj = sheet.cell(row = row, column = col)
+#             if cell_obj.value in headers:
+#                 header_found = True
+#                 # print(cell_obj.value , 'object value')
+#                 # col_taken = True
+#                 col_.append(col)
+#         if header_found:
+#            break 
+#     print(col_ , "coldddd")
+#     # import pdb
+#     # pdb.set_trace()
+#     for row in range(row_+1 , rows+1):
+        
+#         meta , created = model.ModelMeta.objects.get_or_create(
+#             account_name = _get_sheet_value(sheet ,row , 1),
+#             corporate_segment = _get_sheet_value(sheet ,row , 2),
+#             product_group = _get_sheet_value(sheet ,row , 3),
+#             # brand_filter = _get_sheet_value(sheet ,row , 4),
+#             # brand_format_filter = _get_sheet_value(sheet ,row , 5),
+#             # strategic_cell_filter = _get_sheet_value(sheet ,row , 5),
+#             slug = util.generate_slug_string(
+#                 _get_sheet_value(sheet ,row , 1),
+#                _get_sheet_value(sheet ,row , 2),
+#                 _get_sheet_value(sheet ,row , 3)
+#             )
+#         )
+#         if created:
+#             # print(created , "created")
+#             # print(meta , "meta")
+#             meta.brand_filter = _get_sheet_value(sheet ,row , 4)
+#             meta.brand_format_filter =_get_sheet_value(sheet ,row , 5)
+#             meta.strategic_cell_filter =_get_sheet_value(sheet ,row , 6)
+#             meta.save()
+#             # meta.slug = util.generate_slug_string(
+#             #     _get_sheet_value(sheet ,row , 1),
+#             #    _get_sheet_value(sheet ,row , 2),
+#             #     _get_sheet_value(sheet ,row , 3))
+#         c_map = model.CoeffMap(
+#             model_meta = meta,
+#             coefficient_old = _get_sheet_value(sheet ,row , 7),
+#             coefficient_new = _get_sheet_value(sheet ,row , 8),
+#             value = _get_sheet_value(sheet ,row , 9),
+#             # off_inv = _get_sheet_value(sheet ,row , 18),
+#             #  gmac = _get_sheet_value(sheet ,row , 20),
+#             # list_price = _get_sheet_value(sheet ,row , 23),
+#         )
+#         c_map.save() 
+#     book.close()
+
 

@@ -343,8 +343,8 @@ def calculate_financial_mertrics_equation( data_list ,roi_list,unit_info , flag,
         # retail_price = retail_price * decimal.Decimal(1 - (20/100)) if is_vat_applied else retail_price
         # 
         list_price =roi[roi_values.index('list_price')]
-        if(flag=='simulated'):
-            print(list_price , "simlp")
+        # if(flag=='simulated'):
+        #     print(list_price , "simlp")
         # import pdb
         # pdb.set_trace()
         gmac_percent_lsv = roi[roi_values.index('gmac')] * 100
@@ -373,7 +373,9 @@ def calculate_financial_mertrics_equation( data_list ,roi_list,unit_info , flag,
                  )
             # import pdb
             # pdb.set_trace()
-            base_percent = (base_split_val['Base']/base_split_val['Predicted_sales'])*100
+           
+            # base_percent = (base_split_val['Base']/base_split_val['Predicted_sales'])*100
+            base_percent = (unit['Base']/unit['Predicted_sales'])*100
             inc_percent = 100 - base_percent
             base_units = decimal.Decimal((base_percent / 100)) * predicted_units
             incremental_units = decimal.Decimal((inc_percent / 100)) * predicted_units

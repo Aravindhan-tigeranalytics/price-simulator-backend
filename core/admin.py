@@ -83,13 +83,14 @@ class ModelMetaAdmin(admin.ModelAdmin):
         if request.method == "POST":
             try:
                 total_model = 0
+                slug_memory = {}
                 if('model_file' in request.FILES):
                     
                     csv_file = request.FILES["model_file"]
-                    excel.read_model_files(csv_file)
+                    slug_memory = excel.read_model_files(csv_file , slug_memory)
                 if('roi'in request.FILES):
                     roi =  request.FILES["roi"]
-                    excel.read_roi_data(roi)
+                    excel.read_roi_data(roi , slug_memory)
                 
                 self.message_user(request, "Total {} model data imported".format(total_model))
                 return redirect("..")

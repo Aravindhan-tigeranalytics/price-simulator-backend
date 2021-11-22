@@ -394,9 +394,9 @@ class SaveScenarioViewSet(viewsets.ModelViewSet):
             if request.data['scenario_type'] == 'promo':
                 self.create_promo(request)
                 return Response({}, 200)
-        request.data['name']
-        request.data['comments']
         request_dump = request.data['value']
+        if model.SavedScenario.objects.filter(name =  request.data['name']).exists():
+            raise exception.AlredyExistsException("{} already exists".format(request.data['name']))
          
         scenario = model.SavedScenario(
             scenario_type = 'pricing',
