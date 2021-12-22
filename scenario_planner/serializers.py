@@ -207,7 +207,14 @@ class ScenarioSavedListOptimized(serializers.ModelSerializer):
             ),
              Prefetch(
                   'promo_saved',
-            queryset=model.PromoSave.objects.select_related('saved_pricing').all(),
+            queryset=model.PromoSave.objects.select_related('saved_pricing').all().prefetch_related(
+                Prefetch(
+                    'saved_pricing__pricing_week',
+                    queryset=model.PricingWeek.objects.all(),
+                     to_attr='prefetched_promo_price_week'
+                )
+                
+                ),
             to_attr='prefetched_promo'
             ),
               Prefetch(
@@ -239,14 +246,39 @@ class ScenarioSavedListOptimized(serializers.ModelSerializer):
                 "product_group" : promo_save.product_group,
                 "pricing" : False
             }
-            # if( bool(promo_save.saved_pricing)):
-            #     pricing = model.PricingWeek.objects.filter(pricing_save = promo_save.saved_pricing).first()
-            #     obj['pricing'] = {
-            #         "lpi" : pricing.lp_increase,
-            #         "rsp" : pricing.rsp_increase,
-            #         "cogs" : pricing.cogs_increase,
-            #         "elasticity" : pricing.base_price_elasticity
-            #     }
+            pricing_save = promo_save.saved_pricing
+            if( bool(pricing_save)):
+                pricing = pricing_save.prefetched_promo_price_week[0]
+                # import pdb
+                # pdb.set_trace()
+                obj['pricing'] =  True
+                obj['pricing'] = {
+                    "lpi" : pricing_save.lp_increase,
+                    "rsp" : pricing_save.rsp_increase,
+                    "cogs" : pricing_save.cogs_increase,
+                    "promo" : pricing_save.promo_increase,
+                    "base_lpi" : pricing.base_list_price,
+                    "base_rsp" : pricing.base_retail_price,
+                    "base_cogs" : pricing.base_cogs,
+                    "base_promo" : pricing.base_promo_price,
+                    "cogs_date" : pricing_save.cogs_date,
+                    "list_price_date" : pricing_save.list_price_date,
+                    "rsp_date" : pricing_save.rsp_date,
+                    "promo_date" : pricing_save.promo_date,
+                    "follow_competition" : pricing_save.follow_competition,
+                    "inc_elasticity" : pricing_save.inc_elasticity,
+                    "inc_net_elasticity" : pricing_save.inc_net_elasticity,
+                     "base_elasticity" : pricing_save.base_elasticity,
+                    "base_net_elasticity" : pricing_save.base_net_elasticity,
+                    "is_tpr_constant" : pricing_save.is_tpr_constant
+                    }
+                # pricing = model.PricingWeek.objects.filter(pricing_save = promo_save.saved_pricing).first()
+                # obj['pricing'] = {
+                #     "lpi" : pricing.lp_increase,
+                #     "rsp" : pricing.rsp_increase,
+                #     "cogs" : pricing.cogs_increase,
+                #     "elasticity" : pricing.base_price_elasticity
+                # }
             
                     
             return obj

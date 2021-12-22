@@ -153,7 +153,7 @@ class SavePromo(viewsets.GenericViewSet):
                 saved_scenario = scenario
             )
         if("pricing_scenario_id" in value):
-            pr_save.saved_pricing__id = value['pricing_scenario_id']
+            pr_save.saved_pricing_id = value['pricing_scenario_id']
         
         pr_save.save()
         bulk_pricing_week = []
